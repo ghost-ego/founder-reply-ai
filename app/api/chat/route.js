@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
-    const { prompt } = await request.json();
+    const { prompt, tone, length } = await request.json();
 
     if (!prompt) {
       return NextResponse.json(
@@ -20,6 +20,9 @@ export async function POST(request) {
       );
     }
 
+    const selectedTone = tone || "Professional";
+    const selectedLength = length || "Medium";
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
       {
@@ -32,23 +35,43 @@ export async function POST(request) {
             {
               parts: [
                 {
-                  text: `Generate exactly 3 different LinkedIn comments for this post.
+                  text: `You are FounderReply AI, an expert LinkedIn comment assistant.
 
-Comment 1 should be thoughtful and insightful.
-Comment 2 should be bold and confident.
-Comment 3 should be short and punchy.
+Generate exactly 3 different LinkedIn comments for the post below.
 
-All comments must:
-- Sound human and natural.
-- Sound like a founder.
-- Add value.
-- Avoid generic praise.
-- Never say "Great post".
+TONE:
+${selectedTone}
+
+LENGTH:
+${selectedLength}
+
+Tone instructions:
+- Professional: polished, intelligent, credible.
+- Bold: confident, direct, strong founder perspective.
+- Friendly: warm, conversational, approachable.
+- Funny: clever and lightly humorous, but still appropriate for LinkedIn.
+
+Length instructions:
+- Short: 1-2 sentences.
+- Medium: 2-4 sentences.
+- Detailed: 4-6 sentences.
+
+The three comments should have different approaches:
+1. Thoughtful and insightful.
+2. A different perspective or strong opinion.
+3. Natural and conversational.
+
+Rules:
+- Sound like a real human founder.
+- Add useful insight.
+- Do not use generic praise.
+- Never start with "Great post!"
 - Never mention AI.
-- No unnecessary hashtags.
-- Keep each comment under 80 words.
+- Avoid unnecessary hashtags.
+- Do not repeat the same idea three times.
 
-Return ONLY this JSON:
+Return ONLY valid JSON in exactly this format:
+
 {
   "comments": [
     "comment 1",
@@ -90,7 +113,6 @@ ${prompt}`,
       );
     }
 
-    // Remove markdown code fences if Gemini adds them
     const cleaned = text
       .replace(/```json/gi, "")
       .replace(/```/g, "")
@@ -100,12 +122,13 @@ ${prompt}`,
 
     try {
       result = JSON.parse(cleaned);
-    } catch (error) {
+    } catch {
       console.error("Invalid Gemini JSON:", text);
 
       return NextResponse.json(
         {
-          error: "The AI returned an invalid response. Please try again.",
+          error:
+            "The AI returned an invalid response. Please try again.",
         },
         { status: 500 }
       );
@@ -117,9 +140,7 @@ ${prompt}`,
       result.comments.length < 3
     ) {
       return NextResponse.json(
-        {
-          error: "The AI did not return 3 comments.",
-        },
+        { error: "The AI did not return 3 comments." },
         { status: 500 }
       );
     }
