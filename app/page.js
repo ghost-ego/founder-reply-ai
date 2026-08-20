@@ -1,118 +1,77 @@
-"use client";
+import { NextResponse } from "next/server";
 
-import { useState } from "react";
+export async function POST(request) {
+  try {
+    const { prompt } = await request.json();
 
-export default function Home() {
-  const [post, setPost] = useState("");
-  const [comments, setComments] = useState([]);
-  const [loading, setLoading] = useState(false);
+    if (!prompt) {
+      return NextResponse.json(
+        { error: "Prompt is required" },
+        { status: 400 }
+      );
+    }
 
-  async function generateComments() {
-    if (!post.trim()) return;
+    const apiKey = process.env.GEMINI_API_KEY;
 
-    setLoading(true);
-    setComments([]);
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "GEMINI_API_KEY is not configured" },
+        { status: 500 }
+      );
+    }
 
-    try {
-      const response = await fetch("/api/chat", {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
+      {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt: post,
+          contents: [
+            {
+              parts: [
+                {
+                  text: `Write one thoughtful LinkedIn comment for this post.
+
+Make it sound natural, intelligent, concise, and like a real founder. Add useful insight instead of generic praise. Do not mention AI. Do not use hashtags.
+
+Post:
+${prompt}`,
+                },
+              ],
+            },
+          ],
         }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to generate comment.");
       }
+    );
 
-      if (data.reply) {
-        setComments([data.reply]);
-      } else {
-        setComments(["No comment was generated."]);
-      }
-    } catch (error) {
-      console.error(error);
-      setComments([
-        error.message || "Something went wrong. Please try again.",
-      ]);
-    } finally {
-      setLoading(false);
+    const data = await response.json();
+
+    if (!response.ok) {
+      return NextResponse.json(
+        {
+          error: data?.error?.message || "Gemini API request failed.",
+        },
+        { status: response.status }
+      );
     }
+
+    const reply =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!reply) {
+      return NextResponse.json(
+        { error: "Gemini returned no comment." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ reply });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error?.message || "Something went wrong." },
+      { status: 500 }
+    );
   }
-
-  return (
-    <main
-      style={{
-        maxWidth: "800px",
-        margin: "0 auto",
-        padding: "40px 20px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <h1>FounderReply AI</h1>
-
-      <p>
-        Generate thoughtful LinkedIn comments that sound like a real founder.
-      </p>
-
-      <textarea
-        value={post}
-        onChange={(e) => setPost(e.target.value)}
-        placeholder="Paste a LinkedIn post here..."
-        style={{
-          width: "100%",
-          minHeight: "220px",
-          padding: "15px",
-          fontSize: "16px",
-          borderRadius: "10px",
-          border: "1px solid #ccc",
-          boxSizing: "border-box",
-        }}
-      />
-
-      <button
-        onClick={generateComments}
-        disabled={loading}
-        style={{
-          marginTop: "15px",
-          padding: "14px 22px",
-          fontSize: "16px",
-          borderRadius: "10px",
-          border: "none",
-          cursor: loading ? "wait" : "pointer",
-        }}
-      >
-        {loading ? "Generating..." : "Generate Comments"}
-      </button>
-
-      <section style={{ marginTop: "30px" }}>
-        {comments.map((comment, index) => (
-          <div
-            key={index}
-            style={{
-              padding: "18px",
-              marginBottom: "15px",
-              border: "1px solid #ddd",
-              borderRadius: "12px",
-            }}
-          >
-            <strong>Comment {index + 1}</strong>
-
-            <p>{comment}</p>
-
-            <button
-              onClick={() => navigator.clipboard.writeText(comment)}
-            >
-              Copy
-            </button>
-          </div>
-        ))}
-      </section>
-    </main>
-  );
 }
