@@ -14,35 +14,46 @@ export default function Home() {
     setComments([]);
 
     try {
-      const response = await fetch("/api/generate", {
+      const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ post })
+        body: JSON.stringify({
+          prompt: post,
+        }),
       });
 
       const data = await response.json();
 
-      if (data.comments) {
-        setComments(data.comments);
-      } else {
-        setComments(["Something went wrong. Please try again."]);
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate comment.");
       }
-    } catch {
-      setComments(["Something went wrong. Please try again."]);
-    }
 
-    setLoading(false);
+      if (data.reply) {
+        setComments([data.reply]);
+      } else {
+        setComments(["No comment was generated."]);
+      }
+    } catch (error) {
+      console.error(error);
+      setComments([
+        error.message || "Something went wrong. Please try again.",
+      ]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <main style={{
-      maxWidth: "800px",
-      margin: "0 auto",
-      padding: "40px 20px",
-      fontFamily: "Arial, sans-serif"
-    }}>
+    <main
+      style={{
+        maxWidth: "800px",
+        margin: "0 auto",
+        padding: "40px 20px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
       <h1>FounderReply AI</h1>
 
       <p>
@@ -59,7 +70,8 @@ export default function Home() {
           padding: "15px",
           fontSize: "16px",
           borderRadius: "10px",
-          border: "1px solid #ccc"
+          border: "1px solid #ccc",
+          boxSizing: "border-box",
         }}
       />
 
@@ -72,7 +84,7 @@ export default function Home() {
           fontSize: "16px",
           borderRadius: "10px",
           border: "none",
-          cursor: "pointer"
+          cursor: loading ? "wait" : "pointer",
         }}
       >
         {loading ? "Generating..." : "Generate Comments"}
@@ -86,11 +98,13 @@ export default function Home() {
               padding: "18px",
               marginBottom: "15px",
               border: "1px solid #ddd",
-              borderRadius: "12px"
+              borderRadius: "12px",
             }}
           >
             <strong>Comment {index + 1}</strong>
+
             <p>{comment}</p>
+
             <button
               onClick={() => navigator.clipboard.writeText(comment)}
             >
@@ -101,4 +115,4 @@ export default function Home() {
       </section>
     </main>
   );
-    }
+}
