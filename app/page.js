@@ -42,11 +42,11 @@ export default function Home() {
         );
       }
 
-      if (Array.isArray(data.comments)) {
-        setComments(data.comments);
-      } else {
+      if (!Array.isArray(data.comments)) {
         throw new Error("No comments were generated.");
       }
+
+      setComments(data.comments);
     } catch (error) {
       setError(
         error.message || "Something went wrong. Please try again."
@@ -57,7 +57,28 @@ export default function Home() {
   }
 
   async function copyComment(comment) {
-    await navigator.clipboard.writeText(comment);
+    try {
+      await navigator.clipboard.writeText(comment);
+    } catch {
+      setError("Could not copy the comment.");
+    }
+  }
+
+  async function copyAll() {
+    if (!comments.length) return;
+
+    try {
+      const text = comments
+        .map(
+          (comment, index) =>
+            `Comment ${index + 1}:\n${comment}`
+        )
+        .join("\n\n");
+
+      await navigator.clipboard.writeText(text);
+    } catch {
+      setError("Could not copy the comments.");
+    }
   }
 
   const tones = [
@@ -172,7 +193,7 @@ export default function Home() {
             backdropFilter: "blur(20px)",
           }}
         >
-          {/* Post */}
+          {/* LinkedIn Post */}
           <div
             style={{
               display: "flex",
@@ -341,10 +362,6 @@ export default function Home() {
                 loading || !post.trim()
                   ? "not-allowed"
                   : "pointer",
-              boxShadow:
-                loading || !post.trim()
-                  ? "none"
-                  : "0 10px 35px rgba(79,70,229,0.35)",
             }}
           >
             {loading
@@ -368,17 +385,44 @@ export default function Home() {
         {/* Results */}
         {comments.length > 0 && (
           <section style={{ marginTop: "30px" }}>
+            {/* Result Header */}
             <div
               style={{
-                color: "#94a3b8",
-                fontSize: "13px",
-                fontWeight: "600",
-                textTransform: "uppercase",
-                letterSpacing: "1px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "12px",
                 marginBottom: "15px",
+                flexWrap: "wrap",
               }}
             >
-              Choose your reply
+              <div
+                style={{
+                  color: "#94a3b8",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                }}
+              >
+                Choose your reply
+              </div>
+
+              <button
+                onClick={copyAll}
+                style={{
+                  padding: "9px 14px",
+                  borderRadius: "10px",
+                  border:
+                    "1px solid rgba(255,255,255,0.12)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                }}
+              >
+                📋 Copy All
+              </button>
             </div>
 
             {comments.map((comment, index) => {
@@ -393,7 +437,8 @@ export default function Home() {
                   key={index}
                   style={{
                     background: "rgba(255,255,255,0.055)",
-                    border: "1px solid rgba(255,255,255,0.1)",
+                    border:
+                      "1px solid rgba(255,255,255,0.1)",
                     borderRadius: "22px",
                     padding: "24px",
                     marginBottom: "16px",
@@ -421,9 +466,7 @@ export default function Home() {
                   </p>
 
                   <button
-                    onClick={() =>
-                      navigator.clipboard.writeText(comment)
-                    }
+                    onClick={() => copyComment(comment)}
                     style={{
                       padding: "10px 16px",
                       borderRadius: "10px",
@@ -439,6 +482,30 @@ export default function Home() {
                 </div>
               );
             })}
+
+            {/* Regenerate */}
+            <button
+              onClick={generateComments}
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "15px",
+                borderRadius: "14px",
+                border:
+                  "1px solid rgba(255,255,255,0.12)",
+                background: "rgba(255,255,255,0.06)",
+                color: "#fff",
+                cursor: loading
+                  ? "not-allowed"
+                  : "pointer",
+                fontWeight: "700",
+                fontSize: "15px",
+              }}
+            >
+              {loading
+                ? "Generating..."
+                : "🔄 Regenerate Comments"}
+            </button>
           </section>
         )}
 
