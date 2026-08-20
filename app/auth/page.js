@@ -25,23 +25,30 @@ export default function AuthPage() {
           password,
         });
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
         setMessage(
-          "Account created. Check your email if confirmation is required."
+          "Account created. Check your email if email confirmation is required."
         );
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const { error } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
 
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
 
         window.location.href = "/";
       }
     } catch (error) {
-      setMessage(error.message || "Something went wrong.");
+      setMessage(
+        error?.message || "Something went wrong. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -52,7 +59,7 @@ export default function AuthPage() {
       style={{
         minHeight: "100vh",
         background: "#050609",
-        color: "#fff",
+        color: "#ffffff",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -69,6 +76,7 @@ export default function AuthPage() {
           border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: "22px",
           padding: "30px",
+          boxSizing: "border-box",
         }}
       >
         <div
@@ -91,6 +99,7 @@ export default function AuthPage() {
             style={{
               margin: 0,
               fontSize: "30px",
+              fontWeight: "700",
             }}
           >
             {mode === "login"
@@ -102,11 +111,12 @@ export default function AuthPage() {
             style={{
               color: "#94a3b8",
               lineHeight: "1.6",
+              marginTop: "10px",
             }}
           >
             {mode === "login"
-              ? "Log in to continue."
-              : "Create a free FounderReply AI account."}
+              ? "Log in to continue using FounderReply AI."
+              : "Create your free FounderReply AI account."}
           </p>
         </div>
 
@@ -124,11 +134,10 @@ export default function AuthPage() {
           <input
             type="email"
             value={email}
-            onChange={(event) =>
-              setEmail(event.target.value)
-            }
+            onChange={(event) => setEmail(event.target.value)}
             placeholder="you@example.com"
             required
+            autoComplete="email"
             style={{
               width: "100%",
               boxSizing: "border-box",
@@ -137,8 +146,9 @@ export default function AuthPage() {
               borderRadius: "10px",
               border: "1px solid rgba(255,255,255,0.12)",
               background: "rgba(0,0,0,0.3)",
-              color: "#fff",
+              color: "#ffffff",
               outline: "none",
+              fontSize: "15px",
             }}
           />
 
@@ -158,9 +168,14 @@ export default function AuthPage() {
             onChange={(event) =>
               setPassword(event.target.value)
             }
-            placeholder="••••••••"
+            placeholder="Minimum 6 characters"
             required
             minLength={6}
+            autoComplete={
+              mode === "login"
+                ? "current-password"
+                : "new-password"
+            }
             style={{
               width: "100%",
               boxSizing: "border-box",
@@ -169,8 +184,9 @@ export default function AuthPage() {
               borderRadius: "10px",
               border: "1px solid rgba(255,255,255,0.12)",
               background: "rgba(0,0,0,0.3)",
-              color: "#fff",
+              color: "#ffffff",
               outline: "none",
+              fontSize: "15px",
             }}
           />
 
@@ -184,12 +200,11 @@ export default function AuthPage() {
               border: "none",
               background:
                 "linear-gradient(90deg, #2563eb, #7c3aed)",
-              color: "#fff",
+              color: "#ffffff",
               fontWeight: "700",
               fontSize: "15px",
-              cursor: loading
-                ? "not-allowed"
-                : "pointer",
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.7 : 1,
             }}
           >
             {loading
@@ -201,16 +216,19 @@ export default function AuthPage() {
         </form>
 
         {message && (
-          <p
+          <div
             style={{
               marginTop: "18px",
+              padding: "12px",
+              borderRadius: "10px",
+              background: "rgba(255,255,255,0.05)",
               color: "#cbd5e1",
               fontSize: "14px",
               lineHeight: "1.5",
             }}
           >
             {message}
-          </p>
+          </div>
         )}
 
         <div
@@ -220,6 +238,7 @@ export default function AuthPage() {
           }}
         >
           <button
+            type="button"
             onClick={() => {
               setMode(
                 mode === "login"
