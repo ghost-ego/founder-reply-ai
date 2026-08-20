@@ -8,6 +8,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [tone, setTone] = useState("Professional");
+  const [length, setLength] = useState("Medium");
+
   async function generateComments() {
     if (!post.trim()) {
       setError("Paste a LinkedIn post first.");
@@ -26,6 +29,8 @@ export default function Home() {
         },
         body: JSON.stringify({
           prompt: post,
+          tone,
+          length,
         }),
       });
 
@@ -54,6 +59,19 @@ export default function Home() {
   async function copyComment(comment) {
     await navigator.clipboard.writeText(comment);
   }
+
+  const tones = [
+    { name: "Professional", icon: "💼" },
+    { name: "Bold", icon: "🔥" },
+    { name: "Friendly", icon: "😊" },
+    { name: "Funny", icon: "😄" },
+  ];
+
+  const lengths = [
+    { name: "Short", description: "1–2 sentences" },
+    { name: "Medium", description: "2–4 sentences" },
+    { name: "Detailed", description: "4–6 sentences" },
+  ];
 
   return (
     <main
@@ -143,7 +161,7 @@ export default function Home() {
           </p>
         </header>
 
-        {/* Input */}
+        {/* Main Card */}
         <section
           style={{
             background: "rgba(255,255,255,0.055)",
@@ -154,6 +172,7 @@ export default function Home() {
             backdropFilter: "blur(20px)",
           }}
         >
+          {/* Post */}
           <div
             style={{
               display: "flex",
@@ -179,7 +198,7 @@ export default function Home() {
             placeholder="Paste a LinkedIn post here..."
             style={{
               width: "100%",
-              minHeight: "230px",
+              minHeight: "220px",
               boxSizing: "border-box",
               resize: "vertical",
               background: "rgba(0,0,0,0.25)",
@@ -193,12 +212,121 @@ export default function Home() {
             }}
           />
 
+          {/* Tone */}
+          <div style={{ marginTop: "22px" }}>
+            <div
+              style={{
+                fontSize: "14px",
+                fontWeight: "700",
+                marginBottom: "10px",
+              }}
+            >
+              Tone
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(140px, 1fr))",
+                gap: "10px",
+              }}
+            >
+              {tones.map((item) => {
+                const selected = tone === item.name;
+
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => setTone(item.name)}
+                    style={{
+                      padding: "13px 12px",
+                      borderRadius: "12px",
+                      border: selected
+                        ? "1px solid #8b5cf6"
+                        : "1px solid rgba(255,255,255,0.1)",
+                      background: selected
+                        ? "rgba(124,58,237,0.2)"
+                        : "rgba(255,255,255,0.04)",
+                      color: "#fff",
+                      cursor: "pointer",
+                      fontWeight: selected ? "700" : "500",
+                    }}
+                  >
+                    {item.icon} {item.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Length */}
+          <div style={{ marginTop: "22px" }}>
+            <div
+              style={{
+                fontSize: "14px",
+                fontWeight: "700",
+                marginBottom: "10px",
+              }}
+            >
+              Length
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(140px, 1fr))",
+                gap: "10px",
+              }}
+            >
+              {lengths.map((item) => {
+                const selected = length === item.name;
+
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => setLength(item.name)}
+                    style={{
+                      padding: "13px 12px",
+                      borderRadius: "12px",
+                      border: selected
+                        ? "1px solid #3b82f6"
+                        : "1px solid rgba(255,255,255,0.1)",
+                      background: selected
+                        ? "rgba(37,99,235,0.2)"
+                        : "rgba(255,255,255,0.04)",
+                      color: "#fff",
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    <div style={{ fontWeight: "700" }}>
+                      {item.name}
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#94a3b8",
+                        marginTop: "3px",
+                      }}
+                    >
+                      {item.description}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Generate */}
           <button
             onClick={generateComments}
             disabled={loading || !post.trim()}
             style={{
               width: "100%",
-              marginTop: "15px",
+              marginTop: "22px",
               padding: "16px 22px",
               borderRadius: "14px",
               border: "none",
@@ -213,10 +341,14 @@ export default function Home() {
                 loading || !post.trim()
                   ? "not-allowed"
                   : "pointer",
+              boxShadow:
+                loading || !post.trim()
+                  ? "none"
+                  : "0 10px 35px rgba(79,70,229,0.35)",
             }}
           >
             {loading
-              ? "Generating 3 comments..."
+              ? "Generating..."
               : "Generate 3 Comments →"}
           </button>
 
@@ -233,7 +365,7 @@ export default function Home() {
           )}
         </section>
 
-        {/* Comments */}
+        {/* Results */}
         {comments.length > 0 && (
           <section style={{ marginTop: "30px" }}>
             <div
@@ -252,8 +384,8 @@ export default function Home() {
             {comments.map((comment, index) => {
               const labels = [
                 "💡 Thoughtful",
-                "🔥 Bold",
-                "⚡ Concise",
+                "🔥 Strong perspective",
+                "⚡ Natural & concise",
               ];
 
               return (
@@ -289,7 +421,9 @@ export default function Home() {
                   </p>
 
                   <button
-                    onClick={() => copyComment(comment)}
+                    onClick={() =>
+                      navigator.clipboard.writeText(comment)
+                    }
                     style={{
                       padding: "10px 16px",
                       borderRadius: "10px",
