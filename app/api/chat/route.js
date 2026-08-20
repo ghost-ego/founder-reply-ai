@@ -32,21 +32,32 @@ export async function POST(request) {
             {
               parts: [
                 {
-                  text: `You are FounderReply AI, an expert LinkedIn comment assistant.
+                  text: `Generate exactly 3 different LinkedIn comments for this post.
 
-Generate one thoughtful LinkedIn comment for the following post.
+Comment 1 should be thoughtful and insightful.
+Comment 2 should be bold and confident.
+Comment 3 should be short and punchy.
 
-The comment must:
-- Sound like a real founder.
-- Be natural and human.
-- Add useful insight.
-- Be concise.
+All comments must:
+- Sound human and natural.
+- Sound like a founder.
+- Add value.
 - Avoid generic praise.
-- Do not mention that you are an AI.
-- Do not use unnecessary hashtags.
+- Never say "Great post".
+- Never mention AI.
+- No unnecessary hashtags.
+- Keep each comment under 80 words.
+
+Return ONLY this JSON:
+{
+  "comments": [
+    "comment 1",
+    "comment 2",
+    "comment 3"
+  ]
+}
 
 LinkedIn post:
-
 ${prompt}`,
                 },
               ],
@@ -69,25 +80,61 @@ ${prompt}`,
       );
     }
 
-    const reply =
+    const text =
       data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    if (!reply) {
+    if (!text) {
       return NextResponse.json(
         { error: "Gemini returned an empty response." },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ reply });
+    // Remove markdown code fences if Gemini adds them
+    const cleaned = text
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    let result;
+
+    try {
+      result = JSON.parse(cleaned);
+    } catch (error) {
+      console.error("Invalid Gemini JSON:", text);
+
+      return NextResponse.json(
+        {
+          error: "The AI returned an invalid response. Please try again.",
+        },
+        { status: 500 }
+      );
+    }
+
+    if (
+      !result.comments ||
+      !Array.isArray(result.comments) ||
+      result.comments.length < 3
+    ) {
+      return NextResponse.json(
+        {
+          error: "The AI did not return 3 comments.",
+        },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      comments: result.comments.slice(0, 3),
+    });
   } catch (error) {
-    console.error("API ERROR:", error);
+    console.error("SERVER ERROR:", error);
 
     return NextResponse.json(
       {
         error:
           error?.message ||
-          "Something went wrong while generating the comment.",
+          "Something went wrong while generating comments.",
       },
       { status: 500 }
     );
