@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
-    const { prompt, tone, length } = await request.json();
+    const { prompt, tone = "Professional", length = "Medium" } =
+      await request.json();
 
-    if (!prompt) {
+    if (!prompt || !prompt.trim()) {
       return NextResponse.json(
-        { error: "Prompt is required" },
+        { error: "LinkedIn post is required." },
         { status: 400 }
       );
     }
@@ -15,13 +16,77 @@ export async function POST(request) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: "GEMINI_API_KEY is not configured" },
+        { error: "GEMINI_API_KEY is not configured." },
         { status: 500 }
       );
     }
 
-    const selectedTone = tone || "Professional";
-    const selectedLength = length || "Medium";
+    const lengthInstructions = {
+      Short: "Keep each comment to 1–2 sentences.",
+      Medium: "Keep each comment to 2–4 sentences.",
+      Detailed: "Keep each comment to 4–6 sentences.",
+    };
+
+    const toneInstructions = {
+      Professional:
+        "Sound confident, thoughtful, intelligent, and professional.",
+      Bold:
+        "Sound confident and bold. Challenge assumptions when appropriate.",
+      Friendly:
+        "Sound warm, approachable, conversational, and genuine.",
+      Funny:
+        "Use subtle, intelligent humor while still providing useful insight.",
+    };
+
+    const instruction = `
+You are FounderReply AI, an expert LinkedIn comment assistant.
+
+Generate EXACTLY 3 different LinkedIn comments for the post below.
+
+The three comments must have clearly different approaches:
+
+1. INSIGHTFUL
+Add a useful perspective or observation that builds on the post.
+
+2. CONTRARIAN
+Offer a thoughtful alternative perspective, challenge an assumption,
+or point out something the post may be missing. Do not be rude.
+
+3. PERSONAL
+Make it sound like a real founder sharing a practical lesson or
+experience related to the idea.
+
+Tone:
+${toneInstructions[tone] || toneInstructions.Professional}
+
+Length:
+${lengthInstructions[length] || lengthInstructions.Medium}
+
+Rules:
+- Sound like a real human founder.
+- Do not sound like an AI.
+- Do not start with generic phrases like "Great post!"
+- Do not simply repeat the LinkedIn post.
+- Add genuine value.
+- Avoid excessive emojis.
+- Avoid unnecessary hashtags.
+- Do not mention that you are an AI.
+- Do not use quotation marks around the comments.
+- Return ONLY valid JSON.
+- The JSON must contain a "comments" array with exactly 3 strings.
+
+Example format:
+{
+  "comments": [
+    "First comment...",
+    "Second comment...",
+    "Third comment..."
+  ]
+}
+
+LinkedIn post:
+${prompt}
+`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
@@ -35,57 +100,15 @@ export async function POST(request) {
             {
               parts: [
                 {
-                  text: `You are FounderReply AI, an expert LinkedIn comment assistant.
-
-Generate exactly 3 different LinkedIn comments for the post below.
-
-TONE:
-${selectedTone}
-
-LENGTH:
-${selectedLength}
-
-Tone instructions:
-- Professional: polished, intelligent, credible.
-- Bold: confident, direct, strong founder perspective.
-- Friendly: warm, conversational, approachable.
-- Funny: clever and lightly humorous, but still appropriate for LinkedIn.
-
-Length instructions:
-- Short: 1-2 sentences.
-- Medium: 2-4 sentences.
-- Detailed: 4-6 sentences.
-
-The three comments should have different approaches:
-1. Thoughtful and insightful.
-2. A different perspective or strong opinion.
-3. Natural and conversational.
-
-Rules:
-- Sound like a real human founder.
-- Add useful insight.
-- Do not use generic praise.
-- Never start with "Great post!"
-- Never mention AI.
-- Avoid unnecessary hashtags.
-- Do not repeat the same idea three times.
-
-Return ONLY valid JSON in exactly this format:
-
-{
-  "comments": [
-    "comment 1",
-    "comment 2",
-    "comment 3"
-  ]
-}
-
-LinkedIn post:
-${prompt}`,
+                  text: instruction,
                 },
               ],
             },
           ],
+          generationConfig: {
+            temperature: 0.9,
+            responseMimeType: "application/json",
+          },
         }),
       }
     );
@@ -113,49 +136,38 @@ ${prompt}`,
       );
     }
 
-    const cleaned = text
-      .replace(/```json/gi, "")
-      .replace(/```/g, "")
-      .trim();
-
     let result;
 
     try {
-      result = JSON.parse(cleaned);
+      result = JSON.parse(text);
     } catch {
-      console.error("Invalid Gemini JSON:", text);
-
       return NextResponse.json(
-        {
-          error:
-            "The AI returned an invalid response. Please try again.",
-        },
+        { error: "The AI returned an invalid response. Please try again." },
         { status: 500 }
       );
     }
 
     if (
-      !result.comments ||
       !Array.isArray(result.comments) ||
-      result.comments.length < 3
+      result.comments.length !== 3
     ) {
       return NextResponse.json(
-        { error: "The AI did not return 3 comments." },
+        { error: "The AI did not generate exactly 3 comments." },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
-      comments: result.comments.slice(0, 3),
+      comments: result.comments,
     });
   } catch (error) {
-    console.error("SERVER ERROR:", error);
+    console.error("FounderReply AI error:", error);
 
     return NextResponse.json(
       {
         error:
           error?.message ||
-          "Something went wrong while generating comments.",
+          "Something went wrong. Please try again.",
       },
       { status: 500 }
     );
