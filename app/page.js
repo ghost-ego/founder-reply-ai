@@ -1,137 +1,324 @@
-import { NextResponse } from "next/server";
+"use client";
 
-export async function POST(request) {
-  try {
-    const { prompt } = await request.json();
+import { useState } from "react";
 
-    if (!prompt) {
-      return NextResponse.json(
-        { error: "Prompt is required" },
-        { status: 400 }
-      );
+export default function Home() {
+  const [post, setPost] = useState("");
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function generateComments() {
+    if (!post.trim()) {
+      setError("Paste a LinkedIn post first.");
+      return;
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    setLoading(true);
+    setComments([]);
+    setError("");
 
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "GEMINI_API_KEY is not configured" },
-        { status: 500 }
-      );
-    }
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
-      {
+    try {
+      const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `You are FounderReply AI, an expert LinkedIn comment assistant.
-
-Analyze the LinkedIn post below and generate exactly 3 different comments.
-
-COMMENT 1 — THOUGHTFUL:
-Give a useful insight and sound conversational.
-
-COMMENT 2 — BOLD:
-Give a confident founder-style perspective.
-
-COMMENT 3 — CONCISE:
-Give a short, punchy comment that feels natural.
-
-Rules:
-- Sound human.
-- Do not mention AI.
-- Do not use generic praise.
-- Do not start with "Great post!"
-- Do not use unnecessary hashtags.
-- Each comment should be different.
-- Keep each comment under 80 words.
-
-Return ONLY valid JSON in exactly this format:
-
-{
-  "comments": [
-    "Thoughtful comment",
-    "Bold comment",
-    "Concise comment"
-  ]
-}
-
-LinkedIn post:
-${prompt}`,
-                },
-              ],
-            },
-          ],
+          prompt: post,
         }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || "Failed to generate comments."
+        );
       }
-    );
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return NextResponse.json(
-        {
-          error:
-            data?.error?.message || "Gemini API request failed.",
-        },
-        { status: response.status }
+      if (Array.isArray(data.comments)) {
+        setComments(data.comments);
+      } else {
+        throw new Error("No comments were generated.");
+      }
+    } catch (error) {
+      setError(
+        error.message || "Something went wrong. Please try again."
       );
+    } finally {
+      setLoading(false);
     }
-
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!text) {
-      return NextResponse.json(
-        { error: "Gemini returned an empty response." },
-        { status: 500 }
-      );
-    }
-
-    let result;
-
-    try {
-      const cleaned = text
-        .replace(/```json/g, "")
-        .replace(/```/g, "")
-        .trim();
-
-      result = JSON.parse(cleaned);
-    } catch {
-      return NextResponse.json(
-        { error: "AI returned an invalid response. Please try again." },
-        { status: 500 }
-      );
-    }
-
-    if (!Array.isArray(result.comments) || result.comments.length !== 3) {
-      return NextResponse.json(
-        { error: "AI did not return exactly 3 comments." },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      comments: result.comments,
-    });
-  } catch (error) {
-    console.error("API ERROR:", error);
-
-    return NextResponse.json(
-      {
-        error:
-          error?.message ||
-          "Something went wrong while generating comments.",
-      },
-      { status: 500 }
-    );
   }
+
+  async function copyComment(comment) {
+    await navigator.clipboard.writeText(comment);
+  }
+
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at top, #18233d 0%, #080b12 45%, #050609 100%)",
+        color: "#fff",
+        fontFamily:
+          "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        padding: "30px 18px 60px",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "900px",
+          margin: "0 auto",
+        }}
+      >
+        {/* Header */}
+        <header
+          style={{
+            textAlign: "center",
+            padding: "55px 10px 35px",
+          }}
+        >
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 14px",
+              borderRadius: "999px",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              fontSize: "14px",
+              color: "#cbd5e1",
+              marginBottom: "22px",
+            }}
+          >
+            <span
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                background: "#4ade80",
+                boxShadow: "0 0 12px #4ade80",
+              }}
+            />
+            FounderReply AI
+          </div>
+
+          <h1
+            style={{
+              fontSize: "clamp(40px, 8vw, 72px)",
+              lineHeight: "1",
+              letterSpacing: "-3px",
+              margin: "0",
+              fontWeight: "800",
+            }}
+          >
+            Write replies that
+            <br />
+            <span
+              style={{
+                background:
+                  "linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              founders would write.
+            </span>
+          </h1>
+
+          <p
+            style={{
+              maxWidth: "650px",
+              margin: "22px auto 0",
+              color: "#94a3b8",
+              fontSize: "18px",
+              lineHeight: "1.7",
+            }}
+          >
+            Turn any LinkedIn post into thoughtful, natural comments
+            that sound like a real founder.
+          </p>
+        </header>
+
+        {/* Input */}
+        <section
+          style={{
+            background: "rgba(255,255,255,0.055)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "24px",
+            padding: "22px",
+            boxShadow: "0 25px 80px rgba(0,0,0,0.35)",
+            backdropFilter: "blur(20px)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: "12px",
+            }}
+          >
+            <strong>LinkedIn post</strong>
+
+            <span
+              style={{
+                color: "#64748b",
+                fontSize: "13px",
+              }}
+            >
+              {post.length} characters
+            </span>
+          </div>
+
+          <textarea
+            value={post}
+            onChange={(e) => setPost(e.target.value)}
+            placeholder="Paste a LinkedIn post here..."
+            style={{
+              width: "100%",
+              minHeight: "230px",
+              boxSizing: "border-box",
+              resize: "vertical",
+              background: "rgba(0,0,0,0.25)",
+              color: "#fff",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "16px",
+              padding: "18px",
+              fontSize: "16px",
+              lineHeight: "1.6",
+              outline: "none",
+            }}
+          />
+
+          <button
+            onClick={generateComments}
+            disabled={loading || !post.trim()}
+            style={{
+              width: "100%",
+              marginTop: "15px",
+              padding: "16px 22px",
+              borderRadius: "14px",
+              border: "none",
+              background:
+                loading || !post.trim()
+                  ? "#334155"
+                  : "linear-gradient(90deg, #2563eb, #7c3aed)",
+              color: "#fff",
+              fontSize: "16px",
+              fontWeight: "700",
+              cursor:
+                loading || !post.trim()
+                  ? "not-allowed"
+                  : "pointer",
+            }}
+          >
+            {loading
+              ? "Generating 3 comments..."
+              : "Generate 3 Comments →"}
+          </button>
+
+          {error && (
+            <p
+              style={{
+                color: "#f87171",
+                marginTop: "15px",
+                textAlign: "center",
+              }}
+            >
+              {error}
+            </p>
+          )}
+        </section>
+
+        {/* Comments */}
+        {comments.length > 0 && (
+          <section style={{ marginTop: "30px" }}>
+            <div
+              style={{
+                color: "#94a3b8",
+                fontSize: "13px",
+                fontWeight: "600",
+                textTransform: "uppercase",
+                letterSpacing: "1px",
+                marginBottom: "15px",
+              }}
+            >
+              Choose your reply
+            </div>
+
+            {comments.map((comment, index) => {
+              const labels = [
+                "💡 Thoughtful",
+                "🔥 Bold",
+                "⚡ Concise",
+              ];
+
+              return (
+                <div
+                  key={index}
+                  style={{
+                    background: "rgba(255,255,255,0.055)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "22px",
+                    padding: "24px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: "700",
+                      marginBottom: "14px",
+                    }}
+                  >
+                    {labels[index]}
+                  </div>
+
+                  <p
+                    style={{
+                      color: "#e2e8f0",
+                      fontSize: "17px",
+                      lineHeight: "1.75",
+                      marginTop: 0,
+                    }}
+                  >
+                    {comment}
+                  </p>
+
+                  <button
+                    onClick={() => copyComment(comment)}
+                    style={{
+                      padding: "10px 16px",
+                      borderRadius: "10px",
+                      border:
+                        "1px solid rgba(255,255,255,0.12)",
+                      background: "rgba(255,255,255,0.06)",
+                      color: "#fff",
+                      cursor: "pointer",
+                    }}
+                  >
+                    📋 Copy comment
+                  </button>
+                </div>
+              );
+            })}
+          </section>
+        )}
+
+        <footer
+          style={{
+            textAlign: "center",
+            color: "#475569",
+            fontSize: "13px",
+            marginTop: "55px",
+          }}
+        >
+          FounderReply AI · Built for founders who build in public.
+        </footer>
+      </div>
+    </main>
+  );
 }
