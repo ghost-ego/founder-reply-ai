@@ -11,6 +11,8 @@ export default function Home() {
   const [tone, setTone] = useState("Professional");
   const [length, setLength] = useState("Medium");
 
+  const [recent, setRecent] = useState([]);
+
   async function generateComments() {
     if (!post.trim()) {
       setError("Paste a LinkedIn post first.");
@@ -47,6 +49,19 @@ export default function Home() {
       }
 
       setComments(data.comments);
+
+      const newGeneration = {
+        id: Date.now(),
+        post: post.trim(),
+        tone,
+        length,
+        comments: data.comments,
+      };
+
+      setRecent((previous) => [
+        newGeneration,
+        ...previous,
+      ].slice(0, 5));
     } catch (error) {
       setError(
         error.message || "Something went wrong. Please try again."
@@ -79,6 +94,23 @@ export default function Home() {
     } catch {
       setError("Could not copy the comments.");
     }
+  }
+
+  function useAgain(item) {
+    setPost(item.post);
+    setTone(item.tone);
+    setLength(item.length);
+    setComments(item.comments);
+    setError("");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
+
+  function clearRecent() {
+    setRecent([]);
   }
 
   const tones = [
@@ -142,6 +174,7 @@ export default function Home() {
                 boxShadow: "0 0 12px #4ade80",
               }}
             />
+
             FounderReply AI
           </div>
 
@@ -156,6 +189,7 @@ export default function Home() {
           >
             Write replies that
             <br />
+
             <span
               style={{
                 background:
@@ -193,7 +227,7 @@ export default function Home() {
             backdropFilter: "blur(20px)",
           }}
         >
-          {/* LinkedIn Post */}
+          {/* Post */}
           <div
             style={{
               display: "flex",
@@ -224,7 +258,8 @@ export default function Home() {
               resize: "vertical",
               background: "rgba(0,0,0,0.25)",
               color: "#fff",
-              border: "1px solid rgba(255,255,255,0.1)",
+              border:
+                "1px solid rgba(255,255,255,0.1)",
               borderRadius: "16px",
               padding: "18px",
               fontSize: "16px",
@@ -259,7 +294,9 @@ export default function Home() {
                 return (
                   <button
                     key={item.name}
-                    onClick={() => setTone(item.name)}
+                    onClick={() =>
+                      setTone(item.name)
+                    }
                     style={{
                       padding: "13px 12px",
                       borderRadius: "12px",
@@ -271,7 +308,9 @@ export default function Home() {
                         : "rgba(255,255,255,0.04)",
                       color: "#fff",
                       cursor: "pointer",
-                      fontWeight: selected ? "700" : "500",
+                      fontWeight: selected
+                        ? "700"
+                        : "500",
                     }}
                   >
                     {item.icon} {item.name}
@@ -302,12 +341,15 @@ export default function Home() {
               }}
             >
               {lengths.map((item) => {
-                const selected = length === item.name;
+                const selected =
+                  length === item.name;
 
                 return (
                   <button
                     key={item.name}
-                    onClick={() => setLength(item.name)}
+                    onClick={() =>
+                      setLength(item.name)
+                    }
                     style={{
                       padding: "13px 12px",
                       borderRadius: "12px",
@@ -344,7 +386,9 @@ export default function Home() {
           {/* Generate */}
           <button
             onClick={generateComments}
-            disabled={loading || !post.trim()}
+            disabled={
+              loading || !post.trim()
+            }
             style={{
               width: "100%",
               marginTop: "22px",
@@ -382,10 +426,9 @@ export default function Home() {
           )}
         </section>
 
-        {/* Results */}
+        {/* Current Results */}
         {comments.length > 0 && (
           <section style={{ marginTop: "30px" }}>
-            {/* Result Header */}
             <div
               style={{
                 display: "flex",
@@ -415,7 +458,8 @@ export default function Home() {
                   borderRadius: "10px",
                   border:
                     "1px solid rgba(255,255,255,0.12)",
-                  background: "rgba(255,255,255,0.06)",
+                  background:
+                    "rgba(255,255,255,0.06)",
                   color: "#fff",
                   cursor: "pointer",
                   fontWeight: "600",
@@ -436,7 +480,8 @@ export default function Home() {
                 <div
                   key={index}
                   style={{
-                    background: "rgba(255,255,255,0.055)",
+                    background:
+                      "rgba(255,255,255,0.055)",
                     border:
                       "1px solid rgba(255,255,255,0.1)",
                     borderRadius: "22px",
@@ -466,13 +511,16 @@ export default function Home() {
                   </p>
 
                   <button
-                    onClick={() => copyComment(comment)}
+                    onClick={() =>
+                      copyComment(comment)
+                    }
                     style={{
                       padding: "10px 16px",
                       borderRadius: "10px",
                       border:
                         "1px solid rgba(255,255,255,0.12)",
-                      background: "rgba(255,255,255,0.06)",
+                      background:
+                        "rgba(255,255,255,0.06)",
                       color: "#fff",
                       cursor: "pointer",
                     }}
@@ -483,7 +531,6 @@ export default function Home() {
               );
             })}
 
-            {/* Regenerate */}
             <button
               onClick={generateComments}
               disabled={loading}
@@ -493,7 +540,8 @@ export default function Home() {
                 borderRadius: "14px",
                 border:
                   "1px solid rgba(255,255,255,0.12)",
-                background: "rgba(255,255,255,0.06)",
+                background:
+                  "rgba(255,255,255,0.06)",
                 color: "#fff",
                 cursor: loading
                   ? "not-allowed"
@@ -506,6 +554,143 @@ export default function Home() {
                 ? "Generating..."
                 : "🔄 Regenerate Comments"}
             </button>
+          </section>
+        )}
+
+        {/* Recent Generations */}
+        {recent.length > 0 && (
+          <section
+            style={{
+              marginTop: "45px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "16px",
+              }}
+            >
+              <div>
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: "24px",
+                  }}
+                >
+                  Recent Generations
+                </h2>
+
+                <p
+                  style={{
+                    margin: "6px 0 0",
+                    color: "#64748b",
+                    fontSize: "13px",
+                  }}
+                >
+                  Your latest generations from this session.
+                </p>
+              </div>
+
+              <button
+                onClick={clearRecent}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "9px",
+                  border:
+                    "1px solid rgba(255,255,255,0.1)",
+                  background:
+                    "rgba(255,255,255,0.04)",
+                  color: "#94a3b8",
+                  cursor: "pointer",
+                }}
+              >
+                Clear
+              </button>
+            </div>
+
+            {recent.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  background:
+                    "rgba(255,255,255,0.04)",
+                  border:
+                    "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "18px",
+                  padding: "18px",
+                  marginBottom: "12px",
+                }}
+              >
+                <p
+                  style={{
+                    margin: "0 0 14px",
+                    color: "#cbd5e1",
+                    lineHeight: "1.6",
+                  }}
+                >
+                  {item.post.length > 180
+                    ? `${item.post.slice(0, 180)}...`
+                    : item.post}
+                </p>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span
+                    style={{
+                      padding: "6px 9px",
+                      borderRadius: "8px",
+                      background:
+                        "rgba(124,58,237,0.15)",
+                      color: "#c4b5fd",
+                      fontSize: "12px",
+                    }}
+                  >
+                    {item.tone}
+                  </span>
+
+                  <span
+                    style={{
+                      padding: "6px 9px",
+                      borderRadius: "8px",
+                      background:
+                        "rgba(37,99,235,0.15)",
+                      color: "#93c5fd",
+                      fontSize: "12px",
+                    }}
+                  >
+                    {item.length}
+                  </span>
+
+                  <button
+                    onClick={() =>
+                      useAgain(item)
+                    }
+                    style={{
+                      marginLeft: "auto",
+                      padding: "8px 13px",
+                      borderRadius: "9px",
+                      border:
+                        "1px solid rgba(255,255,255,0.1)",
+                      background:
+                        "rgba(255,255,255,0.06)",
+                      color: "#fff",
+                      cursor: "pointer",
+                      fontWeight: "600",
+                    }}
+                  >
+                    Use Again
+                  </button>
+                </div>
+              </div>
+            ))}
           </section>
         )}
 
