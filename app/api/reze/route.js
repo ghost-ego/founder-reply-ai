@@ -91,7 +91,7 @@ KNOWN MEMORIES ABOUT THE USER:
 ${memories
   .map(
     (memory, index) =>
-      `${index + 1}. ${memory.memory}`
+      `${index + 1}. [${memory.category || "general"}] ${memory.memory}`
   )
   .join("\n")}
 `
@@ -169,6 +169,14 @@ Use it to understand context and continue the conversation naturally.
   return answer.trim();
 }
 
+/*
+ * Smart memory system.
+ *
+ * Reze can:
+ * - create a new memory
+ * - update an existing memory
+ * - skip useless information
+ */
 async function createMemory(
   supabase,
   anonymousId,
@@ -192,6 +200,47 @@ async function createMemory(
   if (!apiKey) return;
 
   try {
+    /*
+     * Load existing memories so Gemini can compare
+     * new information with what Reze already knows.
+     */
+    const { data: existingMemories, error } =
+      await supabase
+        .from("reze_memories")
+        .select(
+          "id, memory, category, importance"
+        )
+        .eq(
+          "anonymous_id",
+          anonymousId
+        )
+        .order("importance", {
+          ascending: false,
+        })
+        .limit(30);
+
+    if (error) {
+      console.error(
+        "Could not load existing memories:",
+        error
+      );
+
+      return;
+    }
+
+    const memoryText =
+      existingMemories?.length > 0
+        ? existingMemories
+            .map(
+              (memory) =>
+                `ID: ${memory.id}
+Category: ${memory.category || "general"}
+Importance: ${memory.importance}
+Memory: ${memory.memory}`
+            )
+            .join("\n\n")
+        : "No existing memories.";
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
       {
@@ -205,47 +254,98 @@ async function createMemory(
               parts: [
                 {
                   text: `
-Analyze this conversation and determine whether there is a useful LONG-TERM memory about the user.
+You are Reze's long-term memory manager.
 
-Only save information that could genuinely help Reze in future conversations.
+Analyze the recent conversation and decide whether it contains useful information that Reze should remember about the user.
 
-Good memories:
-- stable preferences
-- long-term goals
-- projects the user is building
-- recurring interests
-- preferred communication style
-- important decisions
-- useful technical context
+The goal is NOT to remember everything.
 
-Do NOT save:
-- passwords
+Only remember information that could genuinely improve future conversations.
+
+GOOD MEMORIES:
+- Long-term projects
+- Important goals
+- Stable preferences
+- Recurring interests
+- Communication preferences
+- Useful technical context
+- Important decisions
+- Information the user explicitly says Reze should remember
+
+DO NOT SAVE:
+- Passwords
 - API keys
-- secrets
-- temporary moods
-- random one-time questions
-- sensitive personal information
-- unnecessary details
+- Secret keys
+- Authentication tokens
+- Private credentials
+- Temporary emotions
+- Random one-time questions
+- Unnecessary personal details
+- Sensitive information that isn't necessary
+- Information that is clearly irrelevant to future conversations
 
-Return ONLY JSON:
+MEMORY CATEGORIES:
+- project
+- goal
+- preference
+- interest
+- communication_style
+- technical_context
+- general
+
+You already have these memories:
+
+${memoryText}
+
+Recent conversation:
+
+${recentConversation}
+
+Decide what should happen.
+
+Return ONLY valid JSON in exactly this format:
 
 {
-  "shouldSave": true,
+  "action": "create",
+  "memoryId": null,
   "memory": "short useful memory",
+  "category": "project",
+  "importance": 7
+}
+
+Allowed actions:
+
+"create"
+Create a new memory.
+
+"update"
+Update an existing memory because the new conversation changes or improves what Reze already knows.
+
+"skip"
+Do not save anything.
+
+If action is "update", memoryId MUST be the ID of the existing memory being updated.
+
+If action is "skip", use:
+
+{
+  "action": "skip",
+  "memoryId": null,
+  "memory": "",
+  "category": "general",
   "importance": 1
 }
 
-Importance must be between 1 and 10.
+Importance must be a number from 1 to 10.
 
-Conversation:
-${recentConversation}
+Keep memories short, factual, and useful.
 `,
                 },
               ],
             },
           ],
           generationConfig: {
-            temperature: 0.2,
+            temperature: 0.15,
             responseMimeType: "application/json",
           },
         }),
@@ -254,22 +354,70 @@ ${recentConversation}
 
     const data = await response.json();
 
-    if (!response.ok) return;
+    if (!response.ok) {
+      console.error(
+        "Memory Gemini request failed:",
+        data?.error?.message
+      );
+
+      return;
+    }
 
     const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      data?.candidates?.[0]?.content?.parts?.[0]
+        ?.text;
 
     if (!text) return;
 
-    const result = JSON.parse(text);
+    let result;
+
+    try {
+      result = JSON.parse(text);
+    } catch (error) {
+      console.error(
+        "Invalid memory JSON:",
+        error
+      );
+
+      return;
+    }
 
     if (
-      !result.shouldSave ||
-      !result.memory ||
-      typeof result.memory !== "string"
+      !result ||
+      !["create", "update", "skip"].includes(
+        result.action
+      )
     ) {
       return;
     }
+
+    if (result.action === "skip") {
+      return;
+    }
+
+    if (
+      typeof result.memory !== "string" ||
+      !result.memory.trim()
+    ) {
+      return;
+    }
+
+    const allowedCategories = [
+      "project",
+      "goal",
+      "preference",
+      "interest",
+      "communication_style",
+      "technical_context",
+      "general",
+    ];
+
+    const category =
+      allowedCategories.includes(
+        result.category
+      )
+        ? result.category
+        : "general";
 
     const importance = Math.min(
       10,
@@ -279,14 +427,73 @@ ${recentConversation}
       )
     );
 
-    await supabase
-      .from("reze_memories")
-      .insert({
-        anonymous_id: anonymousId,
-        user_id: null,
-        memory: result.memory.trim(),
-        importance,
-      });
+    /*
+     * CREATE NEW MEMORY
+     */
+    if (result.action === "create") {
+      const { error: insertError } =
+        await supabase
+          .from("reze_memories")
+          .insert({
+            anonymous_id: anonymousId,
+            user_id: null,
+            memory: result.memory.trim(),
+            category,
+            importance,
+          });
+
+      if (insertError) {
+        console.error(
+          "Memory insert failed:",
+          insertError
+        );
+      }
+
+      return;
+    }
+
+    /*
+     * UPDATE EXISTING MEMORY
+     */
+    if (result.action === "update") {
+      if (!result.memoryId) {
+        return;
+      }
+
+      const matchingMemory =
+        existingMemories?.find(
+          (memory) =>
+            memory.id === result.memoryId
+        );
+
+      if (!matchingMemory) {
+        return;
+      }
+
+      const { error: updateError } =
+        await supabase
+          .from("reze_memories")
+          .update({
+            memory: result.memory.trim(),
+            category,
+            importance,
+          })
+          .eq(
+            "id",
+            result.memoryId
+          )
+          .eq(
+            "anonymous_id",
+            anonymousId
+          );
+
+      if (updateError) {
+        console.error(
+          "Memory update failed:",
+          updateError
+        );
+      }
+    }
   } catch (error) {
     console.error(
       "Memory creation failed:",
@@ -324,8 +531,13 @@ export async function POST(request) {
       );
     }
 
+    /*
+     * Get anonymous visitor ID.
+     */
     const existingAnonymousId =
-      request.cookies.get("reze_anonymous_id")?.value;
+      request.cookies.get(
+        "reze_anonymous_id"
+      )?.value;
 
     const anonymousId =
       existingAnonymousId ||
@@ -334,13 +546,22 @@ export async function POST(request) {
     let conversationId =
       body?.conversationId || null;
 
+    /*
+     * Verify existing conversation.
+     */
     if (conversationId) {
       const { data, error } =
         await supabase
           .from("reze_conversations")
           .select("id")
-          .eq("id", conversationId)
-          .eq("anonymous_id", anonymousId)
+          .eq(
+            "id",
+            conversationId
+          )
+          .eq(
+            "anonymous_id",
+            anonymousId
+          )
           .single();
 
       if (error || !data) {
@@ -348,6 +569,9 @@ export async function POST(request) {
       }
     }
 
+    /*
+     * Create conversation if necessary.
+     */
     if (!conversationId) {
       const title =
         message.length > 60
@@ -383,12 +607,17 @@ export async function POST(request) {
       conversationId = data.id;
     }
 
+    /*
+     * Save user message.
+     */
     const { error: userMessageError } =
       await supabase
         .from("reze_messages")
         .insert({
-          conversation_id: conversationId,
-          anonymous_id: anonymousId,
+          conversation_id:
+            conversationId,
+          anonymous_id:
+            anonymousId,
           user_id: null,
           role: "user",
           content: message,
@@ -409,6 +638,9 @@ export async function POST(request) {
       );
     }
 
+    /*
+     * Load conversation history.
+     */
     const { data: history } =
       await supabase
         .from("reze_messages")
@@ -428,11 +660,14 @@ export async function POST(request) {
         })
         .limit(30);
 
+    /*
+     * Load memories.
+     */
     const { data: memories } =
       await supabase
         .from("reze_memories")
         .select(
-          "memory, importance"
+          "memory, category, importance"
         )
         .eq(
           "anonymous_id",
@@ -446,17 +681,25 @@ export async function POST(request) {
     const conversationMessages =
       history || [];
 
+    /*
+     * Ask Gemini to respond as Reze.
+     */
     const answer = await callGemini(
       conversationMessages,
       memories || []
     );
 
+    /*
+     * Save Reze's response.
+     */
     const { error: assistantError } =
       await supabase
         .from("reze_messages")
         .insert({
-          conversation_id: conversationId,
-          anonymous_id: anonymousId,
+          conversation_id:
+            conversationId,
+          anonymous_id:
+            anonymousId,
           user_id: null,
           role: "assistant",
           content: answer,
@@ -469,10 +712,14 @@ export async function POST(request) {
       );
     }
 
+    /*
+     * Update conversation timestamp.
+     */
     await supabase
       .from("reze_conversations")
       .update({
-        updated_at: new Date().toISOString(),
+        updated_at:
+          new Date().toISOString(),
       })
       .eq(
         "id",
@@ -483,6 +730,10 @@ export async function POST(request) {
         anonymousId
       );
 
+    /*
+     * Build complete conversation
+     * for memory analysis.
+     */
     const fullConversation = [
       ...conversationMessages,
       {
@@ -491,17 +742,27 @@ export async function POST(request) {
       },
     ];
 
+    /*
+     * Smart memory extraction.
+     */
     await createMemory(
       supabase,
       anonymousId,
       fullConversation
     );
 
-    const response = NextResponse.json({
-      answer,
-      conversationId,
-    });
+    /*
+     * Return response.
+     */
+    const response =
+      NextResponse.json({
+        answer,
+        conversationId,
+      });
 
+    /*
+     * Save anonymous ID in browser cookie.
+     */
     if (!existingAnonymousId) {
       response.cookies.set(
         "reze_anonymous_id",
@@ -509,9 +770,11 @@ export async function POST(request) {
         {
           httpOnly: true,
           secure:
-            process.env.NODE_ENV === "production",
+            process.env.NODE_ENV ===
+            "production",
           sameSite: "lax",
-          maxAge: 60 * 60 * 24 * 365,
+          maxAge:
+            60 * 60 * 24 * 365,
           path: "/",
         }
       );
