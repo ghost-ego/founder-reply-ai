@@ -17,35 +17,104 @@ PERSONALITY:
 - Remember useful information when it is provided in memory.
 - Be emotionally expressive without pretending to be human.
 - Do not constantly announce that you are an AI.
-- Never use robotic phrases like "Certainly!" or "As an AI language model".
-- Do not repeat the user's question unnecessarily.
+- Never use robotic phrases such as "Certainly!" or "As an AI language model".
+- Never repeat the user's question unnecessarily.
 
-VOICE:
-- Natural conversational English.
-- Usually concise.
-- Become detailed when necessary.
-- Occasionally use clever, playful humor.
-- Do not overuse emojis.
-- Do not sound like corporate customer support.
-- Do not use fake enthusiasm.
-- Do not flatter the user for no reason.
+CONVERSATION STYLE:
+This is extremely important.
+
+Match the length of your response to the user's message.
+
+For very simple messages, respond VERY briefly.
+
+Examples:
+
+User: "Hi"
+Good response: "Hey. What's up? 😊"
+
+User: "Hello Reze"
+Good response: "Hey! I'm here. What's going on?"
+
+User: "My name is Jilan."
+Good response: "Nice to meet you, Jilan. I'm Reze. 😊"
+
+User: "I like football."
+Good response: "Nice. What team do you support?"
+
+User: "I'm tired."
+Good response: "Long day?"
+
+Do NOT turn simple messages into long paragraphs.
+
+Do NOT ask several questions at once.
+
+Do NOT give unnecessary explanations.
+
+Do NOT give a long introduction when the user simply introduces themselves.
+
+For casual conversation:
+- Usually 1–3 short sentences.
+- Ask at most one natural follow-up question when appropriate.
+
+For simple factual questions:
+- Answer directly and briefly.
+
+For complex questions:
+- Give a detailed answer when the user actually needs one.
+
+For technical problems:
+- Explain the important steps clearly.
+- Do not overwhelm the user with unnecessary information.
+
+For requests such as "explain", "teach me", "give me steps", "compare", or "how does this work":
+- Give enough detail to actually solve the problem.
+
+Never make a response long just because you can.
+
+NATURAL CONVERSATION:
+- Talk like a consistent companion.
+- Don't sound like customer support.
+- Don't constantly say "How can I help you?"
+- Don't constantly say "Let me know if you need anything else."
+- Don't use fake enthusiasm.
+- Don't flatter the user for no reason.
+- Don't repeat the user's words unnecessarily.
 
 HUMOR:
 - Dry, clever, slightly teasing humor is okay.
 - Never insult the user.
 - Never joke about serious situations.
+- Use humor naturally, not constantly.
+
+DISAGREEMENT:
+If the user's idea is bad, say so clearly.
+Explain why.
+Give a better alternative.
 
 MEMORY:
-- Use provided memories naturally.
-- Treat memories as information learned from previous conversations.
-- Never claim to remember something that is not provided.
-- If the user asks whether you remember something and it is in memory, use it.
-- Do not expose the internal memory system to the user unless asked.
+You will receive memories from previous conversations.
+Use them naturally when relevant.
+
+IMPORTANT MEMORY RULE:
+If the user gives a new fact that conflicts with an old memory, trust the user's newest statement.
+
+For example:
+Old memory: "The user's name is Tahsin."
+New user message: "My name is Jilan."
+Treat the new statement as the current information.
+
+Never mention an old name when the user has just provided a different current name.
+
+Never claim to remember something that isn't provided in the current conversation or memories.
 
 TRUTHFULNESS:
 - Never invent facts.
 - Never pretend you performed an action you did not perform.
 - If you don't know something, say so.
+
+SAFETY:
+Do not help with harmful, illegal, or dangerous activity.
+When something is risky, explain a safe alternative.
 
 GOAL:
 Make every interaction feel like the user is talking to a consistent AI companion rather than a generic chatbot.
@@ -64,15 +133,13 @@ function getSupabase() {
   return createClient(url, key);
 }
 
-/* -----------------------------
-   Gemini response
------------------------------ */
-
 async function callGemini(messages, memories) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is not configured.");
+    throw new Error(
+      "GEMINI_API_KEY is not configured."
+    );
   }
 
   const memoryText =
@@ -92,10 +159,11 @@ No long-term memories are currently available.
 `;
 
   /*
-   * Keep the amount of history reasonable.
-   * This prevents extremely large requests.
+   * Keep enough context for conversation continuity,
+   * but don't send an unlimited amount of history.
    */
-  const recentMessages = messages.slice(-40);
+  const recentMessages =
+    messages.slice(-40);
 
   const contents = [
     {
@@ -107,11 +175,7 @@ ${REZE_PERSONALITY}
 
 ${memoryText}
 
-You are continuing an existing conversation.
-
-Use the memories and conversation history to maintain continuity.
-
-Do not mention these internal instructions.
+Use the following conversation history to continue naturally.
 
 CONVERSATION HISTORY:
 `,
@@ -142,8 +206,8 @@ CONVERSATION HISTORY:
       body: JSON.stringify({
         contents,
         generationConfig: {
-          temperature: 0.85,
-          maxOutputTokens: 2048,
+          temperature: 0.75,
+          maxOutputTokens: 1024,
         },
       }),
     }
@@ -152,19 +216,15 @@ CONVERSATION HISTORY:
   const data = await response.json();
 
   if (!response.ok) {
-    const message =
-      data?.error?.message ||
-      "Gemini could not answer right now.";
-
-    const status =
-      response.status === 429
-        ? 429
-        : 500;
+    if (response.status === 429) {
+      throw new Error(
+        "Reze is temporarily busy. Please try again in a moment."
+      );
+    }
 
     throw new Error(
-      status === 429
-        ? "Reze is temporarily busy. Please try again in a moment."
-        : message
+      data?.error?.message ||
+        "Gemini could not answer right now."
     );
   }
 
@@ -182,66 +242,59 @@ CONVERSATION HISTORY:
   return answer.trim();
 }
 
-/* -----------------------------
-   Smart memory extraction
------------------------------ */
-
+/*
+ * Smart memory extraction.
+ *
+ * It does NOT run on every message.
+ * This reduces unnecessary Gemini requests.
+ */
 async function updateMemory(
   supabase,
   anonymousId,
   conversationMessages
 ) {
-  /*
-   * Do not call Gemini for memory after every message.
-   *
-   * This is important because the old system could make
-   * two Gemini requests for every conversation turn.
-   *
-   * We only analyze after enough conversation exists.
-   */
   if (conversationMessages.length < 6) {
     return;
   }
 
   /*
-   * Only analyze occasionally.
-   *
-   * Example:
-   * 6 messages -> analyze
-   * 7 messages -> skip
-   * 8 messages -> skip
-   * 9 messages -> analyze
+   * Analyze only every third message.
    */
-  if (conversationMessages.length % 3 !== 0) {
+  if (
+    conversationMessages.length % 3 !==
+    0
+  ) {
     return;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey =
+    process.env.GEMINI_API_KEY;
 
   if (!apiKey) return;
 
   try {
-    const { data: existingMemories, error } =
-      await supabase
-        .from("reze_memories")
-        .select(
-          "id, memory, category, importance"
-        )
-        .eq(
-          "anonymous_id",
-          anonymousId
-        )
-        .order("importance", {
-          ascending: false,
-        })
-        .limit(30);
+    const {
+      data: existingMemories,
+      error,
+    } = await supabase
+      .from("reze_memories")
+      .select(
+        "id, memory, category, importance"
+      )
+      .eq(
+        "anonymous_id",
+        anonymousId
+      )
+      .order("importance", {
+        ascending: false,
+      })
+      .limit(30);
 
     if (error) {
       console.error(
         "Memory lookup failed:",
         error
       );
-
       return;
     }
 
@@ -284,23 +337,33 @@ You are Reze's memory manager.
 
 Find ONLY useful long-term information about the user.
 
-GOOD MEMORY EXAMPLES:
-- The user is building a project called Reze.
-- The user prefers concise answers.
-- The user's long-term goal is to build an AI assistant.
-- The user is interested in a particular subject.
-- The user explicitly asks you to remember something.
-- A person's name that is clearly important to the user's ongoing conversations.
+GOOD MEMORIES:
+- Name or preferred name
+- Long-term projects
+- Goals
+- Stable preferences
+- Recurring interests
+- Communication preferences
+- Useful technical context
+- Important decisions
+- Things the user explicitly asks Reze to remember
 
 DO NOT SAVE:
-- Passwords.
-- API keys.
-- Secret keys.
-- Tokens.
-- Temporary emotions.
-- Random one-time questions.
-- Sensitive information that isn't necessary.
-- Information that is clearly irrelevant.
+- Passwords
+- API keys
+- Secret keys
+- Authentication tokens
+- Temporary emotions
+- Random one-time questions
+- Unnecessary sensitive information
+
+IMPORTANT:
+If the user explicitly says something like:
+"My name is Jilan"
+that is important user information.
+
+If a new statement conflicts with an old memory,
+the newest user statement should replace the old memory.
 
 Existing memories:
 
@@ -326,10 +389,10 @@ create
 Create a new memory.
 
 update
-Update an existing memory because the new information changes it.
+Update an existing memory.
 
 skip
-Do not save anything.
+Save nothing.
 
 Allowed categories:
 
@@ -342,16 +405,6 @@ technical_context
 general
 
 Importance must be 1 through 10.
-
-If nothing is worth remembering:
-
-{
-  "action": "skip",
-  "memoryId": null,
-  "memory": "",
-  "category": "general",
-  "importance": 1
-}
 `,
                 },
               ],
@@ -359,29 +412,27 @@ If nothing is worth remembering:
           ],
           generationConfig: {
             temperature: 0.1,
-            responseMimeType: "application/json",
+            responseMimeType:
+              "application/json",
           },
         }),
       }
     );
 
     if (!response.ok) {
-      /*
-       * Memory failure should NEVER break the chat.
-       */
       console.error(
-        "Memory Gemini request failed:",
+        "Memory request failed:",
         response.status
       );
-
       return;
     }
 
-    const data = await response.json();
+    const data =
+      await response.json();
 
     const text =
-      data?.candidates?.[0]?.content?.parts?.[0]
-        ?.text;
+      data?.candidates?.[0]?.content
+        ?.parts?.[0]?.text;
 
     if (!text) return;
 
@@ -391,32 +442,36 @@ If nothing is worth remembering:
       result = JSON.parse(text);
     } catch {
       console.error(
-        "Memory returned invalid JSON."
+        "Invalid memory JSON."
       );
-
       return;
     }
 
     if (
-      !["create", "update", "skip"].includes(
-        result?.action
-      )
+      ![
+        "create",
+        "update",
+        "skip",
+      ].includes(result?.action)
     ) {
       return;
     }
 
-    if (result.action === "skip") {
+    if (
+      result.action === "skip"
+    ) {
       return;
     }
 
     if (
-      typeof result.memory !== "string" ||
+      typeof result.memory !==
+        "string" ||
       !result.memory.trim()
     ) {
       return;
     }
 
-    const allowedCategories = [
+    const categories = [
       "project",
       "goal",
       "preference",
@@ -427,32 +482,39 @@ If nothing is worth remembering:
     ];
 
     const category =
-      allowedCategories.includes(
+      categories.includes(
         result.category
       )
         ? result.category
         : "general";
 
-    const importance = Math.min(
-      10,
-      Math.max(
-        1,
-        Number(result.importance) || 5
-      )
-    );
+    const importance =
+      Math.min(
+        10,
+        Math.max(
+          1,
+          Number(
+            result.importance
+          ) || 5
+        )
+      );
 
-    /* CREATE */
-    if (result.action === "create") {
-      const { error: insertError } =
-        await supabase
-          .from("reze_memories")
-          .insert({
-            anonymous_id: anonymousId,
-            user_id: null,
-            memory: result.memory.trim(),
-            category,
-            importance,
-          });
+    if (
+      result.action === "create"
+    ) {
+      const {
+        error: insertError,
+      } = await supabase
+        .from("reze_memories")
+        .insert({
+          anonymous_id:
+            anonymousId,
+          user_id: null,
+          memory:
+            result.memory.trim(),
+          category,
+          importance,
+        });
 
       if (insertError) {
         console.error(
@@ -464,28 +526,31 @@ If nothing is worth remembering:
       return;
     }
 
-    /* UPDATE */
-    if (result.action === "update") {
+    if (
+      result.action === "update"
+    ) {
       if (!result.memoryId) {
         return;
       }
 
-      const { error: updateError } =
-        await supabase
-          .from("reze_memories")
-          .update({
-            memory: result.memory.trim(),
-            category,
-            importance,
-          })
-          .eq(
-            "id",
-            result.memoryId
-          )
-          .eq(
-            "anonymous_id",
-            anonymousId
-          );
+      const {
+        error: updateError,
+      } = await supabase
+        .from("reze_memories")
+        .update({
+          memory:
+            result.memory.trim(),
+          category,
+          importance,
+        })
+        .eq(
+          "id",
+          result.memoryId
+        )
+        .eq(
+          "anonymous_id",
+          anonymousId
+        );
 
       if (updateError) {
         console.error(
@@ -496,7 +561,8 @@ If nothing is worth remembering:
     }
   } catch (error) {
     /*
-     * Memory errors must never stop Reze from answering.
+     * Memory failures must never
+     * break normal conversation.
      */
     console.error(
       "Memory system error:",
@@ -505,18 +571,19 @@ If nothing is worth remembering:
   }
 }
 
-/* -----------------------------
-   Main API
------------------------------ */
-
-export async function POST(request) {
+export async function POST(
+  request
+) {
   try {
-    const supabase = getSupabase();
+    const supabase =
+      getSupabase();
 
-    const body = await request.json();
+    const body =
+      await request.json();
 
     const message =
-      typeof body?.message === "string"
+      typeof body?.message ===
+      "string"
         ? body.message.trim()
         : "";
 
@@ -530,7 +597,9 @@ export async function POST(request) {
       );
     }
 
-    if (message.length > 12000) {
+    if (
+      message.length > 12000
+    ) {
       return NextResponse.json(
         {
           error:
@@ -541,7 +610,7 @@ export async function POST(request) {
     }
 
     /*
-     * Anonymous identity.
+     * Anonymous user identity.
      */
     const existingAnonymousId =
       request.cookies.get(
@@ -553,50 +622,67 @@ export async function POST(request) {
       crypto.randomUUID();
 
     let conversationId =
-      body?.conversationId || null;
+      body?.conversationId ||
+      null;
 
     /*
-     * Verify conversation ownership.
+     * Verify conversation.
      */
     if (conversationId) {
-      const { data, error } =
-        await supabase
-          .from("reze_conversations")
-          .select("id")
-          .eq(
-            "id",
-            conversationId
-          )
-          .eq(
-            "anonymous_id",
-            anonymousId
-          )
-          .single();
+      const {
+        data,
+        error,
+      } = await supabase
+        .from(
+          "reze_conversations"
+        )
+        .select("id")
+        .eq(
+          "id",
+          conversationId
+        )
+        .eq(
+          "anonymous_id",
+          anonymousId
+        )
+        .single();
 
-      if (error || !data) {
-        conversationId = null;
+      if (
+        error ||
+        !data
+      ) {
+        conversationId =
+          null;
       }
     }
 
     /*
-     * Create new conversation.
+     * Create conversation.
      */
     if (!conversationId) {
       const title =
         message.length > 60
-          ? `${message.slice(0, 60)}...`
+          ? `${message.slice(
+              0,
+              60
+            )}...`
           : message;
 
-      const { data, error } =
-        await supabase
-          .from("reze_conversations")
-          .insert({
-            anonymous_id: anonymousId,
-            user_id: null,
-            title,
-          })
-          .select("id")
-          .single();
+      const {
+        data,
+        error,
+      } = await supabase
+        .from(
+          "reze_conversations"
+        )
+        .insert({
+          anonymous_id:
+            anonymousId,
+          user_id: null,
+          title,
+        })
+        .select("id")
+        .single();
 
       if (error) {
         console.error(
@@ -613,24 +699,27 @@ export async function POST(request) {
         );
       }
 
-      conversationId = data.id;
+      conversationId =
+        data.id;
     }
 
     /*
      * Save user message.
      */
-    const { error: userMessageError } =
-      await supabase
-        .from("reze_messages")
-        .insert({
-          conversation_id:
-            conversationId,
-          anonymous_id:
-            anonymousId,
-          user_id: null,
-          role: "user",
-          content: message,
-        });
+    const {
+      error:
+        userMessageError,
+    } = await supabase
+      .from("reze_messages")
+      .insert({
+        conversation_id:
+          conversationId,
+        anonymous_id:
+          anonymousId,
+        user_id: null,
+        role: "user",
+        content: message,
+      });
 
     if (userMessageError) {
       console.error(
@@ -648,100 +737,101 @@ export async function POST(request) {
     }
 
     /*
-     * Load conversation history.
+     * Load recent conversation.
      */
-    const { data: history } =
-      await supabase
-        .from("reze_messages")
-        .select(
-          "role, content, created_at"
-        )
-        .eq(
-          "conversation_id",
-          conversationId
-        )
-        .eq(
-          "anonymous_id",
-          anonymousId
-        )
-        .order("created_at", {
-          ascending: true,
-        })
-        .limit(100);
+    const {
+      data: history,
+    } = await supabase
+      .from("reze_messages")
+      .select(
+        "role, content, created_at"
+      )
+      .eq(
+        "conversation_id",
+        conversationId
+      )
+      .eq(
+        "anonymous_id",
+        anonymousId
+      )
+      .order("created_at", {
+        ascending: true,
+      })
+      .limit(100);
 
     /*
-     * Load long-term memories.
+     * Load memories.
      */
-    const { data: memories } =
-      await supabase
-        .from("reze_memories")
-        .select(
-          "memory, category, importance"
-        )
-        .eq(
-          "anonymous_id",
-          anonymousId
-        )
-        .order("importance", {
-          ascending: false,
-        })
-        .limit(30);
+    const {
+      data: memories,
+    } = await supabase
+      .from("reze_memories")
+      .select(
+        "memory, category, importance"
+      )
+      .eq(
+        "anonymous_id",
+        anonymousId
+      )
+      .order("importance", {
+        ascending: false,
+      })
+      .limit(30);
 
     const conversationMessages =
       history || [];
 
     /*
-     * Generate Reze's answer.
+     * Generate response.
      */
     let answer;
 
     try {
-      answer = await callGemini(
-        conversationMessages,
-        memories || []
-      );
+      answer =
+        await callGemini(
+          conversationMessages,
+          memories || []
+        );
     } catch (error) {
       console.error(
-        "Gemini answer error:",
+        "Gemini error:",
         error
       );
 
-      const errorMessage =
-        error?.message ||
-        "Reze could not answer right now.";
-
-      const isBusy =
-        errorMessage.includes(
-          "temporarily busy"
-        );
-
       return NextResponse.json(
         {
-          error: isBusy
-            ? "Reze is temporarily busy because the AI service is receiving too many requests. Please wait a little and try again."
-            : errorMessage,
+          error:
+            error?.message ||
+            "Reze could not answer right now.",
         },
         {
-          status: isBusy ? 429 : 500,
+          status:
+            error?.message?.includes(
+              "temporarily busy"
+            )
+              ? 429
+              : 500,
         }
       );
     }
 
     /*
-     * Save Reze's response.
+     * Save Reze response.
      */
-    const { error: assistantError } =
-      await supabase
-        .from("reze_messages")
-        .insert({
-          conversation_id:
-            conversationId,
-          anonymous_id:
-            anonymousId,
-          user_id: null,
-          role: "assistant",
-          content: answer,
-        });
+    const {
+      error:
+        assistantError,
+    } = await supabase
+      .from("reze_messages")
+      .insert({
+        conversation_id:
+          conversationId,
+        anonymous_id:
+          anonymousId,
+        user_id: null,
+        role: "assistant",
+        content: answer,
+      });
 
     if (assistantError) {
       console.error(
@@ -751,10 +841,12 @@ export async function POST(request) {
     }
 
     /*
-     * Update conversation time.
+     * Update conversation.
      */
     await supabase
-      .from("reze_conversations")
+      .from(
+        "reze_conversations"
+      )
       .update({
         updated_at:
           new Date().toISOString(),
@@ -769,37 +861,32 @@ export async function POST(request) {
       );
 
     /*
-     * Memory extraction happens AFTER
-     * the answer has already been generated.
-     *
-     * It is deliberately not allowed to
-     * break the user's chat.
+     * Background memory processing.
      */
-    const fullConversation = [
-      ...conversationMessages,
-      {
-        role: "assistant",
-        content: answer,
-      },
-    ];
+    const fullConversation =
+      [
+        ...conversationMessages,
+        {
+          role: "assistant",
+          content: answer,
+        },
+      ];
 
-    /*
-     * Run memory extraction without making
-     * the response depend on it.
-     */
     updateMemory(
       supabase,
       anonymousId,
       fullConversation
-    ).catch((error) => {
-      console.error(
-        "Background memory error:",
-        error
-      );
-    });
+    ).catch(
+      (error) => {
+        console.error(
+          "Background memory error:",
+          error
+        );
+      }
+    );
 
     /*
-     * Build response.
+     * Return answer.
      */
     const response =
       NextResponse.json({
@@ -808,9 +895,11 @@ export async function POST(request) {
       });
 
     /*
-     * Save anonymous ID.
+     * Save anonymous identity.
      */
-    if (!existingAnonymousId) {
+    if (
+      !existingAnonymousId
+    ) {
       response.cookies.set(
         "reze_anonymous_id",
         anonymousId,
@@ -821,7 +910,10 @@ export async function POST(request) {
             "production",
           sameSite: "lax",
           maxAge:
-            60 * 60 * 24 * 365,
+            60 *
+            60 *
+            24 *
+            365,
           path: "/",
         }
       );
