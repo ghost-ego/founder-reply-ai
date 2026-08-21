@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getSupabaseClient } from "../../lib/supabase/client";
+import { createClient } from "../../lib/supabase/client";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -17,7 +17,7 @@ export default function LoginPage() {
     setMessage("");
 
     try {
-      const supabase = getSupabaseClient();
+      const supabase = createClient();
 
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
@@ -84,7 +84,6 @@ export default function LoginPage() {
         padding: "20px",
         fontFamily:
           "Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-        boxSizing: "border-box",
       }}
     >
       <div
@@ -97,7 +96,6 @@ export default function LoginPage() {
           padding: "30px",
           boxSizing: "border-box",
           boxShadow: "0 25px 80px rgba(0,0,0,0.4)",
-          backdropFilter: "blur(20px)",
         }}
       >
         <div
@@ -133,7 +131,6 @@ export default function LoginPage() {
               color: "#94a3b8",
               lineHeight: "1.6",
               marginTop: "10px",
-              marginBottom: 0,
             }}
           >
             {mode === "login"
@@ -226,10 +223,9 @@ export default function LoginPage() {
               padding: "15px",
               borderRadius: "12px",
               border: "none",
-              background:
-                loading
-                  ? "#334155"
-                  : "linear-gradient(90deg, #2563eb, #7c3aed)",
+              background: loading
+                ? "#334155"
+                : "linear-gradient(90deg, #2563eb, #7c3aed)",
               color: "#ffffff",
               fontWeight: "700",
               fontSize: "15px",
