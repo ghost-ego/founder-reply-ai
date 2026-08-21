@@ -4,6 +4,8 @@ import { useState } from "react";
 import { createClient } from "../../lib/supabase/client";
 
 export default function LoginPage() {
+  const supabase = createClient();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState("login");
@@ -17,10 +19,8 @@ export default function LoginPage() {
     setMessage("");
 
     try {
-      const supabase = createClient();
-
       if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
         });
@@ -29,15 +29,9 @@ export default function LoginPage() {
           throw error;
         }
 
-        if (data?.user) {
-          setMessage(
-            "Account created successfully! Check your email to confirm your account."
-          );
-        } else {
-          setMessage(
-            "Account created. Please check your email."
-          );
-        }
+        setMessage(
+          "Account created successfully! Check your email if confirmation is required."
+        );
       } else {
         const { error } =
           await supabase.auth.signInWithPassword({
@@ -52,11 +46,9 @@ export default function LoginPage() {
         window.location.href = "/";
       }
     } catch (error) {
-      console.error("Supabase Auth Error:", error);
-
       setMessage(
         error?.message ||
-          "Unable to connect to the authentication service."
+          "Something went wrong. Please try again."
       );
     } finally {
       setLoading(false);
@@ -64,10 +56,11 @@ export default function LoginPage() {
   }
 
   function switchMode() {
-    setMode((current) =>
-      current === "login" ? "signup" : "login"
+    setMode(
+      mode === "login"
+        ? "signup"
+        : "login"
     );
-
     setMessage("");
   }
 
@@ -77,7 +70,7 @@ export default function LoginPage() {
         minHeight: "100vh",
         background:
           "radial-gradient(circle at top, #18233d 0%, #080b12 45%, #050609 100%)",
-        color: "#ffffff",
+        color: "#fff",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -91,13 +84,18 @@ export default function LoginPage() {
           width: "100%",
           maxWidth: "420px",
           background: "rgba(255,255,255,0.06)",
-          border: "1px solid rgba(255,255,255,0.1)",
+          border:
+            "1px solid rgba(255,255,255,0.1)",
           borderRadius: "24px",
           padding: "30px",
           boxSizing: "border-box",
-          boxShadow: "0 25px 80px rgba(0,0,0,0.4)",
+          boxShadow:
+            "0 25px 80px rgba(0,0,0,0.4)",
+          backdropFilter: "blur(20px)",
         }}
       >
+        {/* Logo / Header */}
+
         <div
           style={{
             textAlign: "center",
@@ -106,11 +104,31 @@ export default function LoginPage() {
         >
           <div
             style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 14px",
+              borderRadius: "999px",
+              background:
+                "rgba(255,255,255,0.06)",
+              border:
+                "1px solid rgba(255,255,255,0.1)",
+              color: "#cbd5e1",
               fontSize: "14px",
-              color: "#94a3b8",
-              marginBottom: "10px",
+              marginBottom: "18px",
             }}
           >
+            <span
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                background: "#4ade80",
+                boxShadow:
+                  "0 0 12px #4ade80",
+              }}
+            />
+
             FounderReply AI
           </div>
 
@@ -119,6 +137,7 @@ export default function LoginPage() {
               margin: 0,
               fontSize: "30px",
               fontWeight: "800",
+              letterSpacing: "-1px",
             }}
           >
             {mode === "login"
@@ -131,6 +150,7 @@ export default function LoginPage() {
               color: "#94a3b8",
               lineHeight: "1.6",
               marginTop: "10px",
+              marginBottom: 0,
             }}
           >
             {mode === "login"
@@ -139,7 +159,11 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {/* Form */}
+
         <form onSubmit={handleAuth}>
+          {/* Email */}
+
           <label
             style={{
               display: "block",
@@ -160,6 +184,7 @@ export default function LoginPage() {
             placeholder="you@example.com"
             required
             autoComplete="email"
+            disabled={loading}
             style={{
               width: "100%",
               boxSizing: "border-box",
@@ -168,12 +193,15 @@ export default function LoginPage() {
               borderRadius: "11px",
               border:
                 "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(0,0,0,0.3)",
-              color: "#ffffff",
+              background:
+                "rgba(0,0,0,0.3)",
+              color: "#fff",
               outline: "none",
               fontSize: "15px",
             }}
           />
+
+          {/* Password */}
 
           <label
             style={{
@@ -200,6 +228,7 @@ export default function LoginPage() {
                 ? "current-password"
                 : "new-password"
             }
+            disabled={loading}
             style={{
               width: "100%",
               boxSizing: "border-box",
@@ -208,12 +237,15 @@ export default function LoginPage() {
               borderRadius: "11px",
               border:
                 "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(0,0,0,0.3)",
-              color: "#ffffff",
+              background:
+                "rgba(0,0,0,0.3)",
+              color: "#fff",
               outline: "none",
               fontSize: "15px",
             }}
           />
+
+          {/* Submit */}
 
           <button
             type="submit"
@@ -223,10 +255,11 @@ export default function LoginPage() {
               padding: "15px",
               borderRadius: "12px",
               border: "none",
-              background: loading
-                ? "#334155"
-                : "linear-gradient(90deg, #2563eb, #7c3aed)",
-              color: "#ffffff",
+              background:
+                loading
+                  ? "#334155"
+                  : "linear-gradient(90deg, #2563eb, #7c3aed)",
+              color: "#fff",
               fontWeight: "700",
               fontSize: "15px",
               cursor: loading
@@ -243,6 +276,8 @@ export default function LoginPage() {
           </button>
         </form>
 
+        {/* Message */}
+
         {message && (
           <div
             style={{
@@ -256,11 +291,14 @@ export default function LoginPage() {
               color: "#cbd5e1",
               fontSize: "14px",
               lineHeight: "1.5",
+              wordBreak: "break-word",
             }}
           >
             {message}
           </div>
         )}
+
+        {/* Switch Login / Signup */}
 
         <div
           style={{
@@ -271,12 +309,16 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={switchMode}
+            disabled={loading}
             style={{
               background: "none",
               border: "none",
               color: "#93c5fd",
-              cursor: "pointer",
+              cursor: loading
+                ? "not-allowed"
+                : "pointer",
               fontSize: "14px",
+              opacity: loading ? 0.6 : 1,
             }}
           >
             {mode === "login"
