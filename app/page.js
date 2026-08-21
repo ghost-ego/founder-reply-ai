@@ -117,6 +117,8 @@ export default function Home() {
     }
 
     setRezeMessage("");
+
+    // Always clear any previous Reze error before sending.
     setRezeError("");
 
     setRezeMessages((previous) => [
@@ -140,27 +142,36 @@ export default function Home() {
         }),
       });
 
-      const data = await response.json();
+      let data = null;
+
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
 
       if (!response.ok) {
-        throw new Error(
-          data?.error || "Reze could not answer."
-        );
+        throw new Error("REZE_REQUEST_FAILED");
+      }
+
+      if (!data?.answer) {
+        throw new Error("REZE_EMPTY_RESPONSE");
       }
 
       setRezeMessages((previous) => [
         ...previous,
         {
           role: "assistant",
-          content:
-            data?.answer ||
-            "I couldn't generate an answer.",
+          content: data.answer,
         },
       ]);
     } catch (err) {
+      // Never expose Gemini/Supabase/server error details
+      // to the user. Show one clean message only.
+      console.error("Reze request failed:", err);
+
       setRezeError(
-        err?.message ||
-          "Something went wrong with Reze."
+        "Something went wrong. Please try again."
       );
     } finally {
       setRezeLoading(false);
@@ -220,6 +231,7 @@ export default function Home() {
     setMode(selectedMode);
     setMenuOpen(false);
     setError("");
+    setRezeError("");
   }
 
   const tones = [
@@ -254,8 +266,7 @@ export default function Home() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily:
-            "Inter, system-ui, sans-serif",
+          fontFamily: "Inter, system-ui, sans-serif",
         }}
       >
         Loading FounderReply AI...
@@ -325,8 +336,6 @@ export default function Home() {
                 Log out
               </button>
             )}
-
-            {/* THREE DOT MENU */}
 
             <div
               style={{
@@ -438,9 +447,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ========================= */}
         {/* REZE */}
-        {/* ========================= */}
 
         {mode === "reze" ? (
           <>
@@ -487,8 +494,7 @@ export default function Home() {
                   fontSize: "17px",
                   lineHeight: "1.6",
                   maxWidth: "600px",
-                  margin:
-                    "16px auto 0",
+                  margin: "16px auto 0",
                 }}
               >
                 Ask me anything. I'm Reze,
@@ -567,8 +573,7 @@ export default function Home() {
                         style={{
                           display: "flex",
                           justifyContent:
-                            item.role ===
-                            "user"
+                            item.role === "user"
                               ? "flex-end"
                               : "flex-start",
                           marginBottom: "14px",
@@ -577,20 +582,15 @@ export default function Home() {
                         <div
                           style={{
                             maxWidth: "85%",
-                            padding:
-                              "13px 15px",
-                            borderRadius:
-                              "16px",
+                            padding: "13px 15px",
+                            borderRadius: "16px",
                             background:
-                              item.role ===
-                              "user"
+                              item.role === "user"
                                 ? "linear-gradient(90deg, #2563eb, #7c3aed)"
                                 : "rgba(255,255,255,0.07)",
                             color: "#fff",
-                            lineHeight:
-                              "1.6",
-                            whiteSpace:
-                              "pre-wrap",
+                            lineHeight: "1.6",
+                            whiteSpace: "pre-wrap",
                           }}
                         >
                           {item.content}
@@ -612,12 +612,16 @@ export default function Home() {
                 )}
               </div>
 
+              {/* ONE CLEAN REZE ERROR MESSAGE */}
+
               {rezeError && (
                 <div
+                  role="alert"
                   style={{
                     color: "#f87171",
                     padding: "10px 4px",
                     fontSize: "14px",
+                    textAlign: "center",
                   }}
                 >
                   {rezeError}
@@ -666,8 +670,7 @@ export default function Home() {
                     !rezeMessage.trim()
                   }
                   style={{
-                    padding:
-                      "0 19px",
+                    padding: "0 19px",
                     borderRadius: "13px",
                     border: "none",
                     background:
@@ -690,9 +693,7 @@ export default function Home() {
             </section>
           </>
         ) : (
-          /* ========================= */
           /* FOUNDER AI */
-          /* ========================= */
 
           <>
             <header
@@ -759,8 +760,7 @@ export default function Home() {
               <p
                 style={{
                   maxWidth: "650px",
-                  margin:
-                    "22px auto 0",
+                  margin: "22px auto 0",
                   color: "#94a3b8",
                   fontSize: "18px",
                   lineHeight: "1.7",
@@ -788,8 +788,7 @@ export default function Home() {
               <div
                 style={{
                   display: "flex",
-                  justifyContent:
-                    "space-between",
+                  justifyContent: "space-between",
                   marginBottom: "12px",
                 }}
               >
@@ -856,36 +855,28 @@ export default function Home() {
                 >
                   {tones.map((item) => {
                     const selected =
-                      tone ===
-                      item.name;
+                      tone === item.name;
 
                     return (
                       <button
                         key={item.name}
                         onClick={() =>
-                          setTone(
-                            item.name
-                          )
+                          setTone(item.name)
                         }
                         style={{
-                          padding:
-                            "13px 12px",
-                          borderRadius:
-                            "12px",
+                          padding: "13px 12px",
+                          borderRadius: "12px",
                           border: selected
                             ? "1px solid #8b5cf6"
                             : "1px solid rgba(255,255,255,0.1)",
-                          background:
-                            selected
-                              ? "rgba(124,58,237,0.2)"
-                              : "rgba(255,255,255,0.04)",
+                          background: selected
+                            ? "rgba(124,58,237,0.2)"
+                            : "rgba(255,255,255,0.04)",
                           color: "#fff",
-                          cursor:
-                            "pointer",
-                          fontWeight:
-                            selected
-                              ? "700"
-                              : "500",
+                          cursor: "pointer",
+                          fontWeight: selected
+                            ? "700"
+                            : "500",
                         }}
                       >
                         {item.icon}{" "}
@@ -921,40 +912,31 @@ export default function Home() {
                 >
                   {lengths.map((item) => {
                     const selected =
-                      length ===
-                      item.name;
+                      length === item.name;
 
                     return (
                       <button
                         key={item.name}
                         onClick={() =>
-                          setLength(
-                            item.name
-                          )
+                          setLength(item.name)
                         }
                         style={{
-                          padding:
-                            "13px 12px",
-                          borderRadius:
-                            "12px",
+                          padding: "13px 12px",
+                          borderRadius: "12px",
                           border: selected
                             ? "1px solid #3b82f6"
                             : "1px solid rgba(255,255,255,0.1)",
-                          background:
-                            selected
-                              ? "rgba(37,99,235,0.2)"
-                              : "rgba(255,255,255,0.04)",
+                          background: selected
+                            ? "rgba(37,99,235,0.2)"
+                            : "rgba(255,255,255,0.04)",
                           color: "#fff",
-                          cursor:
-                            "pointer",
-                          textAlign:
-                            "left",
+                          cursor: "pointer",
+                          textAlign: "left",
                         }}
                       >
                         <div
                           style={{
-                            fontWeight:
-                              "700",
+                            fontWeight: "700",
                           }}
                         >
                           {item.name}
@@ -962,17 +944,12 @@ export default function Home() {
 
                         <div
                           style={{
-                            fontSize:
-                              "12px",
-                            color:
-                              "#94a3b8",
-                            marginTop:
-                              "3px",
+                            fontSize: "12px",
+                            color: "#94a3b8",
+                            marginTop: "3px",
                           }}
                         >
-                          {
-                            item.description
-                          }
+                          {item.description}
                         </div>
                       </button>
                     );
@@ -981,9 +958,7 @@ export default function Home() {
               </div>
 
               <button
-                onClick={
-                  generateComments
-                }
+                onClick={generateComments}
                 disabled={
                   loading ||
                   !post.trim()
@@ -1019,8 +994,7 @@ export default function Home() {
                   style={{
                     color: "#f87171",
                     marginTop: "15px",
-                    textAlign:
-                      "center",
+                    textAlign: "center",
                   }}
                 >
                   {error}
@@ -1037,27 +1011,19 @@ export default function Home() {
                 <div
                   style={{
                     display: "flex",
-                    justifyContent:
-                      "space-between",
-                    alignItems:
-                      "center",
-                    marginBottom:
-                      "15px",
-                    flexWrap:
-                      "wrap",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "15px",
+                    flexWrap: "wrap",
                     gap: "12px",
                   }}
                 >
                   <div
                     style={{
-                      color:
-                        "#94a3b8",
-                      fontSize:
-                        "13px",
-                      fontWeight:
-                        "600",
-                      textTransform:
-                        "uppercase",
+                      color: "#94a3b8",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      textTransform: "uppercase",
                     }}
                   >
                     Choose your reply
@@ -1066,17 +1032,14 @@ export default function Home() {
                   <button
                     onClick={copyAll}
                     style={{
-                      padding:
-                        "9px 14px",
-                      borderRadius:
-                        "10px",
+                      padding: "9px 14px",
+                      borderRadius: "10px",
                       border:
                         "1px solid rgba(255,255,255,0.12)",
                       background:
                         "rgba(255,255,255,0.06)",
                       color: "#fff",
-                      cursor:
-                        "pointer",
+                      cursor: "pointer",
                     }}
                   >
                     📋 Copy All
@@ -1084,10 +1047,7 @@ export default function Home() {
                 </div>
 
                 {comments.map(
-                  (
-                    comment,
-                    index
-                  ) => (
+                  (comment, index) => (
                     <div
                       key={index}
                       style={{
@@ -1095,20 +1055,15 @@ export default function Home() {
                           "rgba(255,255,255,0.055)",
                         border:
                           "1px solid rgba(255,255,255,0.1)",
-                        borderRadius:
-                          "22px",
-                        padding:
-                          "24px",
-                        marginBottom:
-                          "16px",
+                        borderRadius: "22px",
+                        padding: "24px",
+                        marginBottom: "16px",
                       }}
                     >
                       <div
                         style={{
-                          fontWeight:
-                            "700",
-                          marginBottom:
-                            "14px",
+                          fontWeight: "700",
+                          marginBottom: "14px",
                         }}
                       >
                         {
@@ -1122,12 +1077,9 @@ export default function Home() {
 
                       <p
                         style={{
-                          color:
-                            "#e2e8f0",
-                          fontSize:
-                            "17px",
-                          lineHeight:
-                            "1.75",
+                          color: "#e2e8f0",
+                          fontSize: "17px",
+                          lineHeight: "1.75",
                         }}
                       >
                         {comment}
@@ -1135,23 +1087,17 @@ export default function Home() {
 
                       <button
                         onClick={() =>
-                          copyComment(
-                            comment
-                          )
+                          copyComment(comment)
                         }
                         style={{
-                          padding:
-                            "10px 16px",
-                          borderRadius:
-                            "10px",
+                          padding: "10px 16px",
+                          borderRadius: "10px",
                           border:
                             "1px solid rgba(255,255,255,0.12)",
                           background:
                             "rgba(255,255,255,0.06)",
-                          color:
-                            "#fff",
-                          cursor:
-                            "pointer",
+                          color: "#fff",
+                          cursor: "pointer",
                         }}
                       >
                         📋 Copy
@@ -1161,25 +1107,19 @@ export default function Home() {
                 )}
 
                 <button
-                  onClick={
-                    generateComments
-                  }
+                  onClick={generateComments}
                   disabled={loading}
                   style={{
                     width: "100%",
-                    padding:
-                      "15px",
-                    borderRadius:
-                      "14px",
+                    padding: "15px",
+                    borderRadius: "14px",
                     border:
                       "1px solid rgba(255,255,255,0.12)",
                     background:
                       "rgba(255,255,255,0.06)",
                     color: "#fff",
-                    cursor:
-                      "pointer",
-                    fontWeight:
-                      "700",
+                    cursor: "pointer",
+                    fontWeight: "700",
                   }}
                 >
                   🔄 Regenerate
@@ -1196,12 +1136,9 @@ export default function Home() {
                 <div
                   style={{
                     display: "flex",
-                    justifyContent:
-                      "space-between",
-                    alignItems:
-                      "center",
-                    marginBottom:
-                      "16px",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "16px",
                   }}
                 >
                   <h2
@@ -1213,85 +1150,66 @@ export default function Home() {
                   </h2>
 
                   <button
-                    onClick={
-                      clearRecent
-                    }
+                    onClick={clearRecent}
                     style={{
-                      padding:
-                        "8px 12px",
-                      borderRadius:
-                        "9px",
+                      padding: "8px 12px",
+                      borderRadius: "9px",
                       border:
                         "1px solid rgba(255,255,255,0.1)",
                       background:
                         "rgba(255,255,255,0.04)",
-                      color:
-                        "#94a3b8",
+                      color: "#94a3b8",
                     }}
                   >
                     Clear
                   </button>
                 </div>
 
-                {recent.map(
-                  (item) => (
-                    <div
-                      key={item.id}
+                {recent.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      background:
+                        "rgba(255,255,255,0.04)",
+                      border:
+                        "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: "18px",
+                      padding: "18px",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <p
                       style={{
-                        background:
-                          "rgba(255,255,255,0.04)",
-                        border:
-                          "1px solid rgba(255,255,255,0.08)",
-                        borderRadius:
-                          "18px",
-                        padding:
-                          "18px",
-                        marginBottom:
-                          "12px",
+                        color: "#cbd5e1",
+                        lineHeight: "1.6",
                       }}
                     >
-                      <p
-                        style={{
-                          color:
-                            "#cbd5e1",
-                          lineHeight:
-                            "1.6",
-                        }}
-                      >
-                        {item.post
-                          .length >
-                        180
-                          ? `${item.post.slice(
-                              0,
-                              180
-                            )}...`
-                          : item.post}
-                      </p>
+                      {item.post.length > 180
+                        ? `${item.post.slice(
+                            0,
+                            180
+                          )}...`
+                        : item.post}
+                    </p>
 
-                      <button
-                        onClick={() =>
-                          useAgain(
-                            item
-                          )
-                        }
-                        style={{
-                          padding:
-                            "8px 13px",
-                          borderRadius:
-                            "9px",
-                          border:
-                            "1px solid rgba(255,255,255,0.1)",
-                          background:
-                            "rgba(255,255,255,0.06)",
-                          color:
-                            "#fff",
-                        }}
-                      >
-                        Use Again
-                      </button>
-                    </div>
-                  )
-                )}
+                    <button
+                      onClick={() =>
+                        useAgain(item)
+                      }
+                      style={{
+                        padding: "8px 13px",
+                        borderRadius: "9px",
+                        border:
+                          "1px solid rgba(255,255,255,0.1)",
+                        background:
+                          "rgba(255,255,255,0.06)",
+                        color: "#fff",
+                      }}
+                    >
+                      Use Again
+                    </button>
+                  </div>
+                ))}
               </section>
             )}
           </>
