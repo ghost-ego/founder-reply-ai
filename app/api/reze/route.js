@@ -85,7 +85,8 @@ function getSupabase() {
     process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   const key =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   if (!url || !key) {
     throw new Error(
@@ -111,7 +112,7 @@ function getAnonymousId(request) {
 
 /* =========================================================
    SPECIAL DIRECT ANSWERS
-   These do NOT use Gemini.
+   These do NOT use Groq.
 ========================================================= */
 
 function getSpecialAnswer(message) {
@@ -147,11 +148,6 @@ function getSpecialAnswer(message) {
         text.includes(question)
     )
   ) {
-    /*
-      Important:
-      Do NOT mention Tahsin here.
-    */
-
     return "I am Reze. 😊";
   }
 
@@ -171,7 +167,6 @@ function getSpecialAnswer(message) {
     "who built reze",
     "who founded reze",
     "who is your founder",
-    "who made you",
     "who made u",
     "who created u",
   ];
@@ -216,9 +211,7 @@ function getSpecialAnswer(message) {
 function detectMemory(message) {
   let match;
 
-  /*
-    USER NAME
-  */
+  /* USER NAME */
 
   match = message.match(
     /^(?:and\s+)?my name is\s+(.+)$/i
@@ -242,9 +235,7 @@ function detectMemory(message) {
     };
   }
 
-  /*
-    CRUSH
-  */
+  /* CRUSH */
 
   match = message.match(
     /^(?:and\s+)?my crush(?:'s)?(?:\s+name)?\s+is\s+(.+)$/i
@@ -523,6 +514,7 @@ function answerMemoryQuestion(
 
 /* =========================================================
    LONG-TERM MEMORY EXTRACTION
+   Uses Groq instead of Gemini.
 ========================================================= */
 
 async function extractLongTermMemory(
@@ -544,7 +536,7 @@ async function extractLongTermMemory(
   }
 
   const apiKey =
-    process.env.GEMINI_API_KEY;
+    process.env.GROQ_API_KEY;
 
   if (!apiKey) {
     return;
@@ -562,19 +554,22 @@ async function extractLongTermMemory(
   try {
     const response =
       await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
+        "https://api.groq.com/openai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type":
               "application/json",
+            Authorization:
+              `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
-            contents: [
+            model:
+              "openai/gpt-oss-120b",
+            messages: [
               {
-                parts: [
-                  {
-                    text: `
+                role: "system",
+                content: `
 Analyze this conversation for ONE useful long-term memory about the user.
 
 Only save something that could genuinely improve future conversations.
@@ -597,7 +592,7 @@ DO NOT SAVE:
 - Sensitive personal information
 - One-time details
 
-Return ONLY JSON:
+Return ONLY valid JSON:
 
 {
   "shouldSave": false,
@@ -616,19 +611,18 @@ If useful:
 }
 
 importance must be 1-10.
-
-Conversation:
-${recentConversation}
 `,
-                  },
-                ],
+              },
+              {
+                role: "user",
+                content:
+                  recentConversation,
               },
             ],
-            generationConfig: {
-              temperature: 0.1,
-              maxOutputTokens: 250,
-              responseMimeType:
-                "application/json",
+            temperature: 0.1,
+            max_tokens: 250,
+            response_format: {
+              type: "json_object",
             },
           }),
         }
@@ -636,7 +630,7 @@ ${recentConversation}
 
     if (!response.ok) {
       console.error(
-        "Memory extraction status:",
+        "Groq memory extraction status:",
         response.status
       );
 
@@ -647,9 +641,9 @@ ${recentConversation}
       await response.json();
 
     const text =
-      data?.candidates?.[0]
-        ?.content?.parts?.[0]
-        ?.text;
+      data?.choices?.[0]
+        ?.message
+        ?.content;
 
     if (!text) {
       return;
@@ -701,26 +695,21 @@ ${recentConversation}
 }
 
 /* =========================================================
-   GEMINI CHAT
+   GROQ CHAT
 ========================================================= */
 
-async function callGemini(
+async function callGroq(
   messages,
   memories
 ) {
   const apiKey =
-    process.env.GEMINI_API_KEY;
+    process.env.GROQ_API_KEY;
 
   if (!apiKey) {
     throw new Error(
-      "GEMINI_API_KEY is not configured."
+      "GROQ_API_KEY is not configured."
     );
   }
-
-  /*
-    Only the 6 newest messages
-    are sent to Gemini.
-  */
 
   const recentMessages =
     messages.slice(-6);
@@ -736,12 +725,10 @@ async function callGemini(
           .join("\n")
       : "No stored memories.";
 
-  const contents = [
+  const groqMessages = [
     {
-      role: "user",
-      parts: [
-        {
-          text: `
+      role: "system",
+      content: `
 ${REZE_PERSONALITY}
 
 LONG-TERM MEMORY ABOUT THE USER:
@@ -757,11 +744,7 @@ Do not say "according to my memory".
 Do not force memories into unrelated answers.
 
 Keep simple messages simple.
-
-Conversation:
 `,
-        },
-      ],
     },
 
     ...recentMessages.map(
@@ -769,99 +752,73 @@ Conversation:
         role:
           message.role ===
           "assistant"
-            ? "model"
+            ? "assistant"
             : "user",
-        parts: [
-          {
-            text:
-              message.content,
-          },
-        ],
+        content:
+          message.content,
       })
     ),
   ];
 
-  const maxAttempts = 2;
-
-  for (
-    let attempt = 0;
-    attempt < maxAttempts;
-    attempt++
-  ) {
-    const response =
-      await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            contents,
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 700,
-            },
-          }),
-        }
-      );
-
-    const data =
-      await response.json();
-
-    if (response.ok) {
-      const answer =
-        data?.candidates?.[0]
-          ?.content?.parts
-          ?.map(
-            (part) =>
-              part.text || ""
-          )
-          .join("") || "";
-
-      if (!answer.trim()) {
-        throw new Error(
-          "Reze received an empty response."
-        );
+  const response =
+    await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+          Authorization:
+            `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model:
+            "openai/gpt-oss-120b",
+          messages:
+            groqMessages,
+          temperature: 0.7,
+          max_tokens: 700,
+        }),
       }
+    );
 
-      return answer.trim();
-    }
+  const data =
+    await response.json();
 
-    if (
-      response.status === 429 &&
-      attempt <
-        maxAttempts - 1
-    ) {
-      await new Promise(
-        (resolve) =>
-          setTimeout(
-            resolve,
-            2500
-          )
-      );
-
-      continue;
-    }
+  if (!response.ok) {
+    console.error(
+      "Groq API error:",
+      data
+    );
 
     if (
-      response.status === 429
+      response.status ===
+      429
     ) {
       throw new Error(
-        "Reze is temporarily busy because the free Gemini limit has been reached. Please try again later."
+        "Reze is temporarily busy because the Groq rate limit has been reached. Please try again later."
       );
     }
 
     throw new Error(
       data?.error?.message ||
-        "Gemini request failed."
+        "Groq request failed."
     );
   }
 
-  throw new Error(
-    "Reze could not answer right now."
-  );
+  const answer =
+    data?.choices?.[0]
+      ?.message
+      ?.content
+      ?.trim();
+
+  if (!answer) {
+    throw new Error(
+      "Reze received an empty response."
+    );
+  }
+
+  return answer;
 }
 
 /* =========================================================
@@ -925,7 +882,7 @@ export async function POST(
 
     /* =====================================================
        SPECIAL ANSWERS
-       These use ZERO Gemini requests.
+       ZERO Groq requests.
     ===================================================== */
 
     const specialAnswer =
@@ -1174,7 +1131,7 @@ export async function POST(
     }
 
     /* =====================================================
-       LOAD ONLY RECENT HISTORY
+       LOAD RECENT HISTORY
     ===================================================== */
 
     const {
@@ -1201,20 +1158,20 @@ export async function POST(
       (history || []).reverse();
 
     /* =====================================================
-       ASK GEMINI
+       ASK GROQ
     ===================================================== */
 
     let answer;
 
     try {
       answer =
-        await callGemini(
+        await callGroq(
           recentHistory,
           memories
         );
     } catch (error) {
       console.error(
-        "Gemini error:",
+        "Groq error:",
         error
       );
 
@@ -1227,7 +1184,7 @@ export async function POST(
         {
           status:
             error?.message?.includes(
-              "free Gemini limit"
+              "rate limit"
             )
               ? 429
               : 500,
