@@ -3,6 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
+/* =========================================================
+   REZE PERSONALITY
+========================================================= */
+
 const REZE_PERSONALITY = `
 You are Reze.
 
@@ -12,8 +16,10 @@ PERSONALITY:
 - Confident, calm, intelligent, slightly mischievous.
 - Natural and conversational.
 - Have your own opinions.
+- Do not blindly agree with the user.
 - Disagree respectfully when appropriate.
-- Never sound like corporate customer support.
+- Curious about the user's ideas.
+- Helpful without sounding like customer support.
 - Never say "As an AI language model".
 - Do not constantly announce that you are an AI.
 - Do not repeat the user's question.
@@ -22,25 +28,33 @@ RESPONSE STYLE:
 - Match the user's message length.
 - Simple message = short answer.
 - Greeting = short natural greeting.
-- Simple introduction = brief response.
-- Complex question = detailed response when necessary.
-- Do not give huge answers to simple questions.
+- Introduction = brief and friendly.
+- Simple question = direct answer.
+- Complex question = detailed answer when necessary.
+- Do not give huge answers to simple messages.
 - Do not ask several questions at once.
+- Avoid unnecessary bullet points for casual conversation.
 
 HUMOR:
-- Dry, clever and slightly teasing humor is okay.
+- Dry, clever and slightly mischievous humor is okay.
+- Light teasing is okay.
 - Never insult the user.
 - Never joke about serious situations.
 
 MEMORY:
-- Use the memories provided.
+- Use memories provided by the system.
 - Never invent memories.
-- The newest memory should be preferred when information conflicts.
+- Newer information should be preferred when information conflicts.
 
 TRUTHFULNESS:
-- Never pretend you performed an action you did not perform.
+- Never pretend you completed an action you could not perform.
 - Never invent information.
+- If you don't know something, say so naturally.
 `;
+
+/* =========================================================
+   SUPABASE
+========================================================= */
 
 function getSupabase() {
   const url =
@@ -58,29 +72,51 @@ function getSupabase() {
   return createClient(url, key);
 }
 
+/* =========================================================
+   ANONYMOUS USER ID
+========================================================= */
+
 function getAnonymousId(request) {
-  return (
+  const existing =
     request.cookies.get(
       "reze_anonymous_id"
-    )?.value ||
-    crypto.randomUUID()
-  );
+    )?.value;
+
+  if (existing) {
+    return existing;
+  }
+
+  return crypto.randomUUID();
 }
 
-/*
-  Detect important personal facts
-  WITHOUT calling Gemini.
-*/
+/* =========================================================
+   DIRECT MEMORY DETECTION
+========================================================= */
+
 function detectMemory(message) {
   let match;
 
-  match = message.match(
-    /^my name is\s+(.+)$/i
+  const text =
+    message.trim();
+
+  /*
+    NAME
+
+    Examples:
+    My name is Jilan
+    And my name is Jilan
+    I'm Jilan
+    I am Jilan
+    And I'm Jilan
+  */
+
+  match = text.match(
+    /^(?:and\s+)?my name is\s+(.+)$/i
   );
 
   if (!match) {
-    match = message.match(
-      /^(?:i'm|i am)\s+([A-Za-z][A-Za-z0-9_-]{1,30})$/i
+    match = text.match(
+      /^(?:and\s+)?(?:i'm|i am)\s+([A-Za-z][A-Za-z0-9_-]{1,30})$/i
     );
   }
 
@@ -90,12 +126,23 @@ function detectMemory(message) {
 
     return {
       category: "name",
+      value: name,
       memory: `The user's name is ${name}.`,
     };
   }
 
-  match = message.match(
-    /^my crush(?:'s)?(?: name)? is\s+(.+)$/i
+  /*
+    CRUSH
+
+    Examples:
+    My crush is Tinni
+    My crush name is Tinni
+    My crush's name is Tinni
+    And my crush name is Tinni
+  */
+
+  match = text.match(
+    /^(?:and\s+)?my crush(?:'s)?(?:\s+name)?\s+is\s+(.+)$/i
   );
 
   if (match) {
@@ -104,12 +151,17 @@ function detectMemory(message) {
 
     return {
       category: "crush",
+      value: crush,
       memory: `The user's crush's name is ${crush}.`,
     };
   }
 
   return null;
 }
+
+/* =========================================================
+   GET MEMORIES
+========================================================= */
 
 async function getMemories(
   supabase,
@@ -144,14 +196,24 @@ async function getMemories(
   return data || [];
 }
 
+/* =========================================================
+   SAVE MEMORY
+========================================================= */
+
 async function saveMemory(
   supabase,
   anonymousId,
   category,
   memory
 ) {
+  /*
+    Look for an existing memory
+    of the same category.
+  */
+
   const {
     data: existing,
+    error: findError,
   } = await supabase
     .from("reze_memories")
     .select("id")
@@ -165,6 +227,17 @@ async function saveMemory(
     )
     .limit(1)
     .maybeSingle();
+
+  if (findError) {
+    console.error(
+      "Memory lookup error:",
+      findError
+    );
+  }
+
+  /*
+    Update existing memory.
+  */
 
   if (existing?.id) {
     const {
@@ -194,6 +267,10 @@ async function saveMemory(
     return;
   }
 
+  /*
+    Create new memory.
+  */
+
   const {
     error,
   } = await supabase
@@ -215,115 +292,224 @@ async function saveMemory(
   }
 }
 
+/* =========================================================
+   MEMORY QUESTIONS
+========================================================= */
+
+function isMemoryQuestion(
+  message
+) {
+  const text =
+    message
+      .toLowerCase()
+      .trim();
+
+  const memoryWords = [
+    "remember",
+    "memory",
+    "memories",
+    "do you know",
+  ];
+
+  const personalWords = [
+    "my name",
+    "my crush",
+    "crush name",
+    "who am i",
+    "what's my",
+    "what is my",
+  ];
+
+  const hasMemoryWord =
+    memoryWords.some(
+      (word) =>
+        text.includes(word)
+    );
+
+  const hasPersonalWord =
+    personalWords.some(
+      (word) =>
+        text.includes(word)
+    );
+
+  return (
+    hasMemoryWord ||
+    hasPersonalWord
+  );
+}
+
+/* =========================================================
+   ANSWER MEMORY QUESTION DIRECTLY
+========================================================= */
+
 function answerMemoryQuestion(
   message,
   memories
 ) {
   const text =
-    message.toLowerCase();
+    message
+      .toLowerCase()
+      .trim();
 
   const nameMemory =
     memories.find(
-      (m) =>
-        m.category === "name"
+      (memory) =>
+        memory.category ===
+        "name"
     );
 
   const crushMemory =
     memories.find(
-      (m) =>
-        m.category === "crush"
+      (memory) =>
+        memory.category ===
+        "crush"
     );
 
   const asksName =
-    text.includes("my name") ||
-    text.includes("what's my name") ||
-    text.includes("what is my name");
+    text.includes(
+      "my name"
+    ) ||
+    text.includes(
+      "what's my name"
+    ) ||
+    text.includes(
+      "what is my name"
+    ) ||
+    text.includes(
+      "who am i"
+    );
 
   const asksCrush =
-    text.includes("my crush") ||
-    text.includes("crush name") ||
-    text.includes("who is my crush");
+    text.includes(
+      "my crush"
+    ) ||
+    text.includes(
+      "crush name"
+    ) ||
+    text.includes(
+      "who is my crush"
+    );
+
+  /*
+    Both name + crush
+  */
 
   if (
     asksName &&
-    asksCrush &&
-    nameMemory &&
-    crushMemory
+    asksCrush
   ) {
-    return `${nameMemory.memory.replace(
-      "The user's name is ",
-      "Your name is "
-    )} And your crush's name is ${crushMemory.memory.replace(
-      "The user's crush's name is ",
-      ""
-    )}.`;
+    if (
+      nameMemory &&
+      crushMemory
+    ) {
+      const name =
+        nameMemory.memory
+          .replace(
+            "The user's name is ",
+            ""
+          )
+          .replace(
+            /\.$/,
+            ""
+          );
+
+      const crush =
+        crushMemory.memory
+          .replace(
+            "The user's crush's name is ",
+            ""
+          )
+          .replace(
+            /\.$/,
+            ""
+          );
+
+      return `Your name is ${name}, and your crush is ${crush}. 😉`;
+    }
+
+    if (nameMemory) {
+      const name =
+        nameMemory.memory
+          .replace(
+            "The user's name is ",
+            ""
+          )
+          .replace(
+            /\.$/,
+            ""
+          );
+
+      return `Your name is ${name}. I haven't saved your crush's name yet.`;
+    }
+
+    if (crushMemory) {
+      const crush =
+        crushMemory.memory
+          .replace(
+            "The user's crush's name is ",
+            ""
+          )
+          .replace(
+            /\.$/,
+            ""
+          );
+
+      return `Your crush is ${crush}. I don't have your name saved yet.`;
+    }
+
+    return "I don't have your name or your crush's name saved yet.";
   }
+
+  /*
+    Name only
+  */
 
   if (
     asksName &&
     nameMemory
   ) {
-    return nameMemory.memory.replace(
-      "The user's name is ",
-      "Your name is "
-    ) + ".";
+    const name =
+      nameMemory.memory
+        .replace(
+          "The user's name is ",
+          ""
+        )
+        .replace(
+          /\.$/,
+          ""
+        );
+
+    return `Your name is ${name}. 😊`;
   }
+
+  /*
+    Crush only
+  */
 
   if (
     asksCrush &&
     crushMemory
   ) {
-    return (
-      "Your crush's name is " +
-      crushMemory.memory.replace(
-        "The user's crush's name is ",
-        ""
-      ) +
-      "."
-    );
+    const crush =
+      crushMemory.memory
+        .replace(
+          "The user's crush's name is ",
+          ""
+        )
+        .replace(
+          /\.$/,
+          ""
+        );
+
+    return `Your crush's name is ${crush}. 😉`;
   }
 
   return null;
 }
 
-function looksLikeMemoryQuestion(
-  message
-) {
-  const text =
-    message.toLowerCase();
-
-  return (
-    text.includes("remember") ||
-    text.includes("my name") ||
-    text.includes("my crush") ||
-    text.includes("what's my") ||
-    text.includes("what is my")
-  );
-}
-
-function isVerySimpleMessage(
-  message
-) {
-  const text =
-    message.toLowerCase().trim();
-
-  const simple = [
-    "hi",
-    "hello",
-    "hey",
-    "yo",
-    "sup",
-    "good morning",
-    "good afternoon",
-    "good evening",
-    "thanks",
-    "thank you",
-    "ok",
-    "okay",
-  ];
-
-  return simple.includes(text);
-}
+/* =========================================================
+   GEMINI
+========================================================= */
 
 async function callGemini(
   messages,
@@ -339,19 +525,20 @@ async function callGemini(
   }
 
   /*
-    Only send the last 12 messages.
-    This reduces token usage.
+    Only send the latest 10 messages.
+    This keeps token usage lower.
   */
+
   const recentMessages =
-    messages.slice(-12);
+    messages.slice(-10);
 
   const memoryText =
-    memories.length
+    memories.length > 0
       ? memories
           .slice(0, 10)
           .map(
-            (m) =>
-              `- ${m.memory}`
+            (memory) =>
+              `- ${memory.memory}`
           )
           .join("\n")
       : "No stored memories.";
@@ -368,6 +555,8 @@ STORED MEMORIES:
 ${memoryText}
 
 Keep your response proportional to the user's message.
+
+If the user's message is simple, answer simply.
 
 Conversation:
 `,
@@ -393,8 +582,9 @@ Conversation:
   ];
 
   /*
-    Retry only when Gemini says 429.
+    Retry temporary 429 errors.
   */
+
   const maxAttempts = 3;
 
   for (
@@ -443,14 +633,15 @@ Conversation:
       return answer.trim();
     }
 
+    /*
+      Rate limit.
+    */
+
     if (
       response.status === 429 &&
       attempt <
         maxAttempts - 1
     ) {
-      /*
-        2 sec → 4 sec
-      */
       const delay =
         2000 *
         Math.pow(
@@ -488,6 +679,10 @@ Conversation:
   );
 }
 
+/* =========================================================
+   POST
+========================================================= */
+
 export async function POST(
   request
 ) {
@@ -510,7 +705,9 @@ export async function POST(
           error:
             "Message cannot be empty.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
@@ -522,9 +719,15 @@ export async function POST(
           error:
             "That message is too long.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
+
+    /*
+      Anonymous ID
+    */
 
     const oldCookie =
       request.cookies.get(
@@ -535,46 +738,121 @@ export async function POST(
       oldCookie ||
       crypto.randomUUID();
 
+    /*
+      Conversation ID
+    */
+
     let conversationId =
       body?.conversationId ||
       null;
 
     /*
-      Load memories.
+      Load existing memories.
     */
+
     let memories =
       await getMemories(
         supabase,
         anonymousId
       );
 
-    /*
-      Save direct personal memory.
-    */
-    const detected =
+    /* =====================================================
+       DIRECT MEMORY DETECTION
+    ===================================================== */
+
+    const detectedMemory =
       detectMemory(message);
 
-    if (detected) {
+    if (detectedMemory) {
+      /*
+        Save directly.
+        NO GEMINI REQUEST.
+      */
+
       await saveMemory(
         supabase,
         anonymousId,
-        detected.category,
-        detected.memory
+        detectedMemory.category,
+        detectedMemory.memory
       );
+
+      /*
+        Friendly response.
+      */
+
+      let answer;
+
+      if (
+        detectedMemory.category ===
+        "name"
+      ) {
+        answer =
+          `Nice to meet you, ${detectedMemory.value}. 😊`;
+      } else if (
+        detectedMemory.category ===
+        "crush"
+      ) {
+        answer =
+          `Tinni, huh? 😉 I'll remember that.`;
+      } else {
+        answer =
+          "Got it. I'll remember that.";
+      }
+
+      /*
+        Refresh memory.
+      */
 
       memories =
         await getMemories(
           supabase,
           anonymousId
         );
+
+      const response =
+        NextResponse.json({
+          answer,
+          conversationId:
+            conversationId ||
+            null,
+        });
+
+      if (!oldCookie) {
+        response.cookies.set(
+          "reze_anonymous_id",
+          anonymousId,
+          {
+            httpOnly: true,
+            secure:
+              process.env.NODE_ENV ===
+              "production",
+            sameSite: "lax",
+            maxAge:
+              60 *
+              60 *
+              24 *
+              365,
+            path: "/",
+          }
+        );
+      }
+
+      /*
+        VERY IMPORTANT:
+        Stop here.
+
+        Gemini is NOT called.
+      */
+
+      return response;
     }
 
-    /*
-      Answer memory questions
-      WITHOUT Gemini.
-    */
+    /* =====================================================
+       DIRECT MEMORY QUESTION
+    ===================================================== */
+
     if (
-      looksLikeMemoryQuestion(
+      isMemoryQuestion(
         message
       )
     ) {
@@ -589,7 +867,9 @@ export async function POST(
           NextResponse.json({
             answer:
               memoryAnswer,
-            conversationId,
+            conversationId:
+              conversationId ||
+              null,
           });
 
         if (!oldCookie) {
@@ -612,14 +892,17 @@ export async function POST(
           );
         }
 
+        /*
+          NO GEMINI REQUEST.
+        */
+
         return response;
       }
     }
 
-    /*
-      Simple greetings still go to Gemini,
-      but with tiny context and tiny output.
-    */
+    /* =====================================================
+       CREATE CONVERSATION
+    ===================================================== */
 
     if (!conversationId) {
       const {
@@ -655,7 +938,9 @@ export async function POST(
             error:
               "Could not create Reze conversation.",
           },
-          { status: 500 }
+          {
+            status: 500,
+          }
         );
       }
 
@@ -663,9 +948,10 @@ export async function POST(
         data.id;
     }
 
-    /*
-      Save user message.
-    */
+    /* =====================================================
+       SAVE USER MESSAGE
+    ===================================================== */
+
     const {
       error:
         userMessageError,
@@ -692,13 +978,16 @@ export async function POST(
           error:
             "Could not save your message.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
-    /*
-      Load only recent conversation.
-    */
+    /* =====================================================
+       LOAD RECENT HISTORY
+    ===================================================== */
+
     const {
       data: history,
     } = await supabase
@@ -717,7 +1006,11 @@ export async function POST(
       .order("created_at", {
         ascending: true,
       })
-      .limit(12);
+      .limit(10);
+
+    /* =====================================================
+       GEMINI
+    ===================================================== */
 
     let answer;
 
@@ -750,9 +1043,10 @@ export async function POST(
       );
     }
 
-    /*
-      Save Reze response.
-    */
+    /* =====================================================
+       SAVE ASSISTANT MESSAGE
+    ===================================================== */
+
     const {
       error:
         assistantError,
@@ -775,9 +1069,10 @@ export async function POST(
       );
     }
 
-    /*
-      Update conversation.
-    */
+    /* =====================================================
+       UPDATE CONVERSATION
+    ===================================================== */
+
     await supabase
       .from(
         "reze_conversations"
@@ -795,11 +1090,19 @@ export async function POST(
         anonymousId
       );
 
+    /* =====================================================
+       RESPONSE
+    ===================================================== */
+
     const response =
       NextResponse.json({
         answer,
         conversationId,
       });
+
+    /*
+      Save anonymous ID cookie.
+    */
 
     if (!oldCookie) {
       response.cookies.set(
@@ -834,7 +1137,9 @@ export async function POST(
           error?.message ||
           "Reze encountered an unexpected error.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }
