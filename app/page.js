@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "../lib/supabase/client";
 
 export default function Home() {
-  const supabase = createClient();
-
+  const [supabase, setSupabase] = useState(null);
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -19,47 +18,32 @@ export default function Home() {
 
   const [recent, setRecent] = useState([]);
 
-  // Check authentication
+  // Create Supabase only in the browser
   useEffect(() => {
-    async function checkUser() {
+    try {
+      const client = createClient();
+      setSupabase(client);
+
+      client.auth.getSession().then(({ data }) => {
+        setUser(data?.session?.user || null);
+        setAuthLoading(false);
+      });
+
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { subscription },
+      } = client.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user || null);
+      });
 
-      if (!user) {
-        window.location.href = "/auth";
-        return;
-      }
-
-      setUser(user);
+      return () => {
+        subscription.unsubscribe();
+      };
+    } catch (error) {
+      console.error("Supabase initialization error:", error);
       setAuthLoading(false);
+      setError("Authentication system could not be initialized.");
     }
-
-    checkUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!session?.user) {
-          window.location.href = "/auth";
-        } else {
-          setUser(session.user);
-          setAuthLoading(false);
-        }
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
-
-  // Logout
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    window.location.href = "/auth";
-  }
+  }, []);
 
   async function generateComments() {
     if (!post.trim()) {
@@ -111,7 +95,7 @@ export default function Home() {
       );
     } catch (error) {
       setError(
-        error.message ||
+        error?.message ||
           "Something went wrong. Please try again."
       );
     } finally {
@@ -161,6 +145,13 @@ export default function Home() {
     setRecent([]);
   }
 
+  async function logout() {
+    if (!supabase) return;
+
+    await supabase.auth.signOut();
+    setUser(null);
+  }
+
   const tones = [
     { name: "Professional", icon: "💼" },
     { name: "Bold", icon: "🔥" },
@@ -169,13 +160,21 @@ export default function Home() {
   ];
 
   const lengths = [
-    { name: "Short", description: "1–2 sentences" },
-    { name: "Medium", description: "2–4 sentences" },
-    { name: "Detailed", description: "4–6 sentences" },
+    {
+      name: "Short",
+      description: "1–2 sentences",
+    },
+    {
+      name: "Medium",
+      description: "2–4 sentences",
+    },
+    {
+      name: "Detailed",
+      description: "4–6 sentences",
+    },
   ];
 
-  // Wait while checking login
-  if (authLoading || !user) {
+  if (authLoading) {
     return (
       <main
         style={{
@@ -185,10 +184,11 @@ export default function Home() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "Inter, system-ui, sans-serif",
+          fontFamily:
+            "Inter, system-ui, sans-serif",
         }}
       >
-        Checking login...
+        Loading FounderReply AI...
       </main>
     );
   }
@@ -211,51 +211,51 @@ export default function Home() {
           margin: "0 auto",
         }}
       >
-        {/* Header */}
-        <header
+        {/* TOP BAR */}
+        <div
           style={{
-            textAlign: "center",
-            padding: "30px 10px 35px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "10px",
+            gap: "12px",
           }}
         >
-          {/* Account controls */}
           <div
             style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              alignItems: "center",
-              gap: "10px",
-              marginBottom: "20px",
-              flexWrap: "wrap",
+              color: "#cbd5e1",
+              fontSize: "14px",
             }}
           >
-            <span
-              style={{
-                color: "#94a3b8",
-                fontSize: "13px",
-              }}
-            >
-              {user.email}
-            </span>
+            FounderReply AI
+          </div>
 
+          {user && (
             <button
-              onClick={handleLogout}
+              onClick={logout}
               style={{
-                padding: "9px 14px",
-                borderRadius: "10px",
+                padding: "8px 12px",
+                borderRadius: "9px",
                 border:
-                  "1px solid rgba(255,255,255,0.12)",
+                  "1px solid rgba(255,255,255,0.1)",
                 background:
-                  "rgba(255,255,255,0.06)",
-                color: "#fff",
+                  "rgba(255,255,255,0.05)",
+                color: "#cbd5e1",
                 cursor: "pointer",
-                fontWeight: "600",
               }}
             >
               Log out
             </button>
-          </div>
+          )}
+        </div>
 
+        {/* HEADER */}
+        <header
+          style={{
+            textAlign: "center",
+            padding: "45px 10px 35px",
+          }}
+        >
           <div
             style={{
               display: "inline-flex",
@@ -283,7 +283,7 @@ export default function Home() {
               }}
             />
 
-            FounderReply AI
+            AI-powered LinkedIn replies
           </div>
 
           <h1
@@ -292,7 +292,7 @@ export default function Home() {
                 "clamp(40px, 8vw, 72px)",
               lineHeight: "1",
               letterSpacing: "-3px",
-              margin: "0",
+              margin: 0,
               fontWeight: "800",
             }}
           >
@@ -322,13 +322,13 @@ export default function Home() {
               lineHeight: "1.7",
             }}
           >
-            Turn any LinkedIn post into thoughtful,
-            natural comments that sound like a real
-            founder.
+            Turn any LinkedIn post into
+            thoughtful, natural comments
+            that sound like a real founder.
           </p>
         </header>
 
-        {/* Main Card */}
+        {/* MAIN CARD */}
         <section
           style={{
             background:
@@ -342,7 +342,7 @@ export default function Home() {
             backdropFilter: "blur(20px)",
           }}
         >
-          {/* Post */}
+          {/* POST */}
           <div
             style={{
               display: "flex",
@@ -351,7 +351,9 @@ export default function Home() {
               marginBottom: "12px",
             }}
           >
-            <strong>LinkedIn post</strong>
+            <strong>
+              LinkedIn post
+            </strong>
 
             <span
               style={{
@@ -387,7 +389,7 @@ export default function Home() {
             }}
           />
 
-          {/* Tone */}
+          {/* TONE */}
           <div style={{ marginTop: "22px" }}>
             <div
               style={{
@@ -420,15 +422,13 @@ export default function Home() {
                     style={{
                       padding:
                         "13px 12px",
-                      borderRadius:
-                        "12px",
+                      borderRadius: "12px",
                       border: selected
                         ? "1px solid #8b5cf6"
                         : "1px solid rgba(255,255,255,0.1)",
-                      background:
-                        selected
-                          ? "rgba(124,58,237,0.2)"
-                          : "rgba(255,255,255,0.04)",
+                      background: selected
+                        ? "rgba(124,58,237,0.2)"
+                        : "rgba(255,255,255,0.04)",
                       color: "#fff",
                       cursor: "pointer",
                       fontWeight:
@@ -445,7 +445,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Length */}
+          {/* LENGTH */}
           <div style={{ marginTop: "22px" }}>
             <div
               style={{
@@ -478,25 +478,21 @@ export default function Home() {
                     style={{
                       padding:
                         "13px 12px",
-                      borderRadius:
-                        "12px",
+                      borderRadius: "12px",
                       border: selected
                         ? "1px solid #3b82f6"
                         : "1px solid rgba(255,255,255,0.1)",
-                      background:
-                        selected
-                          ? "rgba(37,99,235,0.2)"
-                          : "rgba(255,255,255,0.04)",
+                      background: selected
+                        ? "rgba(37,99,235,0.2)"
+                        : "rgba(255,255,255,0.04)",
                       color: "#fff",
                       cursor: "pointer",
-                      textAlign:
-                        "left",
+                      textAlign: "left",
                     }}
                   >
                     <div
                       style={{
-                        fontWeight:
-                          "700",
+                        fontWeight: "700",
                       }}
                     >
                       {item.name}
@@ -504,17 +500,12 @@ export default function Home() {
 
                     <div
                       style={{
-                        fontSize:
-                          "12px",
-                        color:
-                          "#94a3b8",
-                        marginTop:
-                          "3px",
+                        fontSize: "12px",
+                        color: "#94a3b8",
+                        marginTop: "3px",
                       }}
                     >
-                      {
-                        item.description
-                      }
+                      {item.description}
                     </div>
                   </button>
                 );
@@ -522,32 +513,27 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Generate */}
+          {/* GENERATE */}
           <button
             onClick={generateComments}
             disabled={
-              loading ||
-              !post.trim()
+              loading || !post.trim()
             }
             style={{
               width: "100%",
               marginTop: "22px",
-              padding:
-                "16px 22px",
-              borderRadius:
-                "14px",
+              padding: "16px 22px",
+              borderRadius: "14px",
               border: "none",
               background:
-                loading ||
-                !post.trim()
+                loading || !post.trim()
                   ? "#334155"
                   : "linear-gradient(90deg, #2563eb, #7c3aed)",
               color: "#fff",
               fontSize: "16px",
               fontWeight: "700",
               cursor:
-                loading ||
-                !post.trim()
+                loading || !post.trim()
                   ? "not-allowed"
                   : "pointer",
             }}
@@ -570,25 +556,20 @@ export default function Home() {
           )}
         </section>
 
-        {/* Current Results */}
+        {/* RESULTS */}
         {comments.length > 0 && (
           <section
-            style={{
-              marginTop: "30px",
-            }}
+            style={{ marginTop: "30px" }}
           >
             <div
               style={{
                 display: "flex",
                 justifyContent:
                   "space-between",
-                alignItems:
-                  "center",
+                alignItems: "center",
                 gap: "12px",
-                marginBottom:
-                  "15px",
-                flexWrap:
-                  "wrap",
+                marginBottom: "15px",
+                flexWrap: "wrap",
               }}
             >
               <div
@@ -598,8 +579,7 @@ export default function Home() {
                   fontWeight: "600",
                   textTransform:
                     "uppercase",
-                  letterSpacing:
-                    "1px",
+                  letterSpacing: "1px",
                 }}
               >
                 Choose your reply
@@ -608,19 +588,15 @@ export default function Home() {
               <button
                 onClick={copyAll}
                 style={{
-                  padding:
-                    "9px 14px",
-                  borderRadius:
-                    "10px",
+                  padding: "9px 14px",
+                  borderRadius: "10px",
                   border:
                     "1px solid rgba(255,255,255,0.12)",
                   background:
                     "rgba(255,255,255,0.06)",
                   color: "#fff",
-                  cursor:
-                    "pointer",
-                  fontWeight:
-                    "600",
+                  cursor: "pointer",
+                  fontWeight: "600",
                 }}
               >
                 📋 Copy All
@@ -643,41 +619,29 @@ export default function Home() {
                         "rgba(255,255,255,0.055)",
                       border:
                         "1px solid rgba(255,255,255,0.1)",
-                      borderRadius:
-                        "22px",
-                      padding:
-                        "24px",
-                      marginBottom:
-                        "16px",
+                      borderRadius: "22px",
+                      padding: "24px",
+                      marginBottom: "16px",
                     }}
                   >
                     <div
                       style={{
-                        fontSize:
-                          "14px",
-                        fontWeight:
-                          "700",
+                        fontSize: "14px",
+                        fontWeight: "700",
                         marginBottom:
                           "14px",
                       }}
                     >
-                      {
-                        labels[
-                          index
-                        ]
-                      }
+                      {labels[index] ||
+                        "💬 Reply"}
                     </div>
 
                     <p
                       style={{
-                        color:
-                          "#e2e8f0",
-                        fontSize:
-                          "17px",
-                        lineHeight:
-                          "1.75",
-                        marginTop:
-                          0,
+                        color: "#e2e8f0",
+                        fontSize: "17px",
+                        lineHeight: "1.75",
+                        marginTop: 0,
                       }}
                     >
                       {comment}
@@ -692,14 +656,12 @@ export default function Home() {
                       style={{
                         padding:
                           "10px 16px",
-                        borderRadius:
-                          "10px",
+                        borderRadius: "10px",
                         border:
                           "1px solid rgba(255,255,255,0.12)",
                         background:
                           "rgba(255,255,255,0.06)",
-                        color:
-                          "#fff",
+                        color: "#fff",
                         cursor:
                           "pointer",
                       }}
@@ -712,15 +674,12 @@ export default function Home() {
             )}
 
             <button
-              onClick={
-                generateComments
-              }
+              onClick={generateComments}
               disabled={loading}
               style={{
                 width: "100%",
                 padding: "15px",
-                borderRadius:
-                  "14px",
+                borderRadius: "14px",
                 border:
                   "1px solid rgba(255,255,255,0.12)",
                 background:
@@ -740,7 +699,7 @@ export default function Home() {
           </section>
         )}
 
-        {/* Recent Generations */}
+        {/* RECENT */}
         {recent.length > 0 && (
           <section
             style={{
@@ -752,18 +711,15 @@ export default function Home() {
                 display: "flex",
                 justifyContent:
                   "space-between",
-                alignItems:
-                  "center",
-                marginBottom:
-                  "16px",
+                alignItems: "center",
+                marginBottom: "16px",
               }}
             >
               <div>
                 <h2
                   style={{
                     margin: 0,
-                    fontSize:
-                      "24px",
+                    fontSize: "24px",
                   }}
                 >
                   Recent Generations
@@ -773,170 +729,147 @@ export default function Home() {
                   style={{
                     margin:
                       "6px 0 0",
-                    color:
-                      "#64748b",
-                    fontSize:
-                      "13px",
+                    color: "#64748b",
+                    fontSize: "13px",
                   }}
                 >
-                  Your latest
-                  generations
-                  from this
-                  session.
+                  Your latest generations
+                  from this session.
                 </p>
               </div>
 
               <button
-                onClick={
-                  clearRecent
-                }
+                onClick={clearRecent}
                 style={{
-                  padding:
-                    "8px 12px",
-                  borderRadius:
-                    "9px",
+                  padding: "8px 12px",
+                  borderRadius: "9px",
                   border:
                     "1px solid rgba(255,255,255,0.1)",
                   background:
                     "rgba(255,255,255,0.04)",
-                  color:
-                    "#94a3b8",
-                  cursor:
-                    "pointer",
+                  color: "#94a3b8",
+                  cursor: "pointer",
                 }}
               >
                 Clear
               </button>
             </div>
 
-            {recent.map(
-              (item) => (
-                <div
-                  key={item.id}
+            {recent.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  background:
+                    "rgba(255,255,255,0.04)",
+                  border:
+                    "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "18px",
+                  padding: "18px",
+                  marginBottom: "12px",
+                }}
+              >
+                <p
                   style={{
-                    background:
-                      "rgba(255,255,255,0.04)",
-                    border:
-                      "1px solid rgba(255,255,255,0.08)",
-                    borderRadius:
-                      "18px",
-                    padding:
-                      "18px",
-                    marginBottom:
-                      "12px",
+                    margin:
+                      "0 0 14px",
+                    color: "#cbd5e1",
+                    lineHeight: "1.6",
                   }}
                 >
-                  <p
+                  {item.post.length >
+                  180
+                    ? `${item.post.slice(
+                        0,
+                        180
+                      )}...`
+                    : item.post}
+                </p>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems:
+                      "center",
+                    gap: "8px",
+                    flexWrap:
+                      "wrap",
+                  }}
+                >
+                  <span
                     style={{
-                      margin:
-                        "0 0 14px",
+                      padding:
+                        "6px 9px",
+                      borderRadius:
+                        "8px",
+                      background:
+                        "rgba(124,58,237,0.15)",
                       color:
-                        "#cbd5e1",
-                      lineHeight:
-                        "1.6",
+                        "#c4b5fd",
+                      fontSize:
+                        "12px",
                     }}
                   >
-                    {item.post
-                      .length > 180
-                      ? `${item.post.slice(
-                          0,
-                          180
-                        )}...`
-                      : item.post}
-                  </p>
+                    {item.tone}
+                  </span>
 
-                  <div
+                  <span
                     style={{
-                      display:
-                        "flex",
-                      alignItems:
-                        "center",
-                      gap: "8px",
-                      flexWrap:
-                        "wrap",
+                      padding:
+                        "6px 9px",
+                      borderRadius:
+                        "8px",
+                      background:
+                        "rgba(37,99,235,0.15)",
+                      color:
+                        "#93c5fd",
+                      fontSize:
+                        "12px",
                     }}
                   >
-                    <span
-                      style={{
-                        padding:
-                          "6px 9px",
-                        borderRadius:
-                          "8px",
-                        background:
-                          "rgba(124,58,237,0.15)",
-                        color:
-                          "#c4b5fd",
-                        fontSize:
-                          "12px",
-                      }}
-                    >
-                      {item.tone}
-                    </span>
+                    {item.length}
+                  </span>
 
-                    <span
-                      style={{
-                        padding:
-                          "6px 9px",
-                        borderRadius:
-                          "8px",
-                        background:
-                          "rgba(37,99,235,0.15)",
-                        color:
-                          "#93c5fd",
-                        fontSize:
-                          "12px",
-                      }}
-                    >
-                      {item.length}
-                    </span>
-
-                    <button
-                      onClick={() =>
-                        useAgain(
-                          item
-                        )
-                      }
-                      style={{
-                        marginLeft:
-                          "auto",
-                        padding:
-                          "8px 13px",
-                        borderRadius:
-                          "9px",
-                        border:
-                          "1px solid rgba(255,255,255,0.1)",
-                        background:
-                          "rgba(255,255,255,0.06)",
-                        color:
-                          "#fff",
-                        cursor:
-                          "pointer",
-                        fontWeight:
-                          "600",
-                      }}
-                    >
-                      Use Again
-                    </button>
-                  </div>
+                  <button
+                    onClick={() =>
+                      useAgain(item)
+                    }
+                    style={{
+                      marginLeft:
+                        "auto",
+                      padding:
+                        "8px 13px",
+                      borderRadius:
+                        "9px",
+                      border:
+                        "1px solid rgba(255,255,255,0.1)",
+                      background:
+                        "rgba(255,255,255,0.06)",
+                      color: "#fff",
+                      cursor:
+                        "pointer",
+                      fontWeight:
+                        "600",
+                    }}
+                  >
+                    Use Again
+                  </button>
                 </div>
-              )
-            )}
+              </div>
+            ))}
           </section>
         )}
 
+        {/* FOOTER */}
         <footer
           style={{
-            textAlign:
-              "center",
-            color:
-              "#475569",
-            fontSize:
-              "13px",
-            marginTop:
-              "55px",
+            textAlign: "center",
+            color: "#475569",
+            fontSize: "13px",
+            marginTop: "55px",
           }}
         >
-          FounderReply AI · Built for founders who build in public.
+          FounderReply AI · Built for
+          founders who build in public.
         </footer>
       </div>
     </main>
