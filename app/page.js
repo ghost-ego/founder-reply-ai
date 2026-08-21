@@ -15,34 +15,31 @@ export default function Home() {
 
   const [tone, setTone] = useState("Professional");
   const [length, setLength] = useState("Medium");
-
   const [recent, setRecent] = useState([]);
 
-  // Create Supabase only in the browser
   useEffect(() => {
-    try {
-      const client = createClient();
-      setSupabase(client);
+    const client = createClient();
 
-      client.auth.getSession().then(({ data }) => {
-        setUser(data?.session?.user || null);
-        setAuthLoading(false);
-      });
+    setSupabase(client);
 
-      const {
-        data: { subscription },
-      } = client.auth.onAuthStateChange((_event, session) => {
-        setUser(session?.user || null);
-      });
+    client.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        console.error(error);
+      }
 
-      return () => {
-        subscription.unsubscribe();
-      };
-    } catch (error) {
-      console.error("Supabase initialization error:", error);
+      setUser(data?.session?.user || null);
       setAuthLoading(false);
-      setError("Authentication system could not be initialized.");
-    }
+    });
+
+    const {
+      data: { subscription },
+    } = client.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function generateComments() {
@@ -62,7 +59,7 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt: post,
+          prompt: post.trim(),
           tone,
           length,
         }),
@@ -72,17 +69,17 @@ export default function Home() {
 
       if (!response.ok) {
         throw new Error(
-          data.error || "Failed to generate comments."
+          data?.error || "Failed to generate comments."
         );
       }
 
-      if (!Array.isArray(data.comments)) {
+      if (!Array.isArray(data?.comments)) {
         throw new Error("No comments were generated.");
       }
 
       setComments(data.comments);
 
-      const newGeneration = {
+      const generation = {
         id: Date.now(),
         post: post.trim(),
         tone,
@@ -91,11 +88,11 @@ export default function Home() {
       };
 
       setRecent((previous) =>
-        [newGeneration, ...previous].slice(0, 5)
+        [generation, ...previous].slice(0, 5)
       );
-    } catch (error) {
+    } catch (err) {
       setError(
-        error?.message ||
+        err?.message ||
           "Something went wrong. Please try again."
       );
     } finally {
@@ -128,6 +125,13 @@ export default function Home() {
     }
   }
 
+  async function logout() {
+    if (!supabase) return;
+
+    await supabase.auth.signOut();
+    setUser(null);
+  }
+
   function useAgain(item) {
     setPost(item.post);
     setTone(item.tone);
@@ -143,13 +147,6 @@ export default function Home() {
 
   function clearRecent() {
     setRecent([]);
-  }
-
-  async function logout() {
-    if (!supabase) return;
-
-    await supabase.auth.signOut();
-    setUser(null);
   }
 
   const tones = [
@@ -218,29 +215,21 @@ export default function Home() {
             justifyContent: "space-between",
             alignItems: "center",
             marginBottom: "10px",
-            gap: "12px",
           }}
         >
-          <div
-            style={{
-              color: "#cbd5e1",
-              fontSize: "14px",
-            }}
-          >
-            FounderReply AI
-          </div>
+          <strong>FounderReply AI</strong>
 
           {user && (
             <button
               onClick={logout}
               style={{
-                padding: "8px 12px",
+                padding: "8px 13px",
                 borderRadius: "9px",
                 border:
                   "1px solid rgba(255,255,255,0.1)",
                 background:
                   "rgba(255,255,255,0.05)",
-                color: "#cbd5e1",
+                color: "#fff",
                 cursor: "pointer",
               }}
             >
@@ -283,7 +272,7 @@ export default function Home() {
               }}
             />
 
-            AI-powered LinkedIn replies
+            FounderReply AI
           </div>
 
           <h1
@@ -328,7 +317,7 @@ export default function Home() {
           </p>
         </header>
 
-        {/* MAIN CARD */}
+        {/* INPUT CARD */}
         <section
           style={{
             background:
@@ -342,7 +331,6 @@ export default function Home() {
             backdropFilter: "blur(20px)",
           }}
         >
-          {/* POST */}
           <div
             style={{
               display: "flex",
@@ -351,9 +339,7 @@ export default function Home() {
               marginBottom: "12px",
             }}
           >
-            <strong>
-              LinkedIn post
-            </strong>
+            <strong>LinkedIn post</strong>
 
             <span
               style={{
@@ -559,7 +545,9 @@ export default function Home() {
         {/* RESULTS */}
         {comments.length > 0 && (
           <section
-            style={{ marginTop: "30px" }}
+            style={{
+              marginTop: "30px",
+            }}
           >
             <div
               style={{
@@ -859,7 +847,6 @@ export default function Home() {
           </section>
         )}
 
-        {/* FOOTER */}
         <footer
           style={{
             textAlign: "center",
@@ -868,8 +855,8 @@ export default function Home() {
             marginTop: "55px",
           }}
         >
-          FounderReply AI · Built for
-          founders who build in public.
+          FounderReply AI · Built for founders
+          who build in public.
         </footer>
       </div>
     </main>
