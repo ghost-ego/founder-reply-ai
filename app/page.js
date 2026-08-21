@@ -19,15 +19,12 @@ export default function Home() {
 
   const [recent, setRecent] = useState([]);
 
+  // Check authentication
   useEffect(() => {
-    let mounted = true;
-
     async function checkUser() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-
-      if (!mounted) return;
 
       if (!user) {
         window.location.href = "/auth";
@@ -54,11 +51,11 @@ export default function Home() {
     );
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
   }, [supabase]);
 
+  // Logout
   async function handleLogout() {
     await supabase.auth.signOut();
     window.location.href = "/auth";
@@ -177,7 +174,7 @@ export default function Home() {
     { name: "Detailed", description: "4–6 sentences" },
   ];
 
-  // Don't show the app while authentication is being checked.
+  // Wait while checking login
   if (authLoading || !user) {
     return (
       <main
@@ -188,8 +185,7 @@ export default function Home() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily:
-            "Inter, system-ui, sans-serif",
+          fontFamily: "Inter, system-ui, sans-serif",
         }}
       >
         Checking login...
@@ -222,13 +218,26 @@ export default function Home() {
             padding: "30px 10px 35px",
           }}
         >
+          {/* Account controls */}
           <div
             style={{
               display: "flex",
               justifyContent: "flex-end",
+              alignItems: "center",
+              gap: "10px",
               marginBottom: "20px",
+              flexWrap: "wrap",
             }}
           >
+            <span
+              style={{
+                color: "#94a3b8",
+                fontSize: "13px",
+              }}
+            >
+              {user.email}
+            </span>
+
             <button
               onClick={handleLogout}
               style={{
@@ -254,7 +263,8 @@ export default function Home() {
               gap: "8px",
               padding: "8px 14px",
               borderRadius: "999px",
-              background: "rgba(255,255,255,0.06)",
+              background:
+                "rgba(255,255,255,0.06)",
               border:
                 "1px solid rgba(255,255,255,0.1)",
               fontSize: "14px",
@@ -272,6 +282,7 @@ export default function Home() {
                   "0 0 12px #4ade80",
               }}
             />
+
             FounderReply AI
           </div>
 
@@ -331,10 +342,12 @@ export default function Home() {
             backdropFilter: "blur(20px)",
           }}
         >
+          {/* Post */}
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
+              justifyContent:
+                "space-between",
               marginBottom: "12px",
             }}
           >
@@ -405,22 +418,27 @@ export default function Home() {
                       setTone(item.name)
                     }
                     style={{
-                      padding: "13px 12px",
-                      borderRadius: "12px",
+                      padding:
+                        "13px 12px",
+                      borderRadius:
+                        "12px",
                       border: selected
                         ? "1px solid #8b5cf6"
                         : "1px solid rgba(255,255,255,0.1)",
-                      background: selected
-                        ? "rgba(124,58,237,0.2)"
-                        : "rgba(255,255,255,0.04)",
+                      background:
+                        selected
+                          ? "rgba(124,58,237,0.2)"
+                          : "rgba(255,255,255,0.04)",
                       color: "#fff",
                       cursor: "pointer",
-                      fontWeight: selected
-                        ? "700"
-                        : "500",
+                      fontWeight:
+                        selected
+                          ? "700"
+                          : "500",
                     }}
                   >
-                    {item.icon} {item.name}
+                    {item.icon}{" "}
+                    {item.name}
                   </button>
                 );
               })}
@@ -458,22 +476,27 @@ export default function Home() {
                       setLength(item.name)
                     }
                     style={{
-                      padding: "13px 12px",
-                      borderRadius: "12px",
+                      padding:
+                        "13px 12px",
+                      borderRadius:
+                        "12px",
                       border: selected
                         ? "1px solid #3b82f6"
                         : "1px solid rgba(255,255,255,0.1)",
-                      background: selected
-                        ? "rgba(37,99,235,0.2)"
-                        : "rgba(255,255,255,0.04)",
+                      background:
+                        selected
+                          ? "rgba(37,99,235,0.2)"
+                          : "rgba(255,255,255,0.04)",
                       color: "#fff",
                       cursor: "pointer",
-                      textAlign: "left",
+                      textAlign:
+                        "left",
                     }}
                   >
                     <div
                       style={{
-                        fontWeight: "700",
+                        fontWeight:
+                          "700",
                       }}
                     >
                       {item.name}
@@ -481,12 +504,17 @@ export default function Home() {
 
                     <div
                       style={{
-                        fontSize: "12px",
-                        color: "#94a3b8",
-                        marginTop: "3px",
+                        fontSize:
+                          "12px",
+                        color:
+                          "#94a3b8",
+                        marginTop:
+                          "3px",
                       }}
                     >
-                      {item.description}
+                      {
+                        item.description
+                      }
                     </div>
                   </button>
                 );
@@ -498,23 +526,28 @@ export default function Home() {
           <button
             onClick={generateComments}
             disabled={
-              loading || !post.trim()
+              loading ||
+              !post.trim()
             }
             style={{
               width: "100%",
               marginTop: "22px",
-              padding: "16px 22px",
-              borderRadius: "14px",
+              padding:
+                "16px 22px",
+              borderRadius:
+                "14px",
               border: "none",
               background:
-                loading || !post.trim()
+                loading ||
+                !post.trim()
                   ? "#334155"
                   : "linear-gradient(90deg, #2563eb, #7c3aed)",
               color: "#fff",
               fontSize: "16px",
               fontWeight: "700",
               cursor:
-                loading || !post.trim()
+                loading ||
+                !post.trim()
                   ? "not-allowed"
                   : "pointer",
             }}
@@ -539,16 +572,23 @@ export default function Home() {
 
         {/* Current Results */}
         {comments.length > 0 && (
-          <section style={{ marginTop: "30px" }}>
+          <section
+            style={{
+              marginTop: "30px",
+            }}
+          >
             <div
               style={{
                 display: "flex",
                 justifyContent:
                   "space-between",
-                alignItems: "center",
+                alignItems:
+                  "center",
                 gap: "12px",
-                marginBottom: "15px",
-                flexWrap: "wrap",
+                marginBottom:
+                  "15px",
+                flexWrap:
+                  "wrap",
               }}
             >
               <div
@@ -558,7 +598,8 @@ export default function Home() {
                   fontWeight: "600",
                   textTransform:
                     "uppercase",
-                  letterSpacing: "1px",
+                  letterSpacing:
+                    "1px",
                 }}
               >
                 Choose your reply
@@ -567,15 +608,19 @@ export default function Home() {
               <button
                 onClick={copyAll}
                 style={{
-                  padding: "9px 14px",
-                  borderRadius: "10px",
+                  padding:
+                    "9px 14px",
+                  borderRadius:
+                    "10px",
                   border:
                     "1px solid rgba(255,255,255,0.12)",
                   background:
                     "rgba(255,255,255,0.06)",
                   color: "#fff",
-                  cursor: "pointer",
-                  fontWeight: "600",
+                  cursor:
+                    "pointer",
+                  fontWeight:
+                    "600",
                 }}
               >
                 📋 Copy All
@@ -598,27 +643,41 @@ export default function Home() {
                         "rgba(255,255,255,0.055)",
                       border:
                         "1px solid rgba(255,255,255,0.1)",
-                      borderRadius: "22px",
-                      padding: "24px",
-                      marginBottom: "16px",
+                      borderRadius:
+                        "22px",
+                      padding:
+                        "24px",
+                      marginBottom:
+                        "16px",
                     }}
                   >
                     <div
                       style={{
-                        fontSize: "14px",
-                        fontWeight: "700",
-                        marginBottom: "14px",
+                        fontSize:
+                          "14px",
+                        fontWeight:
+                          "700",
+                        marginBottom:
+                          "14px",
                       }}
                     >
-                      {labels[index]}
+                      {
+                        labels[
+                          index
+                        ]
+                      }
                     </div>
 
                     <p
                       style={{
-                        color: "#e2e8f0",
-                        fontSize: "17px",
-                        lineHeight: "1.75",
-                        marginTop: 0,
+                        color:
+                          "#e2e8f0",
+                        fontSize:
+                          "17px",
+                        lineHeight:
+                          "1.75",
+                        marginTop:
+                          0,
                       }}
                     >
                       {comment}
@@ -639,8 +698,10 @@ export default function Home() {
                           "1px solid rgba(255,255,255,0.12)",
                         background:
                           "rgba(255,255,255,0.06)",
-                        color: "#fff",
-                        cursor: "pointer",
+                        color:
+                          "#fff",
+                        cursor:
+                          "pointer",
                       }}
                     >
                       📋 Copy comment
@@ -651,12 +712,15 @@ export default function Home() {
             )}
 
             <button
-              onClick={generateComments}
+              onClick={
+                generateComments
+              }
               disabled={loading}
               style={{
                 width: "100%",
                 padding: "15px",
-                borderRadius: "14px",
+                borderRadius:
+                  "14px",
                 border:
                   "1px solid rgba(255,255,255,0.12)",
                 background:
@@ -688,15 +752,18 @@ export default function Home() {
                 display: "flex",
                 justifyContent:
                   "space-between",
-                alignItems: "center",
-                marginBottom: "16px",
+                alignItems:
+                  "center",
+                marginBottom:
+                  "16px",
               }}
             >
               <div>
                 <h2
                   style={{
                     margin: 0,
-                    fontSize: "24px",
+                    fontSize:
+                      "24px",
                   }}
                 >
                   Recent Generations
@@ -706,140 +773,167 @@ export default function Home() {
                   style={{
                     margin:
                       "6px 0 0",
-                    color: "#64748b",
-                    fontSize: "13px",
+                    color:
+                      "#64748b",
+                    fontSize:
+                      "13px",
                   }}
                 >
-                  Your latest generations
-                  from this session.
+                  Your latest
+                  generations
+                  from this
+                  session.
                 </p>
               </div>
 
               <button
-                onClick={clearRecent}
+                onClick={
+                  clearRecent
+                }
                 style={{
-                  padding: "8px 12px",
-                  borderRadius: "9px",
+                  padding:
+                    "8px 12px",
+                  borderRadius:
+                    "9px",
                   border:
                     "1px solid rgba(255,255,255,0.1)",
                   background:
                     "rgba(255,255,255,0.04)",
-                  color: "#94a3b8",
-                  cursor: "pointer",
+                  color:
+                    "#94a3b8",
+                  cursor:
+                    "pointer",
                 }}
               >
                 Clear
               </button>
             </div>
 
-            {recent.map((item) => (
-              <div
-                key={item.id}
-                style={{
-                  background:
-                    "rgba(255,255,255,0.04)",
-                  border:
-                    "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: "18px",
-                  padding: "18px",
-                  marginBottom: "12px",
-                }}
-              >
-                <p
-                  style={{
-                    margin:
-                      "0 0 14px",
-                    color: "#cbd5e1",
-                    lineHeight: "1.6",
-                  }}
-                >
-                  {item.post.length > 180
-                    ? `${item.post.slice(
-                        0,
-                        180
-                      )}...`
-                    : item.post}
-                </p>
-
+            {recent.map(
+              (item) => (
                 <div
+                  key={item.id}
                   style={{
-                    display: "flex",
-                    alignItems:
-                      "center",
-                    gap: "8px",
-                    flexWrap: "wrap",
+                    background:
+                      "rgba(255,255,255,0.04)",
+                    border:
+                      "1px solid rgba(255,255,255,0.08)",
+                    borderRadius:
+                      "18px",
+                    padding:
+                      "18px",
+                    marginBottom:
+                      "12px",
                   }}
                 >
-                  <span
+                  <p
                     style={{
-                      padding:
-                        "6px 9px",
-                      borderRadius:
-                        "8px",
-                      background:
-                        "rgba(124,58,237,0.15)",
+                      margin:
+                        "0 0 14px",
                       color:
-                        "#c4b5fd",
-                      fontSize:
-                        "12px",
+                        "#cbd5e1",
+                      lineHeight:
+                        "1.6",
                     }}
                   >
-                    {item.tone}
-                  </span>
+                    {item.post
+                      .length > 180
+                      ? `${item.post.slice(
+                          0,
+                          180
+                        )}...`
+                      : item.post}
+                  </p>
 
-                  <span
+                  <div
                     style={{
-                      padding:
-                        "6px 9px",
-                      borderRadius:
-                        "8px",
-                      background:
-                        "rgba(37,99,235,0.15)",
-                      color:
-                        "#93c5fd",
-                      fontSize:
-                        "12px",
+                      display:
+                        "flex",
+                      alignItems:
+                        "center",
+                      gap: "8px",
+                      flexWrap:
+                        "wrap",
                     }}
                   >
-                    {item.length}
-                  </span>
+                    <span
+                      style={{
+                        padding:
+                          "6px 9px",
+                        borderRadius:
+                          "8px",
+                        background:
+                          "rgba(124,58,237,0.15)",
+                        color:
+                          "#c4b5fd",
+                        fontSize:
+                          "12px",
+                      }}
+                    >
+                      {item.tone}
+                    </span>
 
-                  <button
-                    onClick={() =>
-                      useAgain(item)
-                    }
-                    style={{
-                      marginLeft:
-                        "auto",
-                      padding:
-                        "8px 13px",
-                      borderRadius:
-                        "9px",
-                      border:
-                        "1px solid rgba(255,255,255,0.1)",
-                      background:
-                        "rgba(255,255,255,0.06)",
-                      color: "#fff",
-                      cursor:
-                        "pointer",
-                      fontWeight:
-                        "600",
-                    }}
-                  >
-                    Use Again
-                  </button>
+                    <span
+                      style={{
+                        padding:
+                          "6px 9px",
+                        borderRadius:
+                          "8px",
+                        background:
+                          "rgba(37,99,235,0.15)",
+                        color:
+                          "#93c5fd",
+                        fontSize:
+                          "12px",
+                      }}
+                    >
+                      {item.length}
+                    </span>
+
+                    <button
+                      onClick={() =>
+                        useAgain(
+                          item
+                        )
+                      }
+                      style={{
+                        marginLeft:
+                          "auto",
+                        padding:
+                          "8px 13px",
+                        borderRadius:
+                          "9px",
+                        border:
+                          "1px solid rgba(255,255,255,0.1)",
+                        background:
+                          "rgba(255,255,255,0.06)",
+                        color:
+                          "#fff",
+                        cursor:
+                          "pointer",
+                        fontWeight:
+                          "600",
+                      }}
+                    >
+                      Use Again
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            )}
           </section>
         )}
 
         <footer
           style={{
-            textAlign: "center",
-            color: "#475569",
-            fontSize: "13px",
-            marginTop: "55px",
+            textAlign:
+              "center",
+            color:
+              "#475569",
+            fontSize:
+              "13px",
+            marginTop:
+              "55px",
           }}
         >
           FounderReply AI · Built for founders who build in public.
