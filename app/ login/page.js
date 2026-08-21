@@ -11,6 +11,30 @@ export default function LoginPage() {
   const [mode, setMode] = useState("login");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [testing, setTesting] = useState(false);
+
+  async function testConnection() {
+    setTesting(true);
+    setMessage("Testing Supabase connection...");
+
+    try {
+      const response = await fetch(
+        "https://lfrfcqfkaiiqpykaluqw.supabase.co/auth/v1/health"
+      );
+
+      const text = await response.text();
+
+      setMessage(
+        `Connection test: HTTP ${response.status}\n${text}`
+      );
+    } catch (error) {
+      setMessage(
+        `Connection test FAILED:\n${error?.message || error}`
+      );
+    } finally {
+      setTesting(false);
+    }
+  }
 
   async function handleAuth(e) {
     e.preventDefault();
@@ -19,59 +43,32 @@ export default function LoginPage() {
     setMessage("");
 
     try {
-      if (!email.trim()) {
-        throw new Error("Please enter your email.");
-      }
-
-      if (!password) {
-        throw new Error("Please enter your password.");
-      }
-
       if (mode === "signup") {
-        const result = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
         });
 
-        if (result.error) {
-          throw new Error(
-            `Supabase error: ${result.error.message}`
-          );
-        }
+        if (error) throw error;
 
         setMessage(
-          result.data?.user
-            ? "Account created successfully! Check your email for confirmation."
-            : "Account request completed. Check your email."
+          "Account created! Check your email for confirmation."
         );
       } else {
-        const result =
+        const { error } =
           await supabase.auth.signInWithPassword({
             email: email.trim(),
             password,
           });
 
-        if (result.error) {
-          throw new Error(
-            `Supabase error: ${result.error.message}`
-          );
-        }
+        if (error) throw error;
 
         window.location.href = "/";
       }
     } catch (error) {
-      console.error("FounderReply Auth Error:", error);
-
-      let errorMessage = "Something went wrong.";
-
-      if (error instanceof TypeError) {
-        errorMessage =
-          "Network error: Your browser could not connect to Supabase. Check the Supabase URL and browser connection.";
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-
-      setMessage(errorMessage);
+      setMessage(
+        error?.message || "Something went wrong."
+      );
     } finally {
       setLoading(false);
     }
@@ -101,15 +98,9 @@ export default function LoginPage() {
           borderRadius: "24px",
           padding: "30px",
           boxSizing: "border-box",
-          boxShadow: "0 25px 80px rgba(0,0,0,0.4)",
         }}
       >
-        <div
-          style={{
-            textAlign: "center",
-            marginBottom: "28px",
-          }}
-        >
+        <div style={{ textAlign: "center", marginBottom: "28px" }}>
           <div
             style={{
               fontSize: "14px",
@@ -120,13 +111,7 @@ export default function LoginPage() {
             FounderReply AI
           </div>
 
-          <h1
-            style={{
-              margin: 0,
-              fontSize: "30px",
-              fontWeight: "800",
-            }}
-          >
+          <h1 style={{ margin: 0, fontSize: "30px" }}>
             {mode === "login"
               ? "Welcome back"
               : "Create your account"}
@@ -146,16 +131,7 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleAuth}>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "7px",
-              fontSize: "14px",
-              fontWeight: "600",
-            }}
-          >
-            Email
-          </label>
+          <label>Email</label>
 
           <input
             type="email"
@@ -163,32 +139,21 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             required
-            autoComplete="email"
             style={{
               width: "100%",
               boxSizing: "border-box",
               padding: "14px",
-              marginBottom: "18px",
+              margin: "8px 0 18px",
               borderRadius: "11px",
               border:
                 "1px solid rgba(255,255,255,0.12)",
               background: "rgba(0,0,0,0.3)",
               color: "#fff",
-              outline: "none",
               fontSize: "15px",
             }}
           />
 
-          <label
-            style={{
-              display: "block",
-              marginBottom: "7px",
-              fontSize: "14px",
-              fontWeight: "600",
-            }}
-          >
-            Password
-          </label>
+          <label>Password</label>
 
           <input
             type="password"
@@ -197,22 +162,16 @@ export default function LoginPage() {
             placeholder="Minimum 6 characters"
             required
             minLength={6}
-            autoComplete={
-              mode === "login"
-                ? "current-password"
-                : "new-password"
-            }
             style={{
               width: "100%",
               boxSizing: "border-box",
               padding: "14px",
-              marginBottom: "20px",
+              margin: "8px 0 20px",
               borderRadius: "11px",
               border:
                 "1px solid rgba(255,255,255,0.12)",
               background: "rgba(0,0,0,0.3)",
               color: "#fff",
-              outline: "none",
               fontSize: "15px",
             }}
           />
@@ -230,10 +189,6 @@ export default function LoginPage() {
               color: "#fff",
               fontWeight: "700",
               fontSize: "15px",
-              cursor: loading
-                ? "not-allowed"
-                : "pointer",
-              opacity: loading ? 0.7 : 1,
             }}
           >
             {loading
@@ -247,20 +202,39 @@ export default function LoginPage() {
         {message && (
           <div
             style={{
+              whiteSpace: "pre-wrap",
               marginTop: "18px",
               padding: "14px",
               borderRadius: "10px",
-              background:
-                "rgba(255,255,255,0.05)",
+              background: "rgba(255,255,255,0.05)",
               color: "#cbd5e1",
               fontSize: "14px",
               lineHeight: "1.5",
-              wordBreak: "break-word",
             }}
           >
             {message}
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={testConnection}
+          disabled={testing}
+          style={{
+            width: "100%",
+            marginTop: "18px",
+            padding: "12px",
+            borderRadius: "10px",
+            border:
+              "1px solid rgba(255,255,255,0.12)",
+            background: "rgba(255,255,255,0.05)",
+            color: "#93c5fd",
+          }}
+        >
+          {testing
+            ? "Testing..."
+            : "🔧 Test Supabase Connection"}
+        </button>
 
         <div
           style={{
@@ -272,9 +246,7 @@ export default function LoginPage() {
             type="button"
             onClick={() => {
               setMode(
-                mode === "login"
-                  ? "signup"
-                  : "login"
+                mode === "login" ? "signup" : "login"
               );
               setMessage("");
             }}
@@ -282,7 +254,6 @@ export default function LoginPage() {
               background: "none",
               border: "none",
               color: "#93c5fd",
-              cursor: "pointer",
               fontSize: "14px",
             }}
           >
