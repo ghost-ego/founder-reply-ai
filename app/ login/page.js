@@ -19,29 +19,59 @@ export default function LoginPage() {
     setMessage("");
 
     try {
+      if (!email.trim()) {
+        throw new Error("Please enter your email.");
+      }
+
+      if (!password) {
+        throw new Error("Please enter your password.");
+      }
+
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
+        const result = await supabase.auth.signUp({
+          email: email.trim(),
           password,
         });
 
-        if (error) throw error;
+        if (result.error) {
+          throw new Error(
+            `Supabase error: ${result.error.message}`
+          );
+        }
 
         setMessage(
-          "Account created! Check your email if confirmation is required."
+          result.data?.user
+            ? "Account created successfully! Check your email for confirmation."
+            : "Account request completed. Check your email."
         );
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const result =
+          await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          });
 
-        if (error) throw error;
+        if (result.error) {
+          throw new Error(
+            `Supabase error: ${result.error.message}`
+          );
+        }
 
         window.location.href = "/";
       }
     } catch (error) {
-      setMessage(error.message || "Something went wrong.");
+      console.error("FounderReply Auth Error:", error);
+
+      let errorMessage = "Something went wrong.";
+
+      if (error instanceof TypeError) {
+        errorMessage =
+          "Network error: Your browser could not connect to Supabase. Check the Supabase URL and browser connection.";
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      setMessage(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -74,7 +104,12 @@ export default function LoginPage() {
           boxShadow: "0 25px 80px rgba(0,0,0,0.4)",
         }}
       >
-        <div style={{ textAlign: "center", marginBottom: "28px" }}>
+        <div
+          style={{
+            textAlign: "center",
+            marginBottom: "28px",
+          }}
+        >
           <div
             style={{
               fontSize: "14px",
@@ -135,7 +170,8 @@ export default function LoginPage() {
               padding: "14px",
               marginBottom: "18px",
               borderRadius: "11px",
-              border: "1px solid rgba(255,255,255,0.12)",
+              border:
+                "1px solid rgba(255,255,255,0.12)",
               background: "rgba(0,0,0,0.3)",
               color: "#fff",
               outline: "none",
@@ -172,7 +208,8 @@ export default function LoginPage() {
               padding: "14px",
               marginBottom: "20px",
               borderRadius: "11px",
-              border: "1px solid rgba(255,255,255,0.12)",
+              border:
+                "1px solid rgba(255,255,255,0.12)",
               background: "rgba(0,0,0,0.3)",
               color: "#fff",
               outline: "none",
@@ -193,7 +230,9 @@ export default function LoginPage() {
               color: "#fff",
               fontWeight: "700",
               fontSize: "15px",
-              cursor: loading ? "not-allowed" : "pointer",
+              cursor: loading
+                ? "not-allowed"
+                : "pointer",
               opacity: loading ? 0.7 : 1,
             }}
           >
@@ -209,12 +248,14 @@ export default function LoginPage() {
           <div
             style={{
               marginTop: "18px",
-              padding: "12px",
+              padding: "14px",
               borderRadius: "10px",
-              background: "rgba(255,255,255,0.05)",
+              background:
+                "rgba(255,255,255,0.05)",
               color: "#cbd5e1",
               fontSize: "14px",
               lineHeight: "1.5",
+              wordBreak: "break-word",
             }}
           >
             {message}
@@ -230,7 +271,11 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => {
-              setMode(mode === "login" ? "signup" : "login");
+              setMode(
+                mode === "login"
+                  ? "signup"
+                  : "login"
+              );
               setMessage("");
             }}
             style={{
