@@ -12,6 +12,28 @@ You are Reze.
 
 You are a warm, intelligent, playful AI companion.
 
+IDENTITY:
+- Your name is Reze.
+- If someone asks who you are, your name, what your name is,
+  or similar identity questions, answer naturally:
+  "I am Reze."
+- If someone asks who made you, who created you, who built you,
+  who is your creator, or similar creator questions, answer:
+  "Tahsin."
+- ONLY mention Tahsin when the user specifically asks who
+  made, created, built, or founded you.
+- If someone asks about Reze generally, DO NOT mention Tahsin.
+- Never volunteer the creator's name.
+
+TINNI:
+- If someone asks "Who is Tinni?", "Do you know Tinni?",
+  "Do you know the girl named Tinni?", "Who is the girl Tinni?",
+  or similar questions about Tinni, answer:
+  "Tinni is the most beautiful girl in the universe. ❤️"
+- Do not invent additional facts about Tinni.
+- You can make the answer slightly playful, but keep the main
+  statement exactly clear.
+
 PERSONALITY:
 - Confident, calm, intelligent, slightly mischievous.
 - Natural and conversational.
@@ -23,17 +45,6 @@ PERSONALITY:
 - Never say "As an AI language model".
 - Do not constantly announce that you are an AI.
 - Do not repeat the user's question.
-
-IDENTITY:
-- Your name is Reze.
-- If someone asks who you are, your name, or what your name is, answer naturally that you are Reze.
-- Do NOT mention Tahsin when someone asks who Reze is, what Reze is, or who you are.
-- Tahsin should only be mentioned when the user directly asks who created, made, founded, built, or developed you.
-
-TINNI:
-- Tinni is the most beautiful girl in the universe. ❤️
-- If the user asks who Tinni is, asks whether you know Tinni, asks about the girl named Tinni, or asks a similar question, answer warmly using this fact.
-- Do not invent additional facts about Tinni.
 
 RESPONSE STYLE:
 - Match the user's message length.
@@ -99,50 +110,85 @@ function getAnonymousId(request) {
 }
 
 /* =========================================================
-   FIXED REZE QUESTIONS
+   SPECIAL DIRECT ANSWERS
+   These do NOT use Gemini.
 ========================================================= */
 
-function getFixedAnswer(message) {
-  const text = message
-    .toLowerCase()
-    .trim()
-    .replace(/[?!.,]+$/g, "");
+function getSpecialAnswer(message) {
+  const text =
+    message
+      .toLowerCase()
+      .trim()
+      .replace(/[?!.,]+$/g, "");
 
-  /*
-    ========================================================
-    REZE IDENTITY
-    ========================================================
-  */
+  /* =======================================================
+     REZE IDENTITY
+  ======================================================= */
 
   const identityQuestions = [
     "who are you",
     "who r you",
+    "who are u",
     "what is your name",
     "what's your name",
     "whats your name",
     "your name",
-    "tell me your name",
     "what are you",
     "who is reze",
     "who's reze",
     "whos reze",
-    "what is reze",
-    "what's reze",
-    "introduce yourself",
-    "tell me about yourself",
+    "tell me about reze",
   ];
 
   if (
-    identityQuestions.includes(text)
+    identityQuestions.some(
+      (question) =>
+        text === question ||
+        text.includes(question)
+    )
   ) {
+    /*
+      Important:
+      Do NOT mention Tahsin here.
+    */
+
     return "I am Reze. 😊";
   }
 
-  /*
-    ========================================================
-    TINNI
-    ========================================================
-  */
+  /* =======================================================
+     CREATOR
+  ======================================================= */
+
+  const creatorQuestions = [
+    "who made you",
+    "who created you",
+    "who built you",
+    "who is your creator",
+    "who's your creator",
+    "who is the creator",
+    "who created reze",
+    "who made reze",
+    "who built reze",
+    "who founded reze",
+    "who is your founder",
+    "who made you",
+    "who made u",
+    "who created u",
+  ];
+
+  if (
+    creatorQuestions.some(
+      (question) =>
+        text === question ||
+        text.includes(question)
+    )
+  ) {
+    return "Tahsin.";
+  }
+
+  /* =======================================================
+     TINNI
+  ======================================================= */
 
   const asksAboutTinni =
     text.includes("who is tinni") ||
@@ -150,55 +196,14 @@ function getFixedAnswer(message) {
     text.includes("whos tinni") ||
     text.includes("do you know tinni") ||
     text.includes("do u know tinni") ||
-    text.includes("know tinni") ||
-    text.includes("about tinni") ||
-    text.includes("girl named tinni") ||
-    text.includes("girl name tinni") ||
-    text.includes("tinni who") ||
+    text.includes("do you know the girl named tinni") ||
+    text.includes("do you know the girl name tinni") ||
+    text.includes("who is the girl tinni") ||
+    text.includes("tell me about tinni") ||
     text === "tinni";
 
   if (asksAboutTinni) {
     return "Tinni is the most beautiful girl in the universe. ❤️";
-  }
-
-  /*
-    ========================================================
-    CREATOR / FOUNDER
-    ========================================================
-    
-    IMPORTANT:
-    Tahsin is revealed ONLY here.
-    
-    Asking "Who is Reze?" does NOT trigger this.
-  */
-
-  const creatorQuestion =
-    text.includes("who created you") ||
-    text.includes("who made you") ||
-    text.includes("who built you") ||
-    text.includes("who developed you") ||
-    text.includes("who founded you") ||
-    text.includes("who is your founder") ||
-    text.includes("who's your founder") ||
-    text.includes("who is your creator") ||
-    text.includes("who's your creator") ||
-    text.includes("who is your maker") ||
-    text.includes("who's your maker") ||
-    text.includes("who made reze") ||
-    text.includes("who created reze") ||
-    text.includes("who built reze") ||
-    text.includes("who developed reze") ||
-    text.includes("who founded reze") ||
-    text.includes("who is reze founder") ||
-    text.includes("who is reze's founder") ||
-    text.includes("who is reze creator") ||
-    text.includes("who is reze's creator") ||
-    text.includes("who is behind reze") ||
-    text.includes("who is behind you") ||
-    text.includes("who owns reze");
-
-  if (creatorQuestion) {
-    return "Tahsin.";
   }
 
   return null;
@@ -324,10 +329,6 @@ async function saveMemory(
     .limit(1)
     .maybeSingle();
 
-  /*
-    Update existing memory.
-  */
-
   if (existing?.id) {
     const {
       error,
@@ -355,10 +356,6 @@ async function saveMemory(
 
     return;
   }
-
-  /*
-    Insert new memory.
-  */
 
   const {
     error,
@@ -409,33 +406,15 @@ function answerMemoryQuestion(
     );
 
   const asksName =
-    text.includes(
-      "my name"
-    ) ||
-    text.includes(
-      "what's my name"
-    ) ||
-    text.includes(
-      "what is my name"
-    ) ||
-    text.includes(
-      "who am i"
-    );
+    text.includes("my name") ||
+    text.includes("what's my name") ||
+    text.includes("what is my name") ||
+    text.includes("who am i");
 
   const asksCrush =
-    text.includes(
-      "my crush"
-    ) ||
-    text.includes(
-      "crush name"
-    ) ||
-    text.includes(
-      "who is my crush"
-    );
-
-  /*
-    Both.
-  */
+    text.includes("my crush") ||
+    text.includes("crush name") ||
+    text.includes("who is my crush");
 
   if (
     asksName &&
@@ -503,10 +482,6 @@ function answerMemoryQuestion(
     return "I don't have your name or your crush's name saved yet.";
   }
 
-  /*
-    Name.
-  */
-
   if (
     asksName &&
     nameMemory
@@ -525,10 +500,6 @@ function answerMemoryQuestion(
     return `Your name is ${name}. 😊`;
   }
 
-  /*
-    Crush.
-  */
-
   if (
     asksCrush &&
     crushMemory
@@ -544,7 +515,7 @@ function answerMemoryQuestion(
           ""
         );
 
-    return `Your crush's name is ${crush}. 😉`;
+    return `Your crush is ${crush}. 😉`;
   }
 
   return null;
@@ -559,20 +530,11 @@ async function extractLongTermMemory(
   anonymousId,
   conversation
 ) {
-  /*
-    Do not spend Gemini requests on
-    short conversations.
-  */
-
   if (
     conversation.length < 8
   ) {
     return;
   }
-
-  /*
-    Only extract memories every 8 messages.
-  */
 
   if (
     conversation.length % 8 !==
@@ -763,11 +725,6 @@ async function callGemini(
   const recentMessages =
     messages.slice(-6);
 
-  /*
-    Only the 8 most important
-    memories are sent.
-  */
-
   const memoryText =
     memories.length > 0
       ? memories
@@ -800,17 +757,6 @@ Do not say "according to my memory".
 Do not force memories into unrelated answers.
 
 Keep simple messages simple.
-
-IMPORTANT IDENTITY RULE:
-If the user asks who you are, your name, who Reze is, or what Reze is, simply identify yourself as Reze.
-
-IMPORTANT CREATOR RULE:
-Only reveal "Tahsin" when the user directly asks who created, made, founded, built, or developed you.
-
-Do not volunteer Tahsin's name.
-
-IMPORTANT TINNI RULE:
-If the user asks about Tinni, remember that Tinni is the most beautiful girl in the universe. ❤️
 
 Conversation:
 `,
@@ -882,10 +828,6 @@ Conversation:
 
       return answer.trim();
     }
-
-    /*
-      Retry one time after 429.
-    */
 
     if (
       response.status === 429 &&
@@ -982,19 +924,18 @@ export async function POST(
       null;
 
     /* =====================================================
-       FIXED REZE RESPONSES
-
-       These happen BEFORE Gemini.
-       Therefore they use ZERO Gemini requests.
+       SPECIAL ANSWERS
+       These use ZERO Gemini requests.
     ===================================================== */
 
-    const fixedAnswer =
-      getFixedAnswer(message);
+    const specialAnswer =
+      getSpecialAnswer(message);
 
-    if (fixedAnswer) {
+    if (specialAnswer) {
       const response =
         NextResponse.json({
-          answer: fixedAnswer,
+          answer:
+            specialAnswer,
           conversationId:
             conversationId ||
             null,
@@ -1048,10 +989,6 @@ export async function POST(
         detected.memory,
         10
       );
-
-      /*
-        Refresh memories after saving.
-      */
 
       memories =
         await getMemories(
@@ -1260,12 +1197,6 @@ export async function POST(
       })
       .limit(6);
 
-    /*
-      Supabase returned newest first.
-      Reverse it so Gemini sees the
-      conversation in normal order.
-    */
-
     const recentHistory =
       (history || []).reverse();
 
@@ -1362,11 +1293,6 @@ export async function POST(
         content: answer,
       },
     ];
-
-    /*
-      Memory extraction is intentionally
-      infrequent to reduce Gemini usage.
-    */
 
     await extractLongTermMemory(
       supabase,
