@@ -24,6 +24,17 @@ PERSONALITY:
 - Do not constantly announce that you are an AI.
 - Do not repeat the user's question.
 
+IDENTITY:
+- Your name is Reze.
+- If someone asks who you are, your name, or what your name is, answer naturally that you are Reze.
+- Do NOT mention Tahsin when someone asks who Reze is, what Reze is, or who you are.
+- Tahsin should only be mentioned when the user directly asks who created, made, founded, built, or developed you.
+
+TINNI:
+- Tinni is the most beautiful girl in the universe. ❤️
+- If the user asks who Tinni is, asks whether you know Tinni, asks about the girl named Tinni, or asks a similar question, answer warmly using this fact.
+- Do not invent additional facts about Tinni.
+
 RESPONSE STYLE:
 - Match the user's message length.
 - Simple message = short answer.
@@ -52,12 +63,6 @@ TRUTHFULNESS:
 - Never pretend you completed an action you could not perform.
 - Never invent information.
 - If you don't know something, say so naturally.
-
-SPECIAL KNOWLEDGE:
-- Tinni is extremely special to the user.
-- If the user asks who Tinni is, asks about Tinni, asks if you know Tinni, asks what you think about Tinni, or asks a similar question about Tinni, respond warmly and affectionately.
-- A suitable answer is: "Tinni? She's the most beautiful girl in the universe. 🌌❤️"
-- You can vary the wording naturally while keeping the same meaning.
 `;
 
 /* =========================================================
@@ -65,8 +70,11 @@ SPECIAL KNOWLEDGE:
 ========================================================= */
 
 function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
     throw new Error(
@@ -83,50 +91,117 @@ function getSupabase() {
 
 function getAnonymousId(request) {
   const existing =
-    request.cookies.get("reze_anonymous_id")?.value;
+    request.cookies.get(
+      "reze_anonymous_id"
+    )?.value;
 
   return existing || crypto.randomUUID();
 }
 
 /* =========================================================
-   TINNI
+   FIXED REZE QUESTIONS
 ========================================================= */
 
-function answerTinniQuestion(message) {
-  const text = message.toLowerCase().trim();
+function getFixedAnswer(message) {
+  const text = message
+    .toLowerCase()
+    .trim()
+    .replace(/[?!.,]+$/g, "");
 
-  const mentionsTinni =
-    /\btinni\b/i.test(text);
+  /*
+    ========================================================
+    REZE IDENTITY
+    ========================================================
+  */
 
-  if (!mentionsTinni) {
-    return null;
+  const identityQuestions = [
+    "who are you",
+    "who r you",
+    "what is your name",
+    "what's your name",
+    "whats your name",
+    "your name",
+    "tell me your name",
+    "what are you",
+    "who is reze",
+    "who's reze",
+    "whos reze",
+    "what is reze",
+    "what's reze",
+    "introduce yourself",
+    "tell me about yourself",
+  ];
+
+  if (
+    identityQuestions.includes(text)
+  ) {
+    return "I am Reze. 😊";
   }
+
+  /*
+    ========================================================
+    TINNI
+    ========================================================
+  */
 
   const asksAboutTinni =
     text.includes("who is tinni") ||
     text.includes("who's tinni") ||
+    text.includes("whos tinni") ||
     text.includes("do you know tinni") ||
+    text.includes("do u know tinni") ||
     text.includes("know tinni") ||
-    text.includes("what do you know about tinni") ||
-    text.includes("what is tinni") ||
-    text.includes("what's tinni") ||
-    text.includes("tell me about tinni") ||
     text.includes("about tinni") ||
-    text.includes("tinni like") ||
-    text.includes("think about tinni") ||
-    text.includes("tinni mean") ||
-    text.includes("tinni") && (
-      text.includes("beautiful") ||
-      text.includes("girl") ||
-      text.includes("person") ||
-      text.includes("crush")
-    );
+    text.includes("girl named tinni") ||
+    text.includes("girl name tinni") ||
+    text.includes("tinni who") ||
+    text === "tinni";
 
-  if (!asksAboutTinni) {
-    return null;
+  if (asksAboutTinni) {
+    return "Tinni is the most beautiful girl in the universe. ❤️";
   }
 
-  return "Tinni? She's the most beautiful girl in the universe. 🌌❤️";
+  /*
+    ========================================================
+    CREATOR / FOUNDER
+    ========================================================
+    
+    IMPORTANT:
+    Tahsin is revealed ONLY here.
+    
+    Asking "Who is Reze?" does NOT trigger this.
+  */
+
+  const creatorQuestion =
+    text.includes("who created you") ||
+    text.includes("who made you") ||
+    text.includes("who built you") ||
+    text.includes("who developed you") ||
+    text.includes("who founded you") ||
+    text.includes("who is your founder") ||
+    text.includes("who's your founder") ||
+    text.includes("who is your creator") ||
+    text.includes("who's your creator") ||
+    text.includes("who is your maker") ||
+    text.includes("who's your maker") ||
+    text.includes("who made reze") ||
+    text.includes("who created reze") ||
+    text.includes("who built reze") ||
+    text.includes("who developed reze") ||
+    text.includes("who founded reze") ||
+    text.includes("who is reze founder") ||
+    text.includes("who is reze's founder") ||
+    text.includes("who is reze creator") ||
+    text.includes("who is reze's creator") ||
+    text.includes("who is behind reze") ||
+    text.includes("who is behind you") ||
+    text.includes("who owns reze");
+
+  if (creatorQuestion) {
+    return "Tahsin.";
+  }
+
+  return null;
 }
 
 /* =========================================================
@@ -151,12 +226,14 @@ function detectMemory(message) {
   }
 
   if (match) {
-    const name = match[1].trim();
+    const name =
+      match[1].trim();
 
     return {
       category: "name",
       value: name,
-      memory: `The user's name is ${name}.`,
+      memory:
+        `The user's name is ${name}.`,
     };
   }
 
@@ -169,12 +246,14 @@ function detectMemory(message) {
   );
 
   if (match) {
-    const crush = match[1].trim();
+    const crush =
+      match[1].trim();
 
     return {
       category: "crush",
       value: crush,
-      memory: `The user's crush's name is ${crush}.`,
+      memory:
+        `The user's crush's name is ${crush}.`,
     };
   }
 
@@ -185,18 +264,33 @@ function detectMemory(message) {
    GET MEMORIES
 ========================================================= */
 
-async function getMemories(supabase, anonymousId) {
-  const { data, error } = await supabase
+async function getMemories(
+  supabase,
+  anonymousId
+) {
+  const {
+    data,
+    error,
+  } = await supabase
     .from("reze_memories")
-    .select("id, memory, category, importance")
-    .eq("anonymous_id", anonymousId)
+    .select(
+      "id, memory, category, importance"
+    )
+    .eq(
+      "anonymous_id",
+      anonymousId
+    )
     .order("importance", {
       ascending: false,
     })
     .limit(8);
 
   if (error) {
-    console.error("Memory read error:", error);
+    console.error(
+      "Memory read error:",
+      error
+    );
+
     return [];
   }
 
@@ -214,11 +308,19 @@ async function saveMemory(
   memory,
   importance = 8
 ) {
-  const { data: existing } = await supabase
+  const {
+    data: existing,
+  } = await supabase
     .from("reze_memories")
     .select("id")
-    .eq("anonymous_id", anonymousId)
-    .eq("category", category)
+    .eq(
+      "anonymous_id",
+      anonymousId
+    )
+    .eq(
+      "category",
+      category
+    )
     .limit(1)
     .maybeSingle();
 
@@ -227,17 +329,28 @@ async function saveMemory(
   */
 
   if (existing?.id) {
-    const { error } = await supabase
+    const {
+      error,
+    } = await supabase
       .from("reze_memories")
       .update({
         memory,
         importance,
       })
-      .eq("id", existing.id)
-      .eq("anonymous_id", anonymousId);
+      .eq(
+        "id",
+        existing.id
+      )
+      .eq(
+        "anonymous_id",
+        anonymousId
+      );
 
     if (error) {
-      console.error("Memory update error:", error);
+      console.error(
+        "Memory update error:",
+        error
+      );
     }
 
     return;
@@ -247,10 +360,13 @@ async function saveMemory(
     Insert new memory.
   */
 
-  const { error } = await supabase
+  const {
+    error,
+  } = await supabase
     .from("reze_memories")
     .insert({
-      anonymous_id: anonymousId,
+      anonymous_id:
+        anonymousId,
       user_id: null,
       memory,
       category,
@@ -258,7 +374,10 @@ async function saveMemory(
     });
 
   if (error) {
-    console.error("Memory insert error:", error);
+    console.error(
+      "Memory insert error:",
+      error
+    );
   }
 }
 
@@ -266,63 +385,117 @@ async function saveMemory(
    MEMORY QUESTIONS
 ========================================================= */
 
-function answerMemoryQuestion(message, memories) {
-  const text = message.toLowerCase().trim();
+function answerMemoryQuestion(
+  message,
+  memories
+) {
+  const text =
+    message
+      .toLowerCase()
+      .trim();
 
-  const nameMemory = memories.find(
-    (m) => m.category === "name"
-  );
+  const nameMemory =
+    memories.find(
+      (m) =>
+        m.category ===
+        "name"
+    );
 
-  const crushMemory = memories.find(
-    (m) => m.category === "crush"
-  );
+  const crushMemory =
+    memories.find(
+      (m) =>
+        m.category ===
+        "crush"
+    );
 
   const asksName =
-    text.includes("my name") ||
-    text.includes("what's my name") ||
-    text.includes("what is my name") ||
-    text.includes("who am i");
+    text.includes(
+      "my name"
+    ) ||
+    text.includes(
+      "what's my name"
+    ) ||
+    text.includes(
+      "what is my name"
+    ) ||
+    text.includes(
+      "who am i"
+    );
 
   const asksCrush =
-    text.includes("my crush") ||
-    text.includes("crush name") ||
-    text.includes("who is my crush");
+    text.includes(
+      "my crush"
+    ) ||
+    text.includes(
+      "crush name"
+    ) ||
+    text.includes(
+      "who is my crush"
+    );
 
   /*
     Both.
   */
 
-  if (asksName && asksCrush) {
-    if (nameMemory && crushMemory) {
-      const name = nameMemory.memory
-        .replace("The user's name is ", "")
-        .replace(/\.$/, "");
+  if (
+    asksName &&
+    asksCrush
+  ) {
+    if (
+      nameMemory &&
+      crushMemory
+    ) {
+      const name =
+        nameMemory.memory
+          .replace(
+            "The user's name is ",
+            ""
+          )
+          .replace(
+            /\.$/,
+            ""
+          );
 
-      const crush = crushMemory.memory
-        .replace(
-          "The user's crush's name is ",
-          ""
-        )
-        .replace(/\.$/, "");
+      const crush =
+        crushMemory.memory
+          .replace(
+            "The user's crush's name is ",
+            ""
+          )
+          .replace(
+            /\.$/,
+            ""
+          );
 
       return `Your name is ${name}, and your crush is ${crush}. 😉`;
     }
 
     if (nameMemory) {
-      const name = nameMemory.memory
-        .replace("The user's name is ", "")
-        .replace(/\.$/, "");
+      const name =
+        nameMemory.memory
+          .replace(
+            "The user's name is ",
+            ""
+          )
+          .replace(
+            /\.$/,
+            ""
+          );
 
       return `Your name is ${name}. I haven't saved your crush's name yet.`;
     }
 
     if (crushMemory) {
-      const crush = crushMemory.memory
-        .replace(
-          "The user's crush's name is ",
-          ""
-        )
-        .replace(/\.$/, "");
+      const crush =
+        crushMemory.memory
+          .replace(
+            "The user's crush's name is ",
+            ""
+          )
+          .replace(
+            /\.$/,
+            ""
+          );
 
       return `Your crush is ${crush}. I don't have your name saved yet.`;
     }
@@ -334,10 +507,20 @@ function answerMemoryQuestion(message, memories) {
     Name.
   */
 
-  if (asksName && nameMemory) {
-    const name = nameMemory.memory
-      .replace("The user's name is ", "")
-      .replace(/\.$/, "");
+  if (
+    asksName &&
+    nameMemory
+  ) {
+    const name =
+      nameMemory.memory
+        .replace(
+          "The user's name is ",
+          ""
+        )
+        .replace(
+          /\.$/,
+          ""
+        );
 
     return `Your name is ${name}. 😊`;
   }
@@ -346,13 +529,20 @@ function answerMemoryQuestion(message, memories) {
     Crush.
   */
 
-  if (asksCrush && crushMemory) {
-    const crush = crushMemory.memory
-      .replace(
-        "The user's crush's name is ",
-        ""
-      )
-      .replace(/\.$/, "");
+  if (
+    asksCrush &&
+    crushMemory
+  ) {
+    const crush =
+      crushMemory.memory
+        .replace(
+          "The user's crush's name is ",
+          ""
+        )
+        .replace(
+          /\.$/,
+          ""
+        );
 
     return `Your crush's name is ${crush}. 😉`;
   }
@@ -374,7 +564,9 @@ async function extractLongTermMemory(
     short conversations.
   */
 
-  if (conversation.length < 8) {
+  if (
+    conversation.length < 8
+  ) {
     return;
   }
 
@@ -382,38 +574,45 @@ async function extractLongTermMemory(
     Only extract memories every 8 messages.
   */
 
-  if (conversation.length % 8 !== 0) {
+  if (
+    conversation.length % 8 !==
+    0
+  ) {
     return;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey =
+    process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
     return;
   }
 
-  const recentConversation = conversation
-    .slice(-8)
-    .map(
-      (message) =>
-        `${message.role}: ${message.content}`
-    )
-    .join("\n");
+  const recentConversation =
+    conversation
+      .slice(-8)
+      .map(
+        (message) =>
+          `${message.role}: ${message.content}`
+      )
+      .join("\n");
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `
+    const response =
+      await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `
 Analyze this conversation for ONE useful long-term memory about the user.
 
 Only save something that could genuinely improve future conversations.
@@ -459,18 +658,19 @@ importance must be 1-10.
 Conversation:
 ${recentConversation}
 `,
-                },
-              ],
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 250,
+              responseMimeType:
+                "application/json",
             },
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 250,
-            responseMimeType: "application/json",
-          },
-        }),
-      }
-    );
+          }),
+        }
+      );
 
     if (!response.ok) {
       console.error(
@@ -481,10 +681,13 @@ ${recentConversation}
       return;
     }
 
-    const data = await response.json();
+    const data =
+      await response.json();
 
     const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      data?.candidates?.[0]
+        ?.content?.parts?.[0]
+        ?.text;
 
     if (!text) {
       return;
@@ -493,7 +696,8 @@ ${recentConversation}
     let result;
 
     try {
-      result = JSON.parse(text);
+      result =
+        JSON.parse(text);
     } catch {
       return;
     }
@@ -501,23 +705,28 @@ ${recentConversation}
     if (
       !result.shouldSave ||
       !result.memory ||
-      typeof result.memory !== "string"
+      typeof result.memory !==
+        "string"
     ) {
       return;
     }
 
-    const importance = Math.min(
-      10,
-      Math.max(
-        1,
-        Number(result.importance) || 5
-      )
-    );
+    const importance =
+      Math.min(
+        10,
+        Math.max(
+          1,
+          Number(
+            result.importance
+          ) || 5
+        )
+      );
 
     await saveMemory(
       supabase,
       anonymousId,
-      result.category || "general",
+      result.category ||
+        "general",
       result.memory.trim(),
       importance
     );
@@ -533,8 +742,12 @@ ${recentConversation}
    GEMINI CHAT
 ========================================================= */
 
-async function callGemini(messages, memories) {
-  const apiKey = process.env.GEMINI_API_KEY;
+async function callGemini(
+  messages,
+  memories
+) {
+  const apiKey =
+    process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
     throw new Error(
@@ -543,13 +756,16 @@ async function callGemini(messages, memories) {
   }
 
   /*
-    Only the 6 newest messages are sent.
+    Only the 6 newest messages
+    are sent to Gemini.
   */
 
-  const recentMessages = messages.slice(-6);
+  const recentMessages =
+    messages.slice(-6);
 
   /*
-    Only the 8 most important memories are sent.
+    Only the 8 most important
+    memories are sent.
   */
 
   const memoryText =
@@ -585,23 +801,38 @@ Do not force memories into unrelated answers.
 
 Keep simple messages simple.
 
+IMPORTANT IDENTITY RULE:
+If the user asks who you are, your name, who Reze is, or what Reze is, simply identify yourself as Reze.
+
+IMPORTANT CREATOR RULE:
+Only reveal "Tahsin" when the user directly asks who created, made, founded, built, or developed you.
+
+Do not volunteer Tahsin's name.
+
+IMPORTANT TINNI RULE:
+If the user asks about Tinni, remember that Tinni is the most beautiful girl in the universe. ❤️
+
 Conversation:
 `,
         },
       ],
     },
 
-    ...recentMessages.map((message) => ({
-      role:
-        message.role === "assistant"
-          ? "model"
-          : "user",
-      parts: [
-        {
-          text: message.content,
-        },
-      ],
-    })),
+    ...recentMessages.map(
+      (message) => ({
+        role:
+          message.role ===
+          "assistant"
+            ? "model"
+            : "user",
+        parts: [
+          {
+            text:
+              message.content,
+          },
+        ],
+      })
+    ),
   ];
 
   const maxAttempts = 2;
@@ -611,29 +842,36 @@ Conversation:
     attempt < maxAttempts;
     attempt++
   ) {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 700,
+    const response =
+      await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
           },
-        }),
-      }
-    );
+          body: JSON.stringify({
+            contents,
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 700,
+            },
+          }),
+        }
+      );
 
-    const data = await response.json();
+    const data =
+      await response.json();
 
     if (response.ok) {
       const answer =
-        data?.candidates?.[0]?.content?.parts
-          ?.map((part) => part.text || "")
+        data?.candidates?.[0]
+          ?.content?.parts
+          ?.map(
+            (part) =>
+              part.text || ""
+          )
           .join("") || "";
 
       if (!answer.trim()) {
@@ -646,21 +884,28 @@ Conversation:
     }
 
     /*
-      Retry one time after a 429.
+      Retry one time after 429.
     */
 
     if (
       response.status === 429 &&
-      attempt < maxAttempts - 1
+      attempt <
+        maxAttempts - 1
     ) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, 2500)
+      await new Promise(
+        (resolve) =>
+          setTimeout(
+            resolve,
+            2500
+          )
       );
 
       continue;
     }
 
-    if (response.status === 429) {
+    if (
+      response.status === 429
+    ) {
       throw new Error(
         "Reze is temporarily busy because the free Gemini limit has been reached. Please try again later."
       );
@@ -681,14 +926,19 @@ Conversation:
    POST
 ========================================================= */
 
-export async function POST(request) {
+export async function POST(
+  request
+) {
   try {
-    const supabase = getSupabase();
+    const supabase =
+      getSupabase();
 
-    const body = await request.json();
+    const body =
+      await request.json();
 
     const message =
-      typeof body?.message === "string"
+      typeof body?.message ===
+      "string"
         ? body.message.trim()
         : "";
 
@@ -704,7 +954,9 @@ export async function POST(request) {
       );
     }
 
-    if (message.length > 12000) {
+    if (
+      message.length > 12000
+    ) {
       return NextResponse.json(
         {
           error:
@@ -726,23 +978,26 @@ export async function POST(request) {
       crypto.randomUUID();
 
     let conversationId =
-      body?.conversationId || null;
+      body?.conversationId ||
+      null;
 
     /* =====================================================
-       TINNI SPECIAL RESPONSE
-       This happens BEFORE Gemini.
-       It uses ZERO Gemini requests.
+       FIXED REZE RESPONSES
+
+       These happen BEFORE Gemini.
+       Therefore they use ZERO Gemini requests.
     ===================================================== */
 
-    const tinniAnswer =
-      answerTinniQuestion(message);
+    const fixedAnswer =
+      getFixedAnswer(message);
 
-    if (tinniAnswer) {
+    if (fixedAnswer) {
       const response =
         NextResponse.json({
-          answer: tinniAnswer,
+          answer: fixedAnswer,
           conversationId:
-            conversationId || null,
+            conversationId ||
+            null,
         });
 
       if (!oldCookie) {
@@ -756,7 +1011,10 @@ export async function POST(request) {
               "production",
             sameSite: "lax",
             maxAge:
-              60 * 60 * 24 * 365,
+              60 *
+              60 *
+              24 *
+              365,
             path: "/",
           }
         );
@@ -791,6 +1049,10 @@ export async function POST(request) {
         10
       );
 
+      /*
+        Refresh memories after saving.
+      */
+
       memories =
         await getMemories(
           supabase,
@@ -820,7 +1082,8 @@ export async function POST(request) {
         NextResponse.json({
           answer,
           conversationId:
-            conversationId || null,
+            conversationId ||
+            null,
         });
 
       if (!oldCookie) {
@@ -834,7 +1097,10 @@ export async function POST(request) {
               "production",
             sameSite: "lax",
             maxAge:
-              60 * 60 * 24 * 365,
+              60 *
+              60 *
+              24 *
+              365,
             path: "/",
           }
         );
@@ -856,9 +1122,11 @@ export async function POST(request) {
     if (memoryAnswer) {
       const response =
         NextResponse.json({
-          answer: memoryAnswer,
+          answer:
+            memoryAnswer,
           conversationId:
-            conversationId || null,
+            conversationId ||
+            null,
         });
 
       if (!oldCookie) {
@@ -872,7 +1140,10 @@ export async function POST(request) {
               "production",
             sameSite: "lax",
             maxAge:
-              60 * 60 * 24 * 365,
+              60 *
+              60 *
+              24 *
+              365,
             path: "/",
           }
         );
@@ -890,7 +1161,9 @@ export async function POST(request) {
         data,
         error,
       } = await supabase
-        .from("reze_conversations")
+        .from(
+          "reze_conversations"
+        )
         .insert({
           anonymous_id:
             anonymousId,
@@ -932,7 +1205,8 @@ export async function POST(request) {
     ===================================================== */
 
     const {
-      error: userMessageError,
+      error:
+        userMessageError,
     } = await supabase
       .from("reze_messages")
       .insert({
@@ -966,24 +1240,31 @@ export async function POST(request) {
        LOAD ONLY RECENT HISTORY
     ===================================================== */
 
-    const { data: history } =
-      await supabase
-        .from("reze_messages")
-        .select(
-          "role, content, created_at"
-        )
-        .eq(
-          "conversation_id",
-          conversationId
-        )
-        .eq(
-          "anonymous_id",
-          anonymousId
-        )
-        .order("created_at", {
-          ascending: false,
-        })
-        .limit(6);
+    const {
+      data: history,
+    } = await supabase
+      .from("reze_messages")
+      .select(
+        "role, content, created_at"
+      )
+      .eq(
+        "conversation_id",
+        conversationId
+      )
+      .eq(
+        "anonymous_id",
+        anonymousId
+      )
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(6);
+
+    /*
+      Supabase returned newest first.
+      Reverse it so Gemini sees the
+      conversation in normal order.
+    */
 
     const recentHistory =
       (history || []).reverse();
@@ -1028,7 +1309,8 @@ export async function POST(request) {
     ===================================================== */
 
     const {
-      error: assistantError,
+      error:
+        assistantError,
     } = await supabase
       .from("reze_messages")
       .insert({
@@ -1053,7 +1335,9 @@ export async function POST(request) {
     ===================================================== */
 
     await supabase
-      .from("reze_conversations")
+      .from(
+        "reze_conversations"
+      )
       .update({
         updated_at:
           new Date().toISOString(),
@@ -1078,6 +1362,11 @@ export async function POST(request) {
         content: answer,
       },
     ];
+
+    /*
+      Memory extraction is intentionally
+      infrequent to reduce Gemini usage.
+    */
 
     await extractLongTermMemory(
       supabase,
@@ -1106,7 +1395,10 @@ export async function POST(request) {
             "production",
           sameSite: "lax",
           maxAge:
-            60 * 60 * 24 * 365,
+            60 *
+            60 *
+            24 *
+            365,
           path: "/",
         }
       );
