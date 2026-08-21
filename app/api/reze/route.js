@@ -65,10 +65,12 @@ Make every interaction feel like the user is talking to a consistent AI companio
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
-    throw new Error("Supabase environment variables are missing.");
+    throw new Error(
+      "Supabase server environment variables are missing."
+    );
   }
 
   return createClient(url, key);
@@ -322,9 +324,6 @@ export async function POST(request) {
       );
     }
 
-    /*
-     * Get or create anonymous visitor ID.
-     */
     const existingAnonymousId =
       request.cookies.get("reze_anonymous_id")?.value;
 
@@ -335,9 +334,6 @@ export async function POST(request) {
     let conversationId =
       body?.conversationId || null;
 
-    /*
-     * Find existing conversation.
-     */
     if (conversationId) {
       const { data, error } =
         await supabase
@@ -352,9 +348,6 @@ export async function POST(request) {
       }
     }
 
-    /*
-     * Create a new conversation if necessary.
-     */
     if (!conversationId) {
       const title =
         message.length > 60
@@ -390,9 +383,6 @@ export async function POST(request) {
       conversationId = data.id;
     }
 
-    /*
-     * Save user message.
-     */
     const { error: userMessageError } =
       await supabase
         .from("reze_messages")
@@ -419,9 +409,6 @@ export async function POST(request) {
       );
     }
 
-    /*
-     * Load conversation history.
-     */
     const { data: history } =
       await supabase
         .from("reze_messages")
@@ -441,9 +428,6 @@ export async function POST(request) {
         })
         .limit(30);
 
-    /*
-     * Load memories.
-     */
     const { data: memories } =
       await supabase
         .from("reze_memories")
@@ -459,9 +443,6 @@ export async function POST(request) {
         })
         .limit(20);
 
-    /*
-     * Generate Reze's response.
-     */
     const conversationMessages =
       history || [];
 
@@ -470,9 +451,6 @@ export async function POST(request) {
       memories || []
     );
 
-    /*
-     * Save Reze's response.
-     */
     const { error: assistantError } =
       await supabase
         .from("reze_messages")
@@ -491,9 +469,6 @@ export async function POST(request) {
       );
     }
 
-    /*
-     * Update conversation timestamp.
-     */
     await supabase
       .from("reze_conversations")
       .update({
@@ -508,9 +483,6 @@ export async function POST(request) {
         anonymousId
       );
 
-    /*
-     * Build history for memory extraction.
-     */
     const fullConversation = [
       ...conversationMessages,
       {
@@ -519,19 +491,12 @@ export async function POST(request) {
       },
     ];
 
-    /*
-     * Create long-term memory when appropriate.
-     */
     await createMemory(
       supabase,
       anonymousId,
       fullConversation
     );
 
-    /*
-     * Return response and save anonymous ID
-     * in the browser cookie.
-     */
     const response = NextResponse.json({
       answer,
       conversationId,
@@ -543,7 +508,8 @@ export async function POST(request) {
         anonymousId,
         {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
+          secure:
+            process.env.NODE_ENV === "production",
           sameSite: "lax",
           maxAge: 60 * 60 * 24 * 365,
           path: "/",
