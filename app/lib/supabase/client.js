@@ -1,14 +1,8 @@
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-
-const supabaseUrl =
-  "https://lfrfcqfkaiiqpykaluqw.supabase.co";
-
-const supabasePublishableKey =
-  "sb_publishable_g5_j08qHLnyaEto_DBSKtA_GUjMN33W";
+import { createBrowserClient } from "@supabase/ssr";
 
 export function createClient() {
-  return createSupabaseClient(
-    supabaseUrl,
-    supabasePublishableKey
+  return createBrowserClient(
+    "https://lfrfcqfkaiiqpykaluqw.supabase.co",
+    "sb_publishable_g5_j08qHLnyaEto_DBSKtA_GUjMN33W"
   );
 }
