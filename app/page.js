@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createClient } from "../lib/supabase/client";
 
 export default function Home() {
+  const supabase = createClient();
+
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
   const [post, setPost] = useState("");
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -12,6 +18,51 @@ export default function Home() {
   const [length, setLength] = useState("Medium");
 
   const [recent, setRecent] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function checkUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!mounted) return;
+
+      if (!user) {
+        window.location.href = "/auth";
+        return;
+      }
+
+      setUser(user);
+      setAuthLoading(false);
+    }
+
+    checkUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session?.user) {
+          window.location.href = "/auth";
+        } else {
+          setUser(session.user);
+          setAuthLoading(false);
+        }
+      }
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    window.location.href = "/auth";
+  }
 
   async function generateComments() {
     if (!post.trim()) {
@@ -58,13 +109,13 @@ export default function Home() {
         comments: data.comments,
       };
 
-      setRecent((previous) => [
-        newGeneration,
-        ...previous,
-      ].slice(0, 5));
+      setRecent((previous) =>
+        [newGeneration, ...previous].slice(0, 5)
+      );
     } catch (error) {
       setError(
-        error.message || "Something went wrong. Please try again."
+        error.message ||
+          "Something went wrong. Please try again."
       );
     } finally {
       setLoading(false);
@@ -126,6 +177,26 @@ export default function Home() {
     { name: "Detailed", description: "4–6 sentences" },
   ];
 
+  // Don't show the app while authentication is being checked.
+  if (authLoading || !user) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          background: "#050609",
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily:
+            "Inter, system-ui, sans-serif",
+        }}
+      >
+        Checking login...
+      </main>
+    );
+  }
+
   return (
     <main
       style={{
@@ -148,9 +219,34 @@ export default function Home() {
         <header
           style={{
             textAlign: "center",
-            padding: "55px 10px 35px",
+            padding: "30px 10px 35px",
           }}
         >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginBottom: "20px",
+            }}
+          >
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: "9px 14px",
+                borderRadius: "10px",
+                border:
+                  "1px solid rgba(255,255,255,0.12)",
+                background:
+                  "rgba(255,255,255,0.06)",
+                color: "#fff",
+                cursor: "pointer",
+                fontWeight: "600",
+              }}
+            >
+              Log out
+            </button>
+          </div>
+
           <div
             style={{
               display: "inline-flex",
@@ -159,7 +255,8 @@ export default function Home() {
               padding: "8px 14px",
               borderRadius: "999px",
               background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              border:
+                "1px solid rgba(255,255,255,0.1)",
               fontSize: "14px",
               color: "#cbd5e1",
               marginBottom: "22px",
@@ -171,16 +268,17 @@ export default function Home() {
                 height: "8px",
                 borderRadius: "50%",
                 background: "#4ade80",
-                boxShadow: "0 0 12px #4ade80",
+                boxShadow:
+                  "0 0 12px #4ade80",
               }}
             />
-
             FounderReply AI
           </div>
 
           <h1
             style={{
-              fontSize: "clamp(40px, 8vw, 72px)",
+              fontSize:
+                "clamp(40px, 8vw, 72px)",
               lineHeight: "1",
               letterSpacing: "-3px",
               margin: "0",
@@ -194,8 +292,10 @@ export default function Home() {
               style={{
                 background:
                   "linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
+                WebkitBackgroundClip:
+                  "text",
+                WebkitTextFillColor:
+                  "transparent",
               }}
             >
               founders would write.
@@ -211,23 +311,26 @@ export default function Home() {
               lineHeight: "1.7",
             }}
           >
-            Turn any LinkedIn post into thoughtful, natural comments
-            that sound like a real founder.
+            Turn any LinkedIn post into thoughtful,
+            natural comments that sound like a real
+            founder.
           </p>
         </header>
 
         {/* Main Card */}
         <section
           style={{
-            background: "rgba(255,255,255,0.055)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background:
+              "rgba(255,255,255,0.055)",
+            border:
+              "1px solid rgba(255,255,255,0.1)",
             borderRadius: "24px",
             padding: "22px",
-            boxShadow: "0 25px 80px rgba(0,0,0,0.35)",
+            boxShadow:
+              "0 25px 80px rgba(0,0,0,0.35)",
             backdropFilter: "blur(20px)",
           }}
         >
-          {/* Post */}
           <div
             style={{
               display: "flex",
@@ -249,14 +352,17 @@ export default function Home() {
 
           <textarea
             value={post}
-            onChange={(e) => setPost(e.target.value)}
+            onChange={(e) =>
+              setPost(e.target.value)
+            }
             placeholder="Paste a LinkedIn post here..."
             style={{
               width: "100%",
               minHeight: "220px",
               boxSizing: "border-box",
               resize: "vertical",
-              background: "rgba(0,0,0,0.25)",
+              background:
+                "rgba(0,0,0,0.25)",
               color: "#fff",
               border:
                 "1px solid rgba(255,255,255,0.1)",
@@ -289,7 +395,8 @@ export default function Home() {
               }}
             >
               {tones.map((item) => {
-                const selected = tone === item.name;
+                const selected =
+                  tone === item.name;
 
                 return (
                   <button
@@ -364,7 +471,11 @@ export default function Home() {
                       textAlign: "left",
                     }}
                   >
-                    <div style={{ fontWeight: "700" }}>
+                    <div
+                      style={{
+                        fontWeight: "700",
+                      }}
+                    >
                       {item.name}
                     </div>
 
@@ -432,7 +543,8 @@ export default function Home() {
             <div
               style={{
                 display: "flex",
-                justifyContent: "space-between",
+                justifyContent:
+                  "space-between",
                 alignItems: "center",
                 gap: "12px",
                 marginBottom: "15px",
@@ -444,7 +556,8 @@ export default function Home() {
                   color: "#94a3b8",
                   fontSize: "13px",
                   fontWeight: "600",
-                  textTransform: "uppercase",
+                  textTransform:
+                    "uppercase",
                   letterSpacing: "1px",
                 }}
               >
@@ -469,67 +582,73 @@ export default function Home() {
               </button>
             </div>
 
-            {comments.map((comment, index) => {
-              const labels = [
-                "💡 Thoughtful",
-                "🔥 Strong perspective",
-                "⚡ Natural & concise",
-              ];
+            {comments.map(
+              (comment, index) => {
+                const labels = [
+                  "💡 Thoughtful",
+                  "🔥 Strong perspective",
+                  "⚡ Natural & concise",
+                ];
 
-              return (
-                <div
-                  key={index}
-                  style={{
-                    background:
-                      "rgba(255,255,255,0.055)",
-                    border:
-                      "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: "22px",
-                    padding: "24px",
-                    marginBottom: "16px",
-                  }}
-                >
+                return (
                   <div
+                    key={index}
                     style={{
-                      fontSize: "14px",
-                      fontWeight: "700",
-                      marginBottom: "14px",
-                    }}
-                  >
-                    {labels[index]}
-                  </div>
-
-                  <p
-                    style={{
-                      color: "#e2e8f0",
-                      fontSize: "17px",
-                      lineHeight: "1.75",
-                      marginTop: 0,
-                    }}
-                  >
-                    {comment}
-                  </p>
-
-                  <button
-                    onClick={() =>
-                      copyComment(comment)
-                    }
-                    style={{
-                      padding: "10px 16px",
-                      borderRadius: "10px",
-                      border:
-                        "1px solid rgba(255,255,255,0.12)",
                       background:
-                        "rgba(255,255,255,0.06)",
-                      color: "#fff",
-                      cursor: "pointer",
+                        "rgba(255,255,255,0.055)",
+                      border:
+                        "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: "22px",
+                      padding: "24px",
+                      marginBottom: "16px",
                     }}
                   >
-                    📋 Copy comment
-                  </button>
-                </div>
-              );
-            })}
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: "700",
+                        marginBottom: "14px",
+                      }}
+                    >
+                      {labels[index]}
+                    </div>
+
+                    <p
+                      style={{
+                        color: "#e2e8f0",
+                        fontSize: "17px",
+                        lineHeight: "1.75",
+                        marginTop: 0,
+                      }}
+                    >
+                      {comment}
+                    </p>
+
+                    <button
+                      onClick={() =>
+                        copyComment(
+                          comment
+                        )
+                      }
+                      style={{
+                        padding:
+                          "10px 16px",
+                        borderRadius:
+                          "10px",
+                        border:
+                          "1px solid rgba(255,255,255,0.12)",
+                        background:
+                          "rgba(255,255,255,0.06)",
+                        color: "#fff",
+                        cursor: "pointer",
+                      }}
+                    >
+                      📋 Copy comment
+                    </button>
+                  </div>
+                );
+              }
+            )}
 
             <button
               onClick={generateComments}
@@ -567,7 +686,8 @@ export default function Home() {
             <div
               style={{
                 display: "flex",
-                justifyContent: "space-between",
+                justifyContent:
+                  "space-between",
                 alignItems: "center",
                 marginBottom: "16px",
               }}
@@ -584,12 +704,14 @@ export default function Home() {
 
                 <p
                   style={{
-                    margin: "6px 0 0",
+                    margin:
+                      "6px 0 0",
                     color: "#64748b",
                     fontSize: "13px",
                   }}
                 >
-                  Your latest generations from this session.
+                  Your latest generations
+                  from this session.
                 </p>
               </div>
 
@@ -625,32 +747,41 @@ export default function Home() {
               >
                 <p
                   style={{
-                    margin: "0 0 14px",
+                    margin:
+                      "0 0 14px",
                     color: "#cbd5e1",
                     lineHeight: "1.6",
                   }}
                 >
                   {item.post.length > 180
-                    ? `${item.post.slice(0, 180)}...`
+                    ? `${item.post.slice(
+                        0,
+                        180
+                      )}...`
                     : item.post}
                 </p>
 
                 <div
                   style={{
                     display: "flex",
-                    alignItems: "center",
+                    alignItems:
+                      "center",
                     gap: "8px",
                     flexWrap: "wrap",
                   }}
                 >
                   <span
                     style={{
-                      padding: "6px 9px",
-                      borderRadius: "8px",
+                      padding:
+                        "6px 9px",
+                      borderRadius:
+                        "8px",
                       background:
                         "rgba(124,58,237,0.15)",
-                      color: "#c4b5fd",
-                      fontSize: "12px",
+                      color:
+                        "#c4b5fd",
+                      fontSize:
+                        "12px",
                     }}
                   >
                     {item.tone}
@@ -658,12 +789,16 @@ export default function Home() {
 
                   <span
                     style={{
-                      padding: "6px 9px",
-                      borderRadius: "8px",
+                      padding:
+                        "6px 9px",
+                      borderRadius:
+                        "8px",
                       background:
                         "rgba(37,99,235,0.15)",
-                      color: "#93c5fd",
-                      fontSize: "12px",
+                      color:
+                        "#93c5fd",
+                      fontSize:
+                        "12px",
                     }}
                   >
                     {item.length}
@@ -674,16 +809,21 @@ export default function Home() {
                       useAgain(item)
                     }
                     style={{
-                      marginLeft: "auto",
-                      padding: "8px 13px",
-                      borderRadius: "9px",
+                      marginLeft:
+                        "auto",
+                      padding:
+                        "8px 13px",
+                      borderRadius:
+                        "9px",
                       border:
                         "1px solid rgba(255,255,255,0.1)",
                       background:
                         "rgba(255,255,255,0.06)",
                       color: "#fff",
-                      cursor: "pointer",
-                      fontWeight: "600",
+                      cursor:
+                        "pointer",
+                      fontWeight:
+                        "600",
                     }}
                   >
                     Use Again
