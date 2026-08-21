@@ -1,60 +1,49 @@
 import { NextResponse } from "next/server";
 
-const REZE_SYSTEM_PROMPT = `
-You are Reze, an AI assistant.
+const IDENTITY_PHRASES = [
+  "what is your name",
+  "what's your name",
+  "who are you",
+  "what are you",
+  "your name",
+];
 
-IDENTITY RULES:
-- If someone asks "what is your name?", answer: "I am Reze, an AI."
-- If someone asks "who are you?", answer: "I am Reze, an AI."
-- If someone asks "what are you?", answer: "I am Reze, an AI."
-- Do NOT mention Tahsin when answering normal identity questions.
-- Only mention Tahsin when the user specifically asks who created, made, founded, built, or developed you.
-- For creator/founder questions, answer: "I was created by Tahsin."
-- Never claim that Tahsin created you unless the question is about your creator/founder.
-
-You are helpful, friendly, intelligent, and concise.
-Answer the user's questions naturally.
-`;
+const CREATOR_PHRASES = [
+  "who created you",
+  "who made you",
+  "who built you",
+  "who founded you",
+  "who is your founder",
+  "who is your creator",
+  "who developed you",
+  "who created reze",
+  "who made reze",
+  "who built reze",
+  "who founded reze",
+];
 
 export async function POST(request) {
   try {
     const body = await request.json();
-
     const message = body?.message?.trim();
 
     if (!message) {
       return NextResponse.json(
-        { error: "Please enter a question." },
-        { status: 400 }
+        {
+          error: "Please enter a question.",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
-    const lower = message.toLowerCase();
+    const lowerMessage = message.toLowerCase();
 
-    // Reze's permanent identity behavior
-    const identityQuestions = [
-      "what is your name",
-      "what's your name",
-      "who are you",
-      "what are you",
-      "your name",
-    ];
-
-    const creatorQuestions = [
-      "who created you",
-      "who made you",
-      "who built you",
-      "who founded you",
-      "who is your founder",
-      "who developed you",
-      "who is your creator",
-      "who created reze",
-      "who made reze",
-    ];
-
+    // Reze identity
     if (
-      identityQuestions.some((question) =>
-        lower.includes(question)
+      IDENTITY_PHRASES.some((phrase) =>
+        lowerMessage.includes(phrase)
       )
     ) {
       return NextResponse.json({
@@ -62,9 +51,10 @@ export async function POST(request) {
       });
     }
 
+    // Reze creator/founder
     if (
-      creatorQuestions.some((question) =>
-        lower.includes(question)
+      CREATOR_PHRASES.some((phrase) =>
+        lowerMessage.includes(phrase)
       )
     ) {
       return NextResponse.json({
@@ -72,13 +62,7 @@ export async function POST(request) {
       });
     }
 
-    /*
-      For now this connects Reze to your existing AI endpoint.
-
-      We will add real internet search in the next part,
-      so Reze can search the web before answering current questions.
-    */
-
+    // Send normal questions to your existing AI endpoint
     const response = await fetch(
       `${request.nextUrl.origin}/api/chat`,
       {
@@ -87,14 +71,23 @@ export async function POST(request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt: `${REZE_SYSTEM_PROMPT}
+          prompt: `
+You are Reze, an AI assistant.
+
+Your identity:
+- Your name is Reze.
+- You are an AI.
+- Do not mention Tahsin unless the user specifically asks who created, made, built, founded, or developed you.
+- Be helpful, friendly, natural, and concise.
 
 User question:
 ${message}
 
-Answer the user directly. Do not mention Tahsin unless the question is specifically about your creator or founder.`,
-          }),
-        }
+Answer the user directly.
+          `.trim(),
+          tone: "Friendly",
+          length: "Medium",
+        }),
       }
     );
 
@@ -107,7 +100,9 @@ Answer the user directly. Do not mention Tahsin unless the question is specifica
             data?.error ||
             "Reze could not generate an answer.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
@@ -124,7 +119,14 @@ Answer the user directly. Do not mention Tahsin unless the question is specifica
     }
 
     if (!answer) {
-      throw new Error("The AI returned an empty response.");
+      return NextResponse.json(
+        {
+          error: "The AI returned an empty response.",
+        },
+        {
+          status: 500,
+        }
+      );
     }
 
     return NextResponse.json({
@@ -139,7 +141,9 @@ Answer the user directly. Do not mention Tahsin unless the question is specifica
           error?.message ||
           "Something went wrong with Reze.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }
