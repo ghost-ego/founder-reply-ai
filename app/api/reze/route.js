@@ -84,10 +84,7 @@ function getAnonymousId(request) {
       "reze_anonymous_id"
     )?.value;
 
-  return (
-    existing ||
-    crypto.randomUUID()
-  );
+  return existing || crypto.randomUUID();
 }
 
 /* =========================================================
@@ -169,7 +166,7 @@ async function getMemories(
     .order("importance", {
       ascending: false,
     })
-    .limit(20);
+    .limit(8);
 
   if (error) {
     console.error(
@@ -437,7 +434,7 @@ function answerMemoryQuestion(
 }
 
 /* =========================================================
-   AUTOMATIC LONG-TERM MEMORY
+   LONG-TERM MEMORY EXTRACTION
 ========================================================= */
 
 async function extractLongTermMemory(
@@ -446,11 +443,8 @@ async function extractLongTermMemory(
   conversation
 ) {
   /*
-    IMPORTANT:
-
-    We only run this occasionally.
-    This prevents Gemini from being called
-    for memory extraction after every message.
+    Do not spend Gemini requests on
+    short conversations.
   */
 
   if (
@@ -460,13 +454,7 @@ async function extractLongTermMemory(
   }
 
   /*
-    Only run when conversation length
-    reaches a multiple of 8.
-
-    Example:
-    8 messages
-    16 messages
-    24 messages
+    Only extract memories every 8 messages.
   */
 
   if (
@@ -485,7 +473,7 @@ async function extractLongTermMemory(
 
   const recentConversation =
     conversation
-      .slice(-12)
+      .slice(-8)
       .map(
         (message) =>
           `${message.role}: ${message.content}`
@@ -528,7 +516,7 @@ DO NOT SAVE:
 - Temporary emotions
 - Random questions
 - Sensitive personal information
-- One-time details that will not matter later
+- One-time details
 
 Return ONLY JSON:
 
@@ -539,7 +527,7 @@ Return ONLY JSON:
   "importance": 1
 }
 
-If there is a useful memory:
+If useful:
 
 {
   "shouldSave": true,
@@ -568,11 +556,6 @@ ${recentConversation}
       );
 
     if (!response.ok) {
-      /*
-        Never let memory extraction
-        break the main chat.
-      */
-
       console.error(
         "Memory extraction status:",
         response.status
@@ -631,11 +614,6 @@ ${recentConversation}
       importance
     );
   } catch (error) {
-    /*
-      Memory failure must NEVER
-      break Reze.
-    */
-
     console.error(
       "Long-term memory error:",
       error
@@ -661,20 +639,25 @@ async function callGemini(
   }
 
   /*
-    Keep history small.
+    IMPORTANT:
+    Only the 6 newest messages are
+    sent to Gemini.
+
+    This reduces token usage.
   */
 
   const recentMessages =
-    messages.slice(-10);
+    messages.slice(-6);
 
   /*
-    Memories become context.
+    Only the 8 most important
+    memories are sent.
   */
 
   const memoryText =
     memories.length > 0
       ? memories
-          .slice(0, 15)
+          .slice(0, 8)
           .map(
             (memory) =>
               `- ${memory.memory}`
@@ -774,6 +757,10 @@ Conversation:
 
       return answer.trim();
     }
+
+    /*
+      Retry one time after a 429.
+    */
 
     if (
       response.status === 429 &&
@@ -894,6 +881,16 @@ export async function POST(
         detected.memory,
         10
       );
+
+      /*
+        Refresh memories after saving.
+      */
+
+      memories =
+        await getMemories(
+          supabase,
+          anonymousId
+        );
 
       let answer;
 
@@ -1073,7 +1070,7 @@ export async function POST(
     }
 
     /* =====================================================
-       LOAD HISTORY
+       LOAD ONLY RECENT HISTORY
     ===================================================== */
 
     const {
@@ -1092,9 +1089,18 @@ export async function POST(
         anonymousId
       )
       .order("created_at", {
-        ascending: true,
+        ascending: false,
       })
-      .limit(10);
+      .limit(6);
+
+    /*
+      Supabase returned newest first.
+      Reverse it so Gemini sees the
+      conversation in normal order.
+    */
+
+    const recentHistory =
+      (history || []).reverse();
 
     /* =====================================================
        ASK GEMINI
@@ -1105,7 +1111,7 @@ export async function POST(
     try {
       answer =
         await callGemini(
-          history || [],
+          recentHistory,
           memories
         );
     } catch (error) {
@@ -1183,7 +1189,7 @@ export async function POST(
     ===================================================== */
 
     const completeConversation = [
-      ...(history || []),
+      ...recentHistory,
       {
         role: "assistant",
         content: answer,
@@ -1191,9 +1197,8 @@ export async function POST(
     ];
 
     /*
-      This runs only every 8 messages.
-
-      It does NOT affect the main answer.
+      Memory extraction is intentionally
+      infrequent to reduce Gemini usage.
     */
 
     await extractLongTermMemory(
