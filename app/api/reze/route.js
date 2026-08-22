@@ -46,11 +46,7 @@ PERSONALITY:
 IMPORTANT RESPONSE STYLE
 =========================================================
 
-Your most important rule:
-
 BE SHORT BY DEFAULT.
-
-The user normally wants the answer quickly.
 
 For a simple question:
 - Give the direct answer.
@@ -58,62 +54,14 @@ For a simple question:
 - Do not add unnecessary background.
 - Do not create lists unless useful.
 - Do not dump research results.
-- Do not explain things the user didn't ask about.
 
-Examples:
-
-User:
-"What is the current price of Bitcoin?"
-
-Good:
-"Bitcoin is around $63K right now. 😏 It moves fast, though."
-
-Bad:
-"Bitcoin's price is hovering around $63K right now. Kraken lists it at..., Binance lists it at..., CoinMarketCap reports..., therefore..."
-
-User:
-"Who is Elon Musk?"
-
-Good:
-"Elon Musk is a tech entrepreneur known for Tesla, SpaceX, and several other companies."
-
-User:
-"Hello"
-
-Good:
-"Hey. 😊 What's on your mind?"
-
-User:
-"2+2?"
-
-Good:
-"4. 😌"
-
-=========================================================
-WHEN TO GIVE A LONG ANSWER
-=========================================================
-
-Only give a detailed answer when:
-
-- The user explicitly asks for a long answer.
-- The user says "explain".
-- The user says "explain in detail".
-- The user says "in detail".
-- The user says "tell me everything".
-- The user says "give me details".
-- The user says "deep dive".
-- The user says "why".
-- The user says "how does it work" when explanation is needed.
-- The question is genuinely complex and cannot be answered accurately in a short response.
-- The user explicitly asks for examples or steps.
-
-Even then:
+For complex questions:
+- Explain clearly.
 - Stay focused.
-- Don't add irrelevant information.
-- Use headings or bullets only when they improve clarity.
+- Use headings or bullets only when useful.
 
 =========================================================
-CURRENT / LIVE INFORMATION
+CURRENT INFORMATION
 =========================================================
 
 When fresh web-search results are provided:
@@ -121,30 +69,10 @@ When fresh web-search results are provided:
 - Use them as the source of current information.
 - Answer the actual question first.
 - Keep the answer short unless the user asks for details.
-- Never dump all search results into the answer.
-- Do not repeat the same information from multiple sources.
-- If multiple sources give slightly different numbers, give a reasonable range or say "around".
-- Never invent a number.
+- Never dump all search results.
+- Never invent numbers.
 - Never pretend old knowledge is current.
-- If the result is time-sensitive, make that clear.
-
-For example:
-
-User:
-"What is the current price of Bitcoin?"
-
-Preferred style:
-"Bitcoin is around $63K right now. 😏 It can move quickly, so the exact price depends on the exchange."
-
-If the user asks:
-"What's the current Bitcoin price? Give me details."
-
-Then provide:
-- Current approximate price.
-- Relevant movement.
-- Important differences between sources if meaningful.
-- Brief explanation.
-- Sources.
+- If information is time-sensitive, make that clear.
 
 =========================================================
 EMOTION / PERSONALITY
@@ -161,25 +89,7 @@ Examples:
 - "Honestly? I'd be careful with that."
 - "Easy one. 😌"
 
-Do NOT add an emoji to every answer.
-
-Do NOT force personality into serious topics.
-
-=========================================================
-WEB SOURCES
-=========================================================
-
-When web search is used:
-
-- Use the freshest useful information.
-- Prefer primary or highly reliable sources.
-- Don't dump raw URLs into the main answer.
-- Only include a Sources section when useful.
-- Keep Sources short.
-- Never invent URLs.
-- Use the exact URLs supplied by the search results.
-
-For a very simple current question, you may answer in 1-3 sentences and then provide a tiny Sources section if needed.
+Do not add an emoji to every answer.
 
 =========================================================
 MEMORY
@@ -224,11 +134,33 @@ function getSupabase() {
 }
 
 /* =========================================================
-   DIRECT MEMORY DETECTION
+   ANONYMOUS USER ID
+========================================================= */
+
+function getAnonymousId(request) {
+  const existing =
+    request.cookies.get(
+      "reze_anonymous_id"
+    )?.value;
+
+  return {
+    id:
+      existing ||
+      crypto.randomUUID(),
+
+    existingCookie:
+      Boolean(existing),
+  };
+}
+
+/* =========================================================
+   MEMORY DETECTION
 ========================================================= */
 
 function detectMemory(message) {
   let match;
+
+  /* USER NAME */
 
   match = message.match(
     /^(?:and\s+)?my name is\s+(.+)$/i
@@ -251,6 +183,8 @@ function detectMemory(message) {
         `The user's name is ${name}.`,
     };
   }
+
+  /* CRUSH */
 
   match = message.match(
     /^(?:and\s+)?my crush(?:'s)?(?:\s+name)?\s+is\s+(.+)$/i
@@ -282,6 +216,8 @@ function getSpecialAnswer(message) {
       .trim()
       .replace(/[?!.,]+$/g, "");
 
+  /* IDENTITY */
+
   const identityQuestions = [
     "who are you",
     "who r you",
@@ -306,6 +242,8 @@ function getSpecialAnswer(message) {
   ) {
     return "I am Reze. 😊";
   }
+
+  /* CREATOR */
 
   const creatorQuestions = [
     "who made you",
@@ -333,15 +271,14 @@ function getSpecialAnswer(message) {
     return "Tahsin.";
   }
 
+  /* TINNI */
+
   const asksAboutTinni =
     text.includes("who is tinni") ||
     text.includes("who's tinni") ||
     text.includes("whos tinni") ||
     text.includes("do you know tinni") ||
     text.includes("do u know tinni") ||
-    text.includes("do you know the girl named tinni") ||
-    text.includes("do you know the girl name tinni") ||
-    text.includes("who is the girl tinni") ||
     text.includes("tell me about tinni") ||
     text === "tinni";
 
@@ -366,7 +303,7 @@ async function getMemories(
   } = await supabase
     .from("reze_memories")
     .select(
-      "id, memory, category, importance"
+      "id, memory, category, importance, created_at"
     )
     .eq(
       "anonymous_id",
@@ -375,7 +312,10 @@ async function getMemories(
     .order("importance", {
       ascending: false,
     })
-    .limit(8);
+    .order("created_at", {
+      ascending: false,
+    })
+    .limit(10);
 
   if (error) {
     console.error(
@@ -400,8 +340,17 @@ async function saveMemory(
   memory,
   importance = 8
 ) {
+  if (
+    !anonymousId ||
+    !category ||
+    !memory
+  ) {
+    return;
+  }
+
   const {
     data: existing,
+    error: findError,
   } = await supabase
     .from("reze_memories")
     .select("id")
@@ -416,14 +365,34 @@ async function saveMemory(
     .limit(1)
     .maybeSingle();
 
+  if (findError) {
+    console.error(
+      "Memory lookup error:",
+      findError
+    );
+
+    return;
+  }
+
   if (existing?.id) {
     const {
       error,
     } = await supabase
       .from("reze_memories")
       .update({
-        memory,
-        importance,
+        memory:
+          memory.trim(),
+
+        importance:
+          Math.min(
+            10,
+            Math.max(
+              1,
+              Number(
+                importance
+              ) || 5
+            )
+          ),
       })
       .eq(
         "id",
@@ -451,10 +420,25 @@ async function saveMemory(
     .insert({
       anonymous_id:
         anonymousId,
-      user_id: null,
-      memory,
+
+      user_id:
+        null,
+
+      memory:
+        memory.trim(),
+
       category,
-      importance,
+
+      importance:
+        Math.min(
+          10,
+          Math.max(
+            1,
+            Number(
+              importance
+            ) || 5
+          )
+        ),
     });
 
   if (error) {
@@ -767,7 +751,7 @@ function isNewsQuery(message) {
 }
 
 /* =========================================================
-   TAVILY WEB SEARCH
+   TAVILY SEARCH
 ========================================================= */
 
 async function searchWeb(query) {
@@ -784,33 +768,51 @@ async function searchWeb(query) {
     isNewsQuery(query);
 
   const body = {
-    query: query.slice(0, 400),
-    topic: news
-      ? "news"
-      : "general",
-    search_depth: "basic",
-    max_results: 5,
-    include_answer: true,
-    include_raw_content: false,
+    query:
+      query.slice(0, 400),
+
+    topic:
+      news
+        ? "news"
+        : "general",
+
+    search_depth:
+      "basic",
+
+    max_results:
+      5,
+
+    include_answer:
+      true,
+
+    include_raw_content:
+      false,
   };
 
   if (news) {
-    body.time_range = "week";
+    body.time_range =
+      "week";
   }
 
   const response =
     await fetch(
       "https://api.tavily.com/search",
       {
-        method: "POST",
+        method:
+          "POST",
+
         headers: {
           "Content-Type":
             "application/json",
+
           Authorization:
             `Bearer ${apiKey}`,
         },
+
         body:
-          JSON.stringify(body),
+          JSON.stringify(
+            body
+          ),
       }
     );
 
@@ -824,7 +826,8 @@ async function searchWeb(query) {
     );
 
     if (
-      response.status === 429
+      response.status ===
+      429
     ) {
       throw new Error(
         "Web search is temporarily rate-limited. Please try again later."
@@ -862,12 +865,15 @@ async function searchWeb(query) {
             title:
               result?.title ||
               "Untitled source",
+
             url:
               result?.url ||
               "",
+
             content:
               result?.content ||
               "",
+
             published_date:
               result?.published_date ||
               null,
@@ -881,10 +887,12 @@ async function searchWeb(query) {
 }
 
 /* =========================================================
-   FORMAT WEB RESULTS
+   WEB CONTEXT
 ========================================================= */
 
-function buildWebContext(webData) {
+function buildWebContext(
+  webData
+) {
   if (
     !webData ||
     !webData.results?.length
@@ -898,12 +906,18 @@ function buildWebContext(webData) {
         (result, index) =>
           `
 SOURCE ${index + 1}
-Title: ${result.title}
-URL: ${result.url}
-Published: ${
-            result.published_date ||
-            "Not provided"
-          }
+
+Title:
+${result.title}
+
+URL:
+${result.url}
+
+Published:
+${
+  result.published_date ||
+  "Not provided"
+}
 
 Content:
 ${result.content}
@@ -918,7 +932,10 @@ Search query:
 ${webData.query}
 
 Tavily summary:
-${webData.answer || "No summary provided."}
+${
+  webData.answer ||
+  "No summary provided."
+}
 
 ${sources}
 `;
@@ -933,6 +950,16 @@ async function extractLongTermMemory(
   anonymousId,
   conversation
 ) {
+  /*
+   IMPORTANT:
+
+   We now require 8 messages and actually send
+   the last 8 messages.
+
+   Previous version checked for 8 but only supplied
+   7 messages, so this function normally never ran.
+  */
+
   if (
     conversation.length < 8
   ) {
@@ -967,13 +994,17 @@ async function extractLongTermMemory(
       await fetch(
         "https://api.groq.com/openai/v1/chat/completions",
         {
-          method: "POST",
+          method:
+            "POST",
+
           headers: {
             "Content-Type":
               "application/json",
+
             Authorization:
               `Bearer ${apiKey}`,
           },
+
           body:
             JSON.stringify({
               model:
@@ -981,7 +1012,9 @@ async function extractLongTermMemory(
 
               messages: [
                 {
-                  role: "system",
+                  role:
+                    "system",
+
                   content: `
 Analyze this conversation for ONE useful long-term memory about the user.
 
@@ -1026,19 +1059,25 @@ If useful:
 importance must be 1-10.
 `,
                 },
+
                 {
-                  role: "user",
+                  role:
+                    "user",
+
                   content:
                     recentConversation,
                 },
               ],
 
-              temperature: 0.1,
+              temperature:
+                0.1,
 
-              max_tokens: 250,
+              max_tokens:
+                250,
 
               response_format: {
-                type: "json_object",
+                type:
+                  "json_object",
               },
             }),
         }
@@ -1071,6 +1110,10 @@ importance must be 1-10.
       result =
         JSON.parse(text);
     } catch {
+      console.error(
+        "Could not parse memory JSON."
+      );
+
       return;
     }
 
@@ -1130,12 +1173,19 @@ async function callGroq(
   }
 
   const recentMessages =
-    messages.slice(-6);
+    messages
+      .filter(
+        (message) =>
+          message &&
+          typeof message.content ===
+            "string"
+      )
+      .slice(-8);
 
   const memoryText =
     memories.length > 0
       ? memories
-          .slice(0, 8)
+          .slice(0, 10)
           .map(
             (memory) =>
               `- ${memory.memory}`
@@ -1163,9 +1213,7 @@ You may use:
 - examples
 - explanations
 
-But stay focused on the user's question.
-
-Do not add irrelevant information.
+Stay focused on the user's question.
 `
       : `
 The user did NOT ask for a detailed answer.
@@ -1175,31 +1223,26 @@ Keep the response SHORT.
 Usually:
 - 1 to 3 sentences.
 - Direct answer first.
-- Add a small natural emotional/personality touch when appropriate.
+- Add a small natural personality touch when appropriate.
 - Do not give a long explanation.
 - Do not list every source detail.
 - Do not repeat the question.
-
-For simple factual questions, answer the fact directly.
-
-For current prices, scores, weather, news, rankings, etc.,
-give the current result first.
-
-Example:
-
-"Bitcoin is around $63K right now. 😏 It moves fast, though."
-
-Do NOT turn a simple question into an article.
 `;
 
   const systemContent = `
 ${REZE_PERSONALITY}
 
-LONG-TERM MEMORY ABOUT THE USER:
+=========================================================
+LONG-TERM MEMORY ABOUT THE USER
+=========================================================
 
 ${memoryText}
 
 Use memories naturally when relevant.
+
+=========================================================
+RESPONSE LENGTH
+=========================================================
 
 ${responseInstruction}
 
@@ -1216,13 +1259,10 @@ Use the web results below.
 
 Rules:
 - Use current information from these results.
-- Answer the user's exact question first.
+- Answer the exact question first.
 - Do not dump all search results.
-- If the user asked for a short answer, keep it short.
-- If sources disagree, mention the difference briefly only if important.
 - Never invent facts.
-- Never invent URLs.
-- Use exact source URLs when a Sources section is appropriate.
+- If sources disagree, mention it briefly when important.
 
 ${webContext}
 `
@@ -1232,7 +1272,9 @@ ${webContext}
 
   const groqMessages = [
     {
-      role: "system",
+      role:
+        "system",
+
       content:
         systemContent,
     },
@@ -1244,6 +1286,7 @@ ${webContext}
           "assistant"
             ? "assistant"
             : "user",
+
         content:
           message.content,
       })
@@ -1254,7 +1297,8 @@ ${webContext}
     await fetch(
       "https://api.groq.com/openai/v1/chat/completions",
       {
-        method: "POST",
+        method:
+          "POST",
 
         headers: {
           "Content-Type":
@@ -1272,9 +1316,10 @@ ${webContext}
             messages:
               groqMessages,
 
-            temperature: detailed
-              ? 0.7
-              : 0.65,
+            temperature:
+              detailed
+                ? 0.7
+                : 0.65,
 
             max_tokens:
               detailed
@@ -1342,22 +1387,169 @@ function createRezeResponse(
       "reze_anonymous_id",
       anonymousId,
       {
-        httpOnly: true,
+        httpOnly:
+          true,
+
         secure:
           process.env.NODE_ENV ===
           "production",
-        sameSite: "lax",
+
+        sameSite:
+          "lax",
+
         maxAge:
           60 *
           60 *
           24 *
           365,
-        path: "/",
+
+        path:
+          "/",
       }
     );
   }
 
   return response;
+}
+
+/* =========================================================
+   SAVE MESSAGE
+========================================================= */
+
+async function saveMessage(
+  supabase,
+  {
+    conversationId,
+    anonymousId,
+    role,
+    content,
+  }
+) {
+  const {
+    error,
+  } = await supabase
+    .from("reze_messages")
+    .insert({
+      conversation_id:
+        conversationId,
+
+      anonymous_id:
+        anonymousId,
+
+      user_id:
+        null,
+
+      role,
+
+      content,
+    });
+
+  if (error) {
+    console.error(
+      `${role} message save error:`,
+      error
+    );
+
+    return false;
+  }
+
+  return true;
+}
+
+/* =========================================================
+   CREATE CONVERSATION
+========================================================= */
+
+async function createConversation(
+  supabase,
+  anonymousId,
+  message
+) {
+  const {
+    data,
+    error,
+  } = await supabase
+    .from(
+      "reze_conversations"
+    )
+    .insert({
+      anonymous_id:
+        anonymousId,
+
+      user_id:
+        null,
+
+      title:
+        message.length > 60
+          ? `${message.slice(
+              0,
+              60
+            )}...`
+          : message,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    console.error(
+      "Conversation creation error:",
+      error
+    );
+
+    throw new Error(
+      "Could not create Reze conversation."
+    );
+  }
+
+  return data.id;
+}
+
+/* =========================================================
+   LOAD HISTORY
+========================================================= */
+
+async function loadConversationHistory(
+  supabase,
+  conversationId,
+  anonymousId
+) {
+  const {
+    data,
+    error,
+  } = await supabase
+    .from("reze_messages")
+    .select(
+      "role, content, created_at"
+    )
+    .eq(
+      "conversation_id",
+      conversationId
+    )
+    .eq(
+      "anonymous_id",
+      anonymousId
+    )
+    .order(
+      "created_at",
+      {
+        ascending:
+          false,
+      }
+    )
+    .limit(8);
+
+  if (error) {
+    console.error(
+      "History load error:",
+      error
+    );
+
+    return [];
+  }
+
+  return (
+    data || []
+  ).reverse();
 }
 
 /* =========================================================
@@ -1368,8 +1560,16 @@ export async function POST(
   request
 ) {
   try {
+    /* -----------------------------------------------------
+       SUPABASE
+    ----------------------------------------------------- */
+
     const supabase =
       getSupabase();
+
+    /* -----------------------------------------------------
+       REQUEST
+    ----------------------------------------------------- */
 
     const body =
       await request.json();
@@ -1387,13 +1587,15 @@ export async function POST(
             "Message cannot be empty.",
         },
         {
-          status: 400,
+          status:
+            400,
         }
       );
     }
 
     if (
-      message.length > 12000
+      message.length >
+      12000
     ) {
       return NextResponse.json(
         {
@@ -1401,19 +1603,23 @@ export async function POST(
             "That message is too long.",
         },
         {
-          status: 400,
+          status:
+            400,
         }
       );
     }
 
-    const oldCookie =
-      request.cookies.get(
-        "reze_anonymous_id"
-      )?.value;
+    /* -----------------------------------------------------
+       ANONYMOUS ID
+    ----------------------------------------------------- */
 
-    const anonymousId =
-      oldCookie ||
-      crypto.randomUUID();
+    const {
+      id: anonymousId,
+      existingCookie,
+    } =
+      getAnonymousId(
+        request
+      );
 
     let conversationId =
       body?.conversationId ||
@@ -1441,7 +1647,7 @@ export async function POST(
 
         anonymousId,
 
-        oldCookie
+        existingCookie
       );
     }
 
@@ -1460,7 +1666,9 @@ export async function POST(
     ===================================================== */
 
     const detected =
-      detectMemory(message);
+      detectMemory(
+        message
+      );
 
     if (detected) {
       await saveMemory(
@@ -1499,6 +1707,7 @@ export async function POST(
       return createRezeResponse(
         {
           answer,
+
           conversationId:
             conversationId ||
             null,
@@ -1506,7 +1715,7 @@ export async function POST(
 
         anonymousId,
 
-        oldCookie
+        existingCookie
       );
     }
 
@@ -1533,7 +1742,7 @@ export async function POST(
 
         anonymousId,
 
-        oldCookie
+        existingCookie
       );
     }
 
@@ -1542,87 +1751,40 @@ export async function POST(
     ===================================================== */
 
     if (!conversationId) {
-      const {
-        data,
-        error,
-      } = await supabase
-        .from(
-          "reze_conversations"
-        )
-        .insert({
-          anonymous_id:
-            anonymousId,
-
-          user_id: null,
-
-          title:
-            message.length > 60
-              ? `${message.slice(
-                  0,
-                  60
-                )}...`
-              : message,
-        })
-        .select("id")
-        .single();
-
-      if (error) {
-        console.error(
-          "Conversation creation error:",
-          error
-        );
-
-        return NextResponse.json(
-          {
-            error:
-              "Could not create Reze conversation.",
-          },
-          {
-            status: 500,
-          }
-        );
-      }
-
       conversationId =
-        data.id;
+        await createConversation(
+          supabase,
+          anonymousId,
+          message
+        );
     }
 
     /* =====================================================
        SAVE USER MESSAGE
     ===================================================== */
 
-    const {
-      error:
-        userMessageError,
-    } = await supabase
-      .from("reze_messages")
-      .insert({
-        conversation_id:
+    const userSaved =
+      await saveMessage(
+        supabase,
+        {
           conversationId,
-
-        anonymous_id:
           anonymousId,
-
-        user_id: null,
-
-        role: "user",
-
-        content: message,
-      });
-
-    if (userMessageError) {
-      console.error(
-        "User message error:",
-        userMessageError
+          role:
+            "user",
+          content:
+            message,
+        }
       );
 
+    if (!userSaved) {
       return NextResponse.json(
         {
           error:
             "Could not save your message.",
         },
         {
-          status: 500,
+          status:
+            500,
         }
       );
     }
@@ -1631,31 +1793,15 @@ export async function POST(
        LOAD RECENT HISTORY
     ===================================================== */
 
-    const {
-      data: history,
-    } = await supabase
-      .from("reze_messages")
-      .select(
-        "role, content, created_at"
-      )
-      .eq(
-        "conversation_id",
-        conversationId
-      )
-      .eq(
-        "anonymous_id",
-        anonymousId
-      )
-      .order("created_at", {
-        ascending: false,
-      })
-      .limit(6);
-
     const recentHistory =
-      (history || []).reverse();
+      await loadConversationHistory(
+        supabase,
+        conversationId,
+        anonymousId
+      );
 
     /* =====================================================
-       DETERMINE RESPONSE LENGTH
+       RESPONSE LENGTH
     ===================================================== */
 
     const detailed =
@@ -1687,12 +1833,20 @@ export async function POST(
           error
         );
 
-        webData = null;
+        /*
+         Do not kill the entire chat if Tavily
+         temporarily fails.
+
+         Reze will still answer using Groq.
+        */
+
+        webData =
+          null;
       }
     }
 
     /* =====================================================
-       ASK GROQ
+       GROQ
     ===================================================== */
 
     let answer;
@@ -1719,9 +1873,10 @@ export async function POST(
         },
         {
           status:
-            error?.message?.includes(
-              "rate limit"
-            )
+            error?.message?.toLowerCase()
+              ?.includes(
+                "rate limit"
+              )
               ? 429
               : 500,
         }
@@ -1732,37 +1887,26 @@ export async function POST(
        SAVE ASSISTANT MESSAGE
     ===================================================== */
 
-    const {
-      error:
-        assistantError,
-    } = await supabase
-      .from("reze_messages")
-      .insert({
-        conversation_id:
-          conversationId,
-
-        anonymous_id:
-          anonymousId,
-
-        user_id: null,
-
-        role: "assistant",
-
-        content: answer,
-      });
-
-    if (assistantError) {
-      console.error(
-        "Assistant save error:",
-        assistantError
-      );
-    }
+    await saveMessage(
+      supabase,
+      {
+        conversationId,
+        anonymousId,
+        role:
+          "assistant",
+        content:
+          answer,
+      }
+    );
 
     /* =====================================================
        UPDATE CONVERSATION
     ===================================================== */
 
-    await supabase
+    const {
+      error:
+        updateConversationError,
+    } = await supabase
       .from(
         "reze_conversations"
       )
@@ -1779,25 +1923,58 @@ export async function POST(
         anonymousId
       );
 
+    if (
+      updateConversationError
+    ) {
+      console.error(
+        "Conversation update error:",
+        updateConversationError
+      );
+    }
+
     /* =====================================================
        LONG-TERM MEMORY
     ===================================================== */
+
+    /*
+     recentHistory already contains the user's latest
+     message because we saved it before loading history.
+
+     Then add Reze's answer.
+
+     This gives the extractor the complete recent exchange.
+    */
 
     const completeConversation =
       [
         ...recentHistory,
 
         {
-          role: "assistant",
-          content: answer,
+          role:
+            "assistant",
+
+          content:
+            answer,
         },
       ];
 
-    await extractLongTermMemory(
-      supabase,
-      anonymousId,
-      completeConversation
-    );
+    /*
+     Run memory extraction without allowing a memory
+     failure to break the user's chat response.
+    */
+
+    try {
+      await extractLongTermMemory(
+        supabase,
+        anonymousId,
+        completeConversation
+      );
+    } catch (memoryError) {
+      console.error(
+        "Memory extraction failed:",
+        memoryError
+      );
+    }
 
     /* =====================================================
        RESPONSE
@@ -1810,7 +1987,9 @@ export async function POST(
         conversationId,
 
         webSearchUsed:
-          Boolean(webData),
+          Boolean(
+            webData
+          ),
 
         sources:
           webData?.results?.map(
@@ -1830,7 +2009,7 @@ export async function POST(
 
       anonymousId,
 
-      oldCookie
+      existingCookie
     );
   } catch (error) {
     console.error(
@@ -1845,7 +2024,8 @@ export async function POST(
           "Reze encountered an unexpected error.",
       },
       {
-        status: 500,
+        status:
+          500,
       }
     );
   }
