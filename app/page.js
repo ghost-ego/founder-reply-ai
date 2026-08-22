@@ -3,14 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 
 export default function HomePage() {
+  const [mode, setMode] = useState("reze");
+  const [message, setMessage] = useState("");
+  const [linkedinPost, setLinkedinPost] = useState("");
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [conversationId, setConversationId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [conversationId, setConversationId] = useState(null);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  /* =========================================================
+     AUTO SCROLL
+  ========================================================= */
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
@@ -18,10 +24,28 @@ export default function HomePage() {
     });
   }, [messages, loading]);
 
-  function startNewChat() {
+  /* =========================================================
+     RESET WHEN SWITCHING
+  ========================================================= */
+
+  function switchMode(newMode) {
+    setMode(newMode);
     setMessages([]);
+    setMessage("");
+    setLinkedinPost("");
     setConversationId(null);
-    setInput("");
+    setSidebarOpen(false);
+  }
+
+  /* =========================================================
+     NEW CHAT
+  ========================================================= */
+
+  function newChat() {
+    setMessages([]);
+    setMessage("");
+    setLinkedinPost("");
+    setConversationId(null);
     setSidebarOpen(false);
 
     setTimeout(() => {
@@ -29,18 +53,18 @@ export default function HomePage() {
     }, 100);
   }
 
-  async function sendMessage() {
-    const message = input.trim();
+  /* =========================================================
+     SEND REZE MESSAGE
+  ========================================================= */
 
-    if (!message || loading) {
-      return;
-    }
+  async function sendRezeMessage() {
+    const text = message.trim();
 
-    setInput("");
+    if (!text || loading) return;
 
     const userMessage = {
       role: "user",
-      content: message,
+      content: text,
     };
 
     setMessages((previous) => [
@@ -48,16 +72,17 @@ export default function HomePage() {
       userMessage,
     ]);
 
+    setMessage("");
     setLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch("/api/reze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message,
+          message: text,
           conversationId,
         }),
       });
@@ -72,9 +97,7 @@ export default function HomePage() {
       }
 
       if (data?.conversationId) {
-        setConversationId(
-          data.conversationId
-        );
+        setConversationId(data.conversationId);
       }
 
       setMessages((previous) => [
@@ -83,35 +106,148 @@ export default function HomePage() {
           role: "assistant",
           content:
             data?.answer ||
-            "I'm here. Try asking me again.",
+            "I couldn't generate a response.",
         },
       ]);
     } catch (error) {
+      console.error("Reze error:", error);
+
       setMessages((previous) => [
         ...previous,
         {
           role: "assistant",
+          error: true,
           content:
             error?.message ||
-            "Something went wrong. Try again.",
-          error: true,
+            "Something went wrong while connecting to Reze.",
         },
       ]);
     } finally {
       setLoading(false);
-
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 50);
     }
   }
+
+  /* =========================================================
+     SEND FOUNDER REPLY
+  ========================================================= */
+
+  async function sendFounderReply() {
+    const post = linkedinPost.trim();
+
+    if (!post || loading) return;
+
+    const userMessage = {
+      role: "user",
+      content: post,
+    };
+
+    setMessages((previous) => [
+      ...previous,
+      userMessage,
+    ]);
+
+    setLinkedinPost("");
+    setLoading(true);
+
+    try {
+      /*
+        IMPORTANT:
+        FounderReply uses /api/chat.
+        Reze NEVER uses this endpoint.
+      */
+
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          linkedinPost: post,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ||
+            "FounderReply could not generate a reply."
+        );
+      }
+
+      const answer =
+        data?.reply ||
+        data?.answer ||
+        data?.content ||
+        data?.message ||
+        "I couldn't generate a reply.";
+
+      setMessages((previous) => [
+        ...previous,
+        {
+          role: "assistant",
+          content: answer,
+        },
+      ]);
+    } catch (error) {
+      console.error(
+        "FounderReply error:",
+        error
+      );
+
+      setMessages((previous) => [
+        ...previous,
+        {
+          role: "assistant",
+          error: true,
+          content:
+            error?.message ||
+            "Something went wrong while connecting to FounderReply AI.",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* =========================================================
+     SEND
+  ========================================================= */
+
+  function handleSend() {
+    if (mode === "reze") {
+      sendRezeMessage();
+    } else {
+      sendFounderReply();
+    }
+  }
+
+  /* =========================================================
+     ENTER KEY
+  ========================================================= */
 
   function handleKeyDown(event) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      sendMessage();
+      handleSend();
     }
   }
+
+  /* =========================================================
+     REZE WELCOME
+  ========================================================= */
+
+  const showWelcome =
+    mode === "reze" &&
+    messages.length === 0;
+
+  /* =========================================================
+     FOUNDER WELCOME
+  ========================================================= */
+
+  const showFounderWelcome =
+    mode === "founder" &&
+    messages.length === 0;
 
   return (
     <>
@@ -127,626 +263,664 @@ export default function HomePage() {
           width: 100%;
           min-height: 100%;
           background: #11131b;
-          color: #ffffff;
+          color: #f5f5f7;
           font-family:
             Inter,
             -apple-system,
             BlinkMacSystemFont,
             "Segoe UI",
-            Roboto,
-            Helvetica,
-            Arial,
             sans-serif;
         }
 
         body {
-          overflow-x: hidden;
+          overflow: hidden;
         }
 
         button,
-        textarea {
-          font-family: inherit;
+        textarea,
+        input {
+          font: inherit;
         }
 
-        ::-webkit-scrollbar {
-          width: 7px;
-        }
-
-        ::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-          background: #363442;
-          border-radius: 10px;
+        button {
+          -webkit-tap-highlight-color: transparent;
         }
       `}</style>
 
       <div className="app">
-        {/* =================================================
-            MOBILE TOP BAR
-        ================================================= */}
 
-        <header className="mobileTopBar">
-          <button
-            className="menuButton"
-            onClick={() =>
-              setSidebarOpen(true)
-            }
-            aria-label="Open menu"
-          >
-            <span />
-            <span />
-            <span />
-          </button>
+        {/* =====================================================
+            SIDEBAR
+        ===================================================== */}
 
-          <div className="mobileBrand">
-            <div className="miniAvatar">
+        <aside
+          className={`sidebar ${
+            sidebarOpen ? "open" : ""
+          }`}
+        >
+          <div className="sidebarTop">
+            <button
+              className="newChat"
+              onClick={newChat}
+            >
+              <span>＋</span>
+              <span>New Chat</span>
+            </button>
+          </div>
+
+          <div className="sidebarItems">
+
+            <button
+              className={`sidebarItem ${
+                mode === "reze" ? "active" : ""
+              }`}
+              onClick={() =>
+                switchMode("reze")
+              }
+            >
               <img
                 src="/reze-avatar.png"
                 alt="Reze"
-                onError={(event) => {
-                  event.currentTarget.style.display =
-                    "none";
-                }}
+                className="sidebarAvatar"
               />
-            </div>
 
-            <span>Reze</span>
+              <span>Reze</span>
+            </button>
+
+            <button
+              className={`sidebarItem ${
+                mode === "founder"
+                  ? "active"
+                  : ""
+              }`}
+              onClick={() =>
+                switchMode("founder")
+              }
+            >
+              <span className="founderIcon">
+                💼
+              </span>
+
+              <span>
+                FounderReply AI
+              </span>
+            </button>
+
           </div>
+        </aside>
 
-          <button
-            className="newChatMobile"
-            onClick={startNewChat}
-            aria-label="New chat"
-          >
-            +
-          </button>
-        </header>
-
-        {/* =================================================
-            SIDEBAR OVERLAY
-        ================================================= */}
+        {/* =====================================================
+            SIDEBAR OVERLAY MOBILE
+        ===================================================== */}
 
         {sidebarOpen && (
-          <div
-            className="sidebarOverlay"
+          <button
+            className="overlay"
+            aria-label="Close menu"
             onClick={() =>
               setSidebarOpen(false)
             }
           />
         )}
 
-        {/* =================================================
-            SIDEBAR
-        ================================================= */}
-
-        <aside
-          className={`sidebar ${
-            sidebarOpen ? "sidebarVisible" : ""
-          }`}
-        >
-          <div className="sidebarInner">
-            <button
-              className="newChatButton"
-              onClick={startNewChat}
-            >
-              <span className="plus">+</span>
-              <span>New Chat</span>
-            </button>
-
-            <div className="navItems">
-              <button
-                className="navItem active"
-                onClick={() => {
-                  setSidebarOpen(false);
-                }}
-              >
-                <span className="navIcon">
-                  🤖
-                </span>
-
-                <span>Reze</span>
-              </button>
-
-              <button
-                className="navItem"
-                onClick={() => {
-                  window.location.href =
-                    "/founder-reply";
-                }}
-              >
-                <span className="navIcon">
-                  💼
-                </span>
-
-                <span>FounderReply AI</span>
-              </button>
-            </div>
-          </div>
-        </aside>
-
-        {/* =================================================
+        {/* =====================================================
             MAIN
-        ================================================= */}
+        ===================================================== */}
 
         <main className="main">
-          {/* =================================================
-              DESKTOP HEADER
-          ================================================= */}
 
-          <div className="desktopHeader">
+          {/* ===================================================
+              TOP BAR
+          =================================================== */}
+
+          <header className="topbar">
+
             <button
-              className="desktopMenuButton"
-              aria-label="Menu"
+              className="topButton menuButton"
+              onClick={() =>
+                setSidebarOpen(true)
+              }
+              aria-label="Open menu"
             >
-              <span>⋮</span>
+              <span></span>
+              <span></span>
+              <span></span>
             </button>
-          </div>
 
-          {/* =================================================
-              WELCOME AREA
-          ================================================= */}
+            <div className="topBrand">
 
-          <section
-            className={`welcome ${
-              messages.length > 0
-                ? "welcomeSmall"
-                : ""
-            }`}
-          >
-            {messages.length === 0 ? (
-              <>
-                <h1>Reze</h1>
+              <div className="topAvatarWrap">
+                <img
+                  src="/reze-avatar.png"
+                  alt="Reze"
+                  className="topAvatar"
+                />
 
-                <p className="welcomeText">
-                  How can Reze assist you today?
-                </p>
-
-                <div className="heroAvatar">
-                  <img
-                    src="/reze-avatar.png"
-                    alt="Reze"
-                    onError={(event) => {
-                      event.currentTarget.style.display =
-                        "none";
-
-                      event.currentTarget.parentElement.classList.add(
-                        "avatarFallback"
-                      );
-                    }}
-                  />
-
+                {mode === "reze" && (
                   <span className="onlineDot" />
-                </div>
-              </>
-            ) : (
-              <div className="smallBrand">
-                <div className="smallBrandAvatar">
-                  <img
-                    src="/reze-avatar.png"
-                    alt="Reze"
-                    onError={(event) => {
-                      event.currentTarget.style.display =
-                        "none";
-                    }}
-                  />
-
-                  <span className="smallOnlineDot" />
-                </div>
-
-                <span>Reze</span>
+                )}
               </div>
-            )}
-          </section>
 
-          {/* =================================================
-              CHAT
-          ================================================= */}
+              <span className="topName">
+                {mode === "reze"
+                  ? "Reze"
+                  : "FounderReply"}
+              </span>
+
+            </div>
+
+            <button
+              className="topButton plusButton"
+              onClick={newChat}
+              aria-label="New chat"
+            >
+              +
+            </button>
+
+          </header>
+
+          {/* ===================================================
+              CHAT AREA
+          =================================================== */}
 
           <section className="chatArea">
+
+            {/* =================================================
+                REZE EMPTY STATE
+            ================================================= */}
+
+            {showWelcome && (
+              <div className="welcome">
+
+                <div className="welcomeAvatarWrap">
+
+                  <img
+                    src="/reze-avatar.png"
+                    alt="Reze"
+                    className="welcomeAvatar"
+                  />
+
+                  <span className="welcomeOnline" />
+
+                </div>
+
+                <h1>Reze</h1>
+
+                <p>
+                  How can Reze assist you
+                  today?
+                </p>
+
+              </div>
+            )}
+
+            {/* =================================================
+                FOUNDER EMPTY STATE
+            ================================================= */}
+
+            {showFounderWelcome && (
+              <div className="welcome">
+
+                <div className="welcomeAvatarWrap founderWelcomeAvatar">
+                  💼
+                </div>
+
+                <h1>
+                  FounderReply AI
+                </h1>
+
+                <p>
+                  Turn LinkedIn posts into
+                  thoughtful replies.
+                </p>
+
+              </div>
+            )}
+
+            {/* =================================================
+                MESSAGES
+            ================================================= */}
+
             <div className="messages">
+
               {messages.map(
-                (message, index) => (
+                (item, index) => (
                   <div
-                    key={`${index}-${message.role}`}
+                    key={index}
                     className={`messageRow ${
-                      message.role === "user"
+                      item.role ===
+                      "user"
                         ? "userRow"
                         : "assistantRow"
                     }`}
                   >
-                    {message.role ===
+
+                    {item.role ===
                       "assistant" && (
-                      <div className="messageAvatar">
-                        <img
-                          src="/reze-avatar.png"
-                          alt="Reze"
-                          onError={(event) => {
-                            event.currentTarget.style.display =
-                              "none";
-                          }}
-                        />
+                      <div className="smallAvatarWrap">
+                        {mode ===
+                        "reze" ? (
+                          <img
+                            src="/reze-avatar.png"
+                            alt="Reze"
+                            className="smallAvatar"
+                          />
+                        ) : (
+                          <div className="smallFounderAvatar">
+                            💼
+                          </div>
+                        )}
                       </div>
                     )}
 
                     <div
                       className={`messageBubble ${
-                        message.role === "user"
+                        item.role ===
+                        "user"
                           ? "userBubble"
                           : "assistantBubble"
                       } ${
-                        message.error
+                        item.error
                           ? "errorBubble"
                           : ""
                       }`}
                     >
-                      {message.content}
+                      {item.content}
                     </div>
+
                   </div>
                 )
               )}
 
+              {/* =================================================
+                  LOADING
+              ================================================= */}
+
               {loading && (
                 <div className="messageRow assistantRow">
-                  <div className="messageAvatar">
-                    <img
-                      src="/reze-avatar.png"
-                      alt="Reze"
-                      onError={(event) => {
-                        event.currentTarget.style.display =
-                          "none";
-                      }}
-                    />
+
+                  <div className="smallAvatarWrap">
+
+                    {mode === "reze" ? (
+                      <img
+                        src="/reze-avatar.png"
+                        alt="Reze"
+                        className="smallAvatar"
+                      />
+                    ) : (
+                      <div className="smallFounderAvatar">
+                        💼
+                      </div>
+                    )}
+
                   </div>
 
-                  <div className="typingBubble">
-                    <span />
-                    <span />
-                    <span />
+                  <div className="typing">
+
+                    <span></span>
+                    <span></span>
+                    <span></span>
+
                   </div>
+
                 </div>
               )}
 
-              <div ref={messagesEndRef} />
-            </div>
-          </section>
-
-          {/* =================================================
-              INPUT AREA
-          ================================================= */}
-
-          <div className="inputSection">
-            <div className="inputBox">
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(event) =>
-                  setInput(event.target.value)
-                }
-                onKeyDown={handleKeyDown}
-                placeholder="Ask Reze anything..."
-                rows={1}
-                disabled={loading}
+              <div
+                ref={messagesEndRef}
               />
 
+            </div>
+
+          </section>
+
+          {/* ===================================================
+              INPUT
+          =================================================== */}
+
+          <div className="inputArea">
+
+            <div className="inputBox">
+
+              {mode === "reze" ? (
+                <textarea
+                  ref={inputRef}
+                  value={message}
+                  onChange={(event) =>
+                    setMessage(
+                      event.target.value
+                    )
+                  }
+                  onKeyDown={
+                    handleKeyDown
+                  }
+                  placeholder="Ask Reze anything..."
+                  rows={1}
+                  disabled={loading}
+                />
+              ) : (
+                <textarea
+                  ref={inputRef}
+                  value={linkedinPost}
+                  onChange={(event) =>
+                    setLinkedinPost(
+                      event.target.value
+                    )
+                  }
+                  onKeyDown={
+                    handleKeyDown
+                  }
+                  placeholder="Paste a LinkedIn post..."
+                  rows={1}
+                  disabled={loading}
+                />
+              )}
+
               <button
-                className={`sendButton ${
-                  input.trim()
-                    ? "sendActive"
-                    : ""
-                }`}
-                onClick={sendMessage}
+                className="sendButton"
+                onClick={handleSend}
                 disabled={
-                  !input.trim() || loading
+                  loading ||
+                  (mode === "reze"
+                    ? !message.trim()
+                    : !linkedinPost.trim())
                 }
+                aria-label="Send"
               >
                 {loading ? (
-                  <span className="sendLoader">
-                    •••
+                  <span className="buttonLoader">
+                    ...
                   </span>
                 ) : (
-                  <>
-                    <span className="sendText">
-                      Send
-                    </span>
-
-                    <span className="sendArrow">
-                      ↑
-                    </span>
-                  </>
+                  "↑"
                 )}
               </button>
+
             </div>
 
-            <div className="inputHint">
-              Reze can make mistakes. Check
-              important information.
+            <div className="bottomHint">
+              {mode === "reze"
+                ? "Reze can make mistakes. Check important information."
+                : "FounderReply AI helps you create thoughtful LinkedIn replies."}
             </div>
+
           </div>
 
-          {/* =================================================
-              BOTTOM BRAND
-          ================================================= */}
-
-          {messages.length === 0 && (
-            <div className="bottomBrand">
-              <span className="sparkle">
-                ✨
-              </span>
-
-              <span>REZE</span>
-
-              <span className="statusLine" />
-            </div>
-          )}
         </main>
       </div>
 
+      {/* =======================================================
+          CSS
+      ======================================================= */}
+
       <style jsx>{`
+
         .app {
-          width: 100%;
-          min-height: 100dvh;
+          width: 100vw;
+          height: 100vh;
           display: flex;
           background: #11131b;
           overflow: hidden;
         }
 
-        /* ================================================
+        /* =====================================================
            SIDEBAR
-        ================================================= */
+        ===================================================== */
 
         .sidebar {
-          width: 340px;
-          min-width: 340px;
-          min-height: 100dvh;
-          background: #121520;
-          border-right: 1px solid #252735;
+          width: 290px;
+          height: 100vh;
+          flex-shrink: 0;
+          background: #121521;
+          border-right: 1px solid #2a2d3b;
+          padding: 28px 22px;
           position: relative;
-          z-index: 30;
+          z-index: 50;
         }
 
-        .sidebarInner {
-          padding: 32px 28px;
+        .sidebarTop {
+          margin-bottom: 38px;
         }
 
-        .newChatButton {
+        .newChat {
           width: 100%;
-          height: 88px;
-          border: 2px solid #50556a;
-          border-radius: 22px;
+          height: 58px;
+          border-radius: 18px;
+          border: 1px solid #4a4e62;
           background: transparent;
-          color: #ffffff;
+          color: #f4f4f7;
           display: flex;
           align-items: center;
-          padding: 0 30px;
-          gap: 18px;
-          font-size: 28px;
+          justify-content: flex-start;
+          gap: 10px;
+          padding: 0 22px;
+          font-size: 18px;
           cursor: pointer;
-          transition: 0.2s ease;
+          transition: 0.2s;
         }
 
-        .newChatButton:hover {
-          background: #1a1d2a;
-          border-color: #696f87;
+        .newChat:hover {
+          background: #1d2030;
         }
 
-        .plus {
-          font-size: 34px;
-          font-weight: 300;
+        .newChat span:first-child {
+          font-size: 28px;
+          line-height: 1;
         }
 
-        .navItems {
-          margin-top: 38px;
+        .sidebarItems {
           display: flex;
           flex-direction: column;
-          gap: 18px;
+          gap: 10px;
         }
 
-        .navItem {
+        .sidebarItem {
           width: 100%;
-          height: 80px;
-          border: 0;
-          border-radius: 20px;
+          height: 70px;
+          border: none;
+          border-radius: 18px;
           background: transparent;
-          color: #9ea2b6;
+          color: #a9adbd;
           display: flex;
           align-items: center;
-          gap: 18px;
-          padding: 0 24px;
-          font-size: 27px;
+          gap: 14px;
+          padding: 0 20px;
+          font-size: 20px;
           text-align: left;
           cursor: pointer;
         }
 
-        .navItem.active {
-          background: #302e3c;
+        .sidebarItem.active {
+          background: #302e3d;
           color: #ffffff;
         }
 
-        .navIcon {
-          font-size: 29px;
+        .sidebarAvatar {
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          object-fit: cover;
         }
 
-        /* ================================================
+        .founderIcon {
+          font-size: 26px;
+        }
+
+        /* =====================================================
            MAIN
-        ================================================= */
+        ===================================================== */
 
         .main {
           flex: 1;
           min-width: 0;
-          min-height: 100dvh;
-          position: relative;
+          height: 100vh;
           display: flex;
           flex-direction: column;
-          background:
-            radial-gradient(
-              circle at 50% 25%,
-              rgba(89, 82, 117, 0.08),
-              transparent 38%
-            ),
-            #181a22;
+          background: #151821;
         }
 
-        .desktopHeader {
-          position: absolute;
-          top: 32px;
-          right: 32px;
-          z-index: 10;
-        }
+        /* =====================================================
+           TOPBAR
+        ===================================================== */
 
-        .desktopMenuButton {
-          width: 82px;
-          height: 82px;
-          border-radius: 22px;
-          border: 1px solid #3c3b49;
-          background: #1d1c28;
-          color: white;
-          font-size: 43px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-        }
-
-        .desktopMenuButton span {
-          transform: translateY(-6px);
-        }
-
-        /* ================================================
-           WELCOME
-        ================================================= */
-
-        .welcome {
-          padding-top: 105px;
-          text-align: center;
-          transition: 0.25s ease;
-        }
-
-        .welcome h1 {
-          margin: 0;
-          font-size: 62px;
-          line-height: 1.1;
-          font-weight: 400;
-          letter-spacing: -1px;
-        }
-
-        .welcomeText {
-          margin: 26px 20px 30px;
-          color: #e5e5eb;
-          font-size: 29px;
-          font-weight: 400;
-        }
-
-        .heroAvatar {
-          width: 112px;
+        .topbar {
           height: 112px;
-          margin: 0 auto;
-          border-radius: 50%;
-          background: #f0eff5;
+          min-height: 112px;
+          border-bottom: 1px solid #292c38;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 30px;
           position: relative;
-          overflow: visible;
-          border: 2px solid rgba(
-            255,
-            255,
-            255,
-            0.35
-          );
+          z-index: 20;
+          background: #12151d;
+        }
+
+        .topButton {
+          width: 70px;
+          height: 70px;
+          border-radius: 24px;
+          border: 1px solid #3c3f50;
+          background: #181a27;
+          color: white;
+          cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
         }
 
-        .heroAvatar img {
-          width: 100%;
-          height: 100%;
+        .menuButton {
+          flex-direction: column;
+          gap: 7px;
+        }
+
+        .menuButton span {
+          width: 34px;
+          height: 4px;
+          border-radius: 5px;
+          background: #e6e6eb;
+        }
+
+        .plusButton {
+          font-size: 42px;
+          font-weight: 300;
+        }
+
+        .topBrand {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .topAvatarWrap {
+          width: 62px;
+          height: 62px;
+          position: relative;
+        }
+
+        .topAvatar {
+          width: 62px;
+          height: 62px;
           border-radius: 50%;
           object-fit: cover;
-          display: block;
         }
 
         .onlineDot {
-          width: 21px;
-          height: 21px;
-          background: #32d86d;
+          width: 18px;
+          height: 18px;
+          background: #2dde72;
+          border: 3px solid #12151d;
           border-radius: 50%;
           position: absolute;
-          right: 3px;
-          bottom: 3px;
-          border: 3px solid #181a22;
+          right: -1px;
+          bottom: 1px;
         }
 
-        .avatarFallback::after {
-          content: "R";
-          font-size: 48px;
+        .topName {
+          font-size: 30px;
           font-weight: 700;
-          color: #292735;
         }
 
-        .welcomeSmall {
-          padding-top: 35px;
+        /* =====================================================
+           CHAT
+        ===================================================== */
+
+        .chatArea {
+          flex: 1;
+          min-height: 0;
+          overflow-y: auto;
+          position: relative;
+          padding: 30px 8%;
         }
 
-        .smallBrand {
-          display: inline-flex;
+        .welcome {
+          min-height: 100%;
+          display: flex;
           align-items: center;
-          gap: 12px;
-          font-size: 24px;
-          font-weight: 600;
-          color: #eeeeF4;
+          justify-content: flex-start;
+          flex-direction: column;
+          padding-top: 55px;
+          text-align: center;
         }
 
-        .smallBrandAvatar {
-          width: 45px;
-          height: 45px;
-          border-radius: 50%;
-          overflow: visible;
-          background: #eeeef3;
+        .welcomeAvatarWrap {
+          width: 82px;
+          height: 82px;
           position: relative;
         }
 
-        .smallBrandAvatar img {
-          width: 100%;
-          height: 100%;
+        .welcomeAvatar {
+          width: 82px;
+          height: 82px;
           border-radius: 50%;
           object-fit: cover;
         }
 
-        .smallOnlineDot {
-          width: 10px;
-          height: 10px;
+        .welcomeOnline {
+          width: 20px;
+          height: 20px;
           border-radius: 50%;
-          background: #32d86d;
+          background: #2dde72;
+          border: 3px solid #151821;
           position: absolute;
           right: 0;
-          bottom: 0;
-          border: 2px solid #181a22;
+          bottom: 2px;
         }
 
-        /* ================================================
-           CHAT
-        ================================================= */
+        .founderWelcomeAvatar {
+          border-radius: 50%;
+          background: #302e3d;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 38px;
+        }
 
-        .chatArea {
-          flex: 1;
-          width: 100%;
-          overflow-y: auto;
-          overflow-x: hidden;
-          padding: 30px 7% 170px;
+        .welcome h1 {
+          margin: 20px 0 6px;
+          font-size: 32px;
+          font-weight: 700;
+        }
+
+        .welcome p {
+          margin: 0;
+          color: #aeb1bd;
+          font-size: 18px;
         }
 
         .messages {
           width: 100%;
-          max-width: 850px;
-          margin: 0 auto;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          padding-bottom: 30px;
         }
 
         .messageRow {
           width: 100%;
           display: flex;
-          margin-bottom: 24px;
-          gap: 12px;
           align-items: flex-end;
+          gap: 12px;
         }
 
         .userRow {
@@ -757,25 +931,10 @@ export default function HomePage() {
           justify-content: flex-start;
         }
 
-        .messageAvatar {
-          width: 38px;
-          height: 38px;
-          min-width: 38px;
-          border-radius: 50%;
-          overflow: hidden;
-          background: #eeeeF3;
-        }
-
-        .messageAvatar img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
         .messageBubble {
-          max-width: min(78%, 720px);
-          padding: 17px 21px;
-          border-radius: 20px;
+          max-width: min(760px, 78%);
+          padding: 18px 22px;
+          border-radius: 22px;
           font-size: 18px;
           line-height: 1.55;
           white-space: pre-wrap;
@@ -783,46 +942,76 @@ export default function HomePage() {
         }
 
         .userBubble {
-          background: #3a374d;
-          border: 1px solid #4a465e;
-          border-bottom-right-radius: 7px;
+          background: #39354f;
+          border: 1px solid #514b6a;
+          border-bottom-right-radius: 8px;
         }
 
         .assistantBubble {
-          background: #292934;
-          border: 1px solid #3c3c48;
-          border-bottom-left-radius: 7px;
+          background: #20232d;
+          border: 1px solid #3a3d48;
+          border-bottom-left-radius: 8px;
         }
 
         .errorBubble {
-          border-color: #7e4242;
+          border-color: #9c4c4c;
+          color: #ffb2b2;
         }
 
-        .typingBubble {
-          min-width: 72px;
+        .smallAvatarWrap {
+          width: 42px;
+          height: 42px;
+          flex-shrink: 0;
+        }
+
+        .smallAvatar {
+          width: 42px;
+          height: 42px;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+
+        .smallFounderAvatar {
+          width: 42px;
+          height: 42px;
+          border-radius: 50%;
+          background: #302e3d;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 21px;
+        }
+
+        /* =====================================================
+           TYPING
+        ===================================================== */
+
+        .typing {
           height: 48px;
-          border-radius: 18px;
-          background: #292934;
-          border: 1px solid #3c3c48;
+          min-width: 75px;
+          padding: 0 20px;
+          border-radius: 22px;
+          background: #20232d;
+          border: 1px solid #3a3d48;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 5px;
         }
 
-        .typingBubble span {
+        .typing span {
           width: 7px;
           height: 7px;
+          background: #aaa;
           border-radius: 50%;
-          background: #aaa8b8;
           animation: typing 1.2s infinite;
         }
 
-        .typingBubble span:nth-child(2) {
+        .typing span:nth-child(2) {
           animation-delay: 0.15s;
         }
 
-        .typingBubble span:nth-child(3) {
+        .typing span:nth-child(3) {
           animation-delay: 0.3s;
         }
 
@@ -830,456 +1019,268 @@ export default function HomePage() {
           0%,
           60%,
           100% {
-            opacity: 0.3;
             transform: translateY(0);
+            opacity: 0.5;
           }
 
           30% {
+            transform: translateY(-5px);
             opacity: 1;
-            transform: translateY(-4px);
           }
         }
 
-        /* ================================================
+        /* =====================================================
            INPUT
-        ================================================= */
+        ===================================================== */
 
-        .inputSection {
-          position: absolute;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          padding: 18px 6% 24px;
-          background: linear-gradient(
-            to top,
-            #181a22 65%,
-            rgba(24, 26, 34, 0)
-          );
-          z-index: 15;
+        .inputArea {
+          padding: 18px 5% 22px;
+          background: #151821;
         }
 
         .inputBox {
-          max-width: 900px;
-          margin: 0 auto;
-          min-height: 76px;
-          border-radius: 21px;
-          border: 1px solid #3d3d4d;
-          background: #171923;
+          width: 100%;
+          min-height: 82px;
+          border-radius: 28px;
+          border: 1px solid #3a3d4c;
+          background: #151821;
           display: flex;
           align-items: center;
-          padding: 8px 9px 8px 20px;
-          box-shadow:
-            0 12px 40px rgba(0, 0, 0, 0.22);
+          padding: 10px 12px 10px 24px;
+          box-shadow: 0 0 0 1px rgba(255,255,255,0.02);
         }
 
-        textarea {
+        .inputBox textarea {
           flex: 1;
           min-width: 0;
+          max-height: 150px;
           resize: none;
-          border: 0;
+          border: none;
           outline: none;
           background: transparent;
-          color: white;
-          font-size: 19px;
+          color: #f5f5f7;
+          font-size: 20px;
           line-height: 1.4;
-          padding: 13px 10px;
-          max-height: 130px;
+          padding: 12px 10px;
         }
 
-        textarea::placeholder {
-          color: #8c8d9a;
+        .inputBox textarea::placeholder {
+          color: #777b8b;
         }
 
         .sendButton {
-          min-width: 105px;
-          height: 58px;
-          border: 0;
-          border-radius: 15px;
-          background: #302d42;
-          color: #777589;
-          font-size: 17px;
+          width: 62px;
+          height: 62px;
+          flex-shrink: 0;
+          border: none;
+          border-radius: 21px;
+          background: #37324e;
+          color: #d9d6e8;
+          font-size: 36px;
           cursor: pointer;
-          transition: 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .sendButton:disabled {
+          opacity: 0.45;
           cursor: not-allowed;
         }
 
-        .sendActive {
-          background: #7068c8;
-          color: white;
+        .buttonLoader {
+          font-size: 20px;
+          letter-spacing: 2px;
         }
 
-        .sendArrow {
-          display: none;
-        }
-
-        .sendLoader {
-          letter-spacing: 3px;
-        }
-
-        .inputHint {
-          max-width: 900px;
-          margin: 8px auto 0;
+        .bottomHint {
           text-align: center;
-          color: #6f707c;
-          font-size: 11px;
+          color: #676b78;
+          font-size: 12px;
+          margin-top: 9px;
         }
 
-        /* ================================================
-           BOTTOM BRAND
-        ================================================= */
+        /* =====================================================
+           OVERLAY
+        ===================================================== */
 
-        .bottomBrand {
-          position: absolute;
-          bottom: 125px;
-          left: 50%;
-          transform: translateX(-50%);
-          display: flex;
-          align-items: center;
-          gap: 7px;
-          color: #aaaab5;
-          font-size: 13px;
-          font-weight: 700;
-          letter-spacing: 0.5px;
-          pointer-events: none;
-        }
-
-        .sparkle {
-          position: absolute;
-          bottom: -55px;
-          left: 50%;
-          transform: translateX(-50%);
-          font-size: 28px;
-        }
-
-        .statusLine {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #32d86d;
-        }
-
-        /* ================================================
-           MOBILE HEADER
-        ================================================= */
-
-        .mobileTopBar {
+        .overlay {
           display: none;
         }
 
-        /* ================================================
+        /* =====================================================
            MOBILE
-        ================================================= */
+        ===================================================== */
 
         @media (max-width: 700px) {
-          .app {
-            min-height: 100dvh;
-            height: 100dvh;
-          }
-
-          .mobileTopBar {
-            display: flex;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 64px;
-            z-index: 50;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 14px;
-            background: rgba(
-              17,
-              19,
-              27,
-              0.92
-            );
-            backdrop-filter: blur(14px);
-            border-bottom: 1px solid
-              rgba(255, 255, 255, 0.05);
-          }
-
-          .menuButton,
-          .newChatMobile {
-            width: 44px;
-            height: 44px;
-            border-radius: 13px;
-            border: 1px solid #383948;
-            background: #1b1c27;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-
-          .menuButton {
-            flex-direction: column;
-            gap: 4px;
-            padding: 10px;
-          }
-
-          .menuButton span {
-            display: block;
-            width: 19px;
-            height: 2px;
-            background: #dedee5;
-            border-radius: 5px;
-          }
-
-          .newChatMobile {
-            font-size: 27px;
-            font-weight: 300;
-            cursor: pointer;
-          }
-
-          .mobileBrand {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            font-size: 18px;
-            font-weight: 600;
-          }
-
-          .miniAvatar {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            overflow: hidden;
-            background: #eeeef3;
-          }
-
-          .miniAvatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-          }
 
           .sidebar {
             position: fixed;
-            top: 0;
-            bottom: 0;
             left: 0;
-            width: min(82vw, 320px);
-            min-width: 0;
+            top: 0;
+            width: 290px;
             transform: translateX(-105%);
             transition: transform 0.25s ease;
-            box-shadow: 15px 0 50px
-              rgba(0, 0, 0, 0.35);
+            box-shadow: 20px 0 50px rgba(0,0,0,0.45);
           }
 
-          .sidebarVisible {
+          .sidebar.open {
             transform: translateX(0);
           }
 
-          .sidebarInner {
-            padding: 88px 20px 25px;
-          }
-
-          .newChatButton {
-            height: 62px;
-            border-radius: 16px;
-            padding: 0 20px;
-            font-size: 20px;
-          }
-
-          .plus {
-            font-size: 27px;
-          }
-
-          .navItems {
-            margin-top: 25px;
-            gap: 9px;
-          }
-
-          .navItem {
-            height: 59px;
-            border-radius: 15px;
-            padding: 0 17px;
-            font-size: 19px;
-          }
-
-          .navIcon {
-            font-size: 21px;
-          }
-
-          .sidebarOverlay {
+          .overlay {
+            display: block;
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.55);
-            z-index: 25;
-            backdrop-filter: blur(2px);
+            z-index: 40;
+            border: none;
+            background: rgba(0,0,0,0.55);
           }
 
-          .main {
-            width: 100%;
-            min-width: 0;
-            height: 100dvh;
-            min-height: 100dvh;
+          .topbar {
+            height: 86px;
+            min-height: 86px;
+            padding: 0 14px;
           }
 
-          .desktopHeader {
-            display: none;
+          .topButton {
+            width: 58px;
+            height: 58px;
+            border-radius: 20px;
           }
 
-          .welcome {
-            padding: 105px 20px 20px;
+          .menuButton span {
+            width: 28px;
+            height: 3px;
           }
 
-          .welcome h1 {
-            font-size: 42px;
-            letter-spacing: -0.5px;
+          .plusButton {
+            font-size: 34px;
           }
 
-          .welcomeText {
-            margin: 14px auto 23px;
-            max-width: 330px;
-            font-size: 19px;
-            line-height: 1.35;
+          .topAvatarWrap {
+            width: 48px;
+            height: 48px;
           }
 
-          .heroAvatar {
-            width: 88px;
-            height: 88px;
+          .topAvatar {
+            width: 48px;
+            height: 48px;
+          }
+
+          .topName {
+            font-size: 23px;
           }
 
           .onlineDot {
-            width: 17px;
-            height: 17px;
+            width: 15px;
+            height: 15px;
             border-width: 2px;
           }
 
-          .welcomeSmall {
-            padding-top: 78px;
-            padding-bottom: 0;
-          }
-
-          .smallBrand {
-            font-size: 18px;
-          }
-
-          .smallBrandAvatar {
-            width: 35px;
-            height: 35px;
-          }
-
           .chatArea {
-            padding:
-              15px 13px
-              120px;
+            padding: 20px 18px;
           }
 
-          .messages {
-            max-width: 100%;
-          }
-
-          .messageRow {
-            margin-bottom: 14px;
-            gap: 8px;
-          }
-
-          .messageAvatar {
-            width: 30px;
-            height: 30px;
-            min-width: 30px;
-          }
-
-          .messageBubble {
-            max-width: 86%;
-            padding: 12px 15px;
-            border-radius: 17px;
-            font-size: 15.5px;
-            line-height: 1.48;
-          }
-
-          .typingBubble {
-            min-width: 60px;
-            height: 42px;
-          }
-
-          .inputSection {
-            padding:
-              9px 11px
-              max(10px, env(safe-area-inset-bottom));
-            background: linear-gradient(
-              to top,
-              #181a22 78%,
-              rgba(24, 26, 34, 0)
-            );
-          }
-
-          .inputBox {
-            min-height: 58px;
-            border-radius: 18px;
-            padding: 5px 6px 5px 13px;
-          }
-
-          textarea {
-            font-size: 15.5px;
-            padding: 10px 6px;
-            max-height: 90px;
-          }
-
-          .sendButton {
-            min-width: 55px;
-            width: 55px;
-            height: 46px;
-            border-radius: 13px;
-            font-size: 21px;
-          }
-
-          .sendText {
-            display: none;
-          }
-
-          .sendArrow {
-            display: inline;
-            font-size: 24px;
-          }
-
-          .inputHint {
-            display: none;
-          }
-
-          .bottomBrand {
-            bottom: 93px;
-            font-size: 11px;
-          }
-
-          .sparkle {
-            bottom: -38px;
-            font-size: 20px;
-          }
-        }
-
-        /* ================================================
-           VERY SMALL PHONES
-        ================================================= */
-
-        @media (max-width: 380px) {
           .welcome {
-            padding-top: 95px;
+            padding-top: 45px;
+          }
+
+          .welcomeAvatarWrap {
+            width: 76px;
+            height: 76px;
+          }
+
+          .welcomeAvatar {
+            width: 76px;
+            height: 76px;
           }
 
           .welcome h1 {
-            font-size: 38px;
+            font-size: 28px;
+            margin-top: 18px;
           }
 
-          .welcomeText {
+          .welcome p {
             font-size: 17px;
           }
 
-          .heroAvatar {
-            width: 78px;
-            height: 78px;
+          .messageBubble {
+            max-width: 84%;
+            font-size: 17px;
+            padding: 15px 18px;
+          }
+
+          .smallAvatarWrap,
+          .smallAvatar,
+          .smallFounderAvatar {
+            width: 38px;
+            height: 38px;
+          }
+
+          .inputArea {
+            padding: 10px 12px 14px;
+          }
+
+          .inputBox {
+            min-height: 72px;
+            border-radius: 25px;
+            padding-left: 15px;
+          }
+
+          .inputBox textarea {
+            font-size: 18px;
+            padding: 10px 5px;
+          }
+
+          .sendButton {
+            width: 56px;
+            height: 56px;
+            border-radius: 19px;
+            font-size: 31px;
+          }
+
+          .bottomHint {
+            font-size: 10px;
+          }
+        }
+
+        /* =====================================================
+           VERY SMALL PHONES
+        ===================================================== */
+
+        @media (max-width: 380px) {
+
+          .topbar {
+            padding: 0 9px;
+          }
+
+          .topButton {
+            width: 52px;
+            height: 52px;
+          }
+
+          .topAvatarWrap,
+          .topAvatar {
+            width: 43px;
+            height: 43px;
+          }
+
+          .topName {
+            font-size: 21px;
+          }
+
+          .chatArea {
+            padding-left: 12px;
+            padding-right: 12px;
           }
 
           .messageBubble {
             max-width: 88%;
-            font-size: 15px;
+            font-size: 16px;
           }
         }
+
       `}</style>
     </>
   );
