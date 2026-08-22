@@ -2,20 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export default function HomePage() {
-  const [mode, setMode] = useState("reze");
-  const [message, setMessage] = useState("");
-  const [linkedinPost, setLinkedinPost] = useState("");
+export default function RezePage() {
   const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [conversationId, setConversationId] = useState(null);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
   /* =========================================================
-     AUTO SCROLL
+     SCROLL TO BOTTOM
   ========================================================= */
 
   useEffect(() => {
@@ -25,28 +22,13 @@ export default function HomePage() {
   }, [messages, loading]);
 
   /* =========================================================
-     RESET WHEN SWITCHING
-  ========================================================= */
-
-  function switchMode(newMode) {
-    setMode(newMode);
-    setMessages([]);
-    setMessage("");
-    setLinkedinPost("");
-    setConversationId(null);
-    setSidebarOpen(false);
-  }
-
-  /* =========================================================
      NEW CHAT
   ========================================================= */
 
   function newChat() {
     setMessages([]);
-    setMessage("");
-    setLinkedinPost("");
+    setInput("");
     setConversationId(null);
-    setSidebarOpen(false);
 
     setTimeout(() => {
       inputRef.current?.focus();
@@ -54,11 +36,11 @@ export default function HomePage() {
   }
 
   /* =========================================================
-     SEND REZE MESSAGE
+     SEND MESSAGE
   ========================================================= */
 
-  async function sendRezeMessage() {
-    const text = message.trim();
+  async function sendMessage() {
+    const text = input.trim();
 
     if (!text || loading) return;
 
@@ -67,12 +49,12 @@ export default function HomePage() {
       content: text,
     };
 
-    setMessages((previous) => [
-      ...previous,
+    setMessages((prev) => [
+      ...prev,
       userMessage,
     ]);
 
-    setMessage("");
+    setInput("");
     setLoading(true);
 
     try {
@@ -97,11 +79,13 @@ export default function HomePage() {
       }
 
       if (data?.conversationId) {
-        setConversationId(data.conversationId);
+        setConversationId(
+          data.conversationId
+        );
       }
 
-      setMessages((previous) => [
-        ...previous,
+      setMessages((prev) => [
+        ...prev,
         {
           role: "assistant",
           content:
@@ -110,115 +94,24 @@ export default function HomePage() {
         },
       ]);
     } catch (error) {
-      console.error("Reze error:", error);
+      console.error("Reze chat error:", error);
 
-      setMessages((previous) => [
-        ...previous,
+      setMessages((prev) => [
+        ...prev,
         {
           role: "assistant",
           error: true,
           content:
             error?.message ||
-            "Something went wrong while connecting to Reze.",
+            "Something went wrong. Please try again.",
         },
       ]);
     } finally {
       setLoading(false);
-    }
-  }
 
-  /* =========================================================
-     SEND FOUNDER REPLY
-  ========================================================= */
-
-  async function sendFounderReply() {
-    const post = linkedinPost.trim();
-
-    if (!post || loading) return;
-
-    const userMessage = {
-      role: "user",
-      content: post,
-    };
-
-    setMessages((previous) => [
-      ...previous,
-      userMessage,
-    ]);
-
-    setLinkedinPost("");
-    setLoading(true);
-
-    try {
-      /*
-        IMPORTANT:
-        FounderReply uses /api/chat.
-        Reze NEVER uses this endpoint.
-      */
-
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          linkedinPost: post,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data?.error ||
-            "FounderReply could not generate a reply."
-        );
-      }
-
-      const answer =
-        data?.reply ||
-        data?.answer ||
-        data?.content ||
-        data?.message ||
-        "I couldn't generate a reply.";
-
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: "assistant",
-          content: answer,
-        },
-      ]);
-    } catch (error) {
-      console.error(
-        "FounderReply error:",
-        error
-      );
-
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: "assistant",
-          error: true,
-          content:
-            error?.message ||
-            "Something went wrong while connecting to FounderReply AI.",
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  /* =========================================================
-     SEND
-  ========================================================= */
-
-  function handleSend() {
-    if (mode === "reze") {
-      sendRezeMessage();
-    } else {
-      sendFounderReply();
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     }
   }
 
@@ -229,29 +122,191 @@ export default function HomePage() {
   function handleKeyDown(event) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      handleSend();
+      sendMessage();
     }
   }
 
   /* =========================================================
-     REZE WELCOME
+     FORMAT MESSAGE
   ========================================================= */
 
-  const showWelcome =
-    mode === "reze" &&
-    messages.length === 0;
+  function formatMessage(text) {
+    if (!text) return null;
+
+    const lines = text.split("\n");
+
+    return lines.map((line, index) => (
+      <span key={index}>
+        {line}
+
+        {index !== lines.length - 1 && (
+          <br />
+        )}
+      </span>
+    ));
+  }
 
   /* =========================================================
-     FOUNDER WELCOME
+     UI
   ========================================================= */
 
-  const showFounderWelcome =
-    mode === "founder" &&
-    messages.length === 0;
-
   return (
-    <>
+    <main className="reze-app">
+
+      {/* =====================================================
+          TOP BAR
+      ===================================================== */}
+
+      <header className="top-bar">
+
+        <div className="brand">
+          <span className="brand-name">
+            Reze
+          </span>
+        </div>
+
+        <button
+          className="new-chat-button"
+          onClick={newChat}
+          aria-label="New chat"
+        >
+          +
+        </button>
+
+      </header>
+
+      {/* =====================================================
+          CHAT AREA
+      ===================================================== */}
+
+      <section className="chat-area">
+
+        {messages.length === 0 ? (
+
+          /* =================================================
+             WELCOME SCREEN
+          ================================================= */
+
+          <div className="welcome">
+
+            <h1>Reze</h1>
+
+            <p>
+              How can Reze assist you today?
+            </p>
+
+          </div>
+
+        ) : (
+
+          /* =================================================
+             MESSAGES
+          ================================================= */
+
+          <div className="messages">
+
+            {messages.map(
+              (message, index) => {
+
+                const isUser =
+                  message.role === "user";
+
+                return (
+                  <div
+                    key={index}
+                    className={
+                      isUser
+                        ? "message-row user-row"
+                        : "message-row assistant-row"
+                    }
+                  >
+
+                    <div
+                      className={
+                        isUser
+                          ? "message user-message"
+                          : message.error
+                          ? "message assistant-message error-message"
+                          : "message assistant-message"
+                      }
+                    >
+                      {formatMessage(
+                        message.content
+                      )}
+                    </div>
+
+                  </div>
+                );
+              }
+            )}
+
+            {/* =============================================
+                LOADING
+            ============================================= */}
+
+            {loading && (
+              <div className="message-row assistant-row">
+
+                <div className="message assistant-message typing">
+
+                  <span></span>
+                  <span></span>
+                  <span></span>
+
+                </div>
+
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+
+          </div>
+        )}
+
+      </section>
+
+      {/* =====================================================
+          INPUT AREA
+      ===================================================== */}
+
+      <div className="input-container">
+
+        <div className="input-box">
+
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(event) =>
+              setInput(event.target.value)
+            }
+            onKeyDown={handleKeyDown}
+            placeholder="Ask Reze anything..."
+            rows={1}
+            disabled={loading}
+          />
+
+          <button
+            className="send-button"
+            onClick={sendMessage}
+            disabled={
+              loading ||
+              !input.trim()
+            }
+            aria-label="Send message"
+          >
+            ↑
+          </button>
+
+        </div>
+
+      </div>
+
+      {/* =====================================================
+          STYLES
+      ===================================================== */}
+
       <style jsx global>{`
+
         * {
           box-sizing: border-box;
         }
@@ -262,749 +317,368 @@ export default function HomePage() {
           padding: 0;
           width: 100%;
           min-height: 100%;
-          background: #11131b;
-          color: #f5f5f7;
+          background: #151820;
+          color: #f4f4f7;
           font-family:
-            Inter,
             -apple-system,
             BlinkMacSystemFont,
             "Segoe UI",
+            Roboto,
+            Helvetica,
+            Arial,
             sans-serif;
         }
 
         body {
-          overflow: hidden;
+          overflow-x: hidden;
         }
 
         button,
-        textarea,
-        input {
-          font: inherit;
+        textarea {
+          font-family: inherit;
         }
 
-        button {
-          -webkit-tap-highlight-color: transparent;
-        }
-      `}</style>
+        /* ===================================================
+           APP
+        =================================================== */
+
+        .reze-app {
+          width: 100%;
+          height: 100dvh;
+          min-height: 100dvh;
 
-      <div className="app">
-
-        {/* =====================================================
-            SIDEBAR
-        ===================================================== */}
-
-        <aside
-          className={`sidebar ${
-            sidebarOpen ? "open" : ""
-          }`}
-        >
-          <div className="sidebarTop">
-            <button
-              className="newChat"
-              onClick={newChat}
-            >
-              <span>＋</span>
-              <span>New Chat</span>
-            </button>
-          </div>
-
-          <div className="sidebarItems">
-
-            <button
-              className={`sidebarItem ${
-                mode === "reze" ? "active" : ""
-              }`}
-              onClick={() =>
-                switchMode("reze")
-              }
-            >
-              <img
-                src="/reze-avatar.png"
-                alt="Reze"
-                className="sidebarAvatar"
-              />
-
-              <span>Reze</span>
-            </button>
-
-            <button
-              className={`sidebarItem ${
-                mode === "founder"
-                  ? "active"
-                  : ""
-              }`}
-              onClick={() =>
-                switchMode("founder")
-              }
-            >
-              <span className="founderIcon">
-                💼
-              </span>
-
-              <span>
-                FounderReply AI
-              </span>
-            </button>
-
-          </div>
-        </aside>
-
-        {/* =====================================================
-            SIDEBAR OVERLAY MOBILE
-        ===================================================== */}
-
-        {sidebarOpen && (
-          <button
-            className="overlay"
-            aria-label="Close menu"
-            onClick={() =>
-              setSidebarOpen(false)
-            }
-          />
-        )}
-
-        {/* =====================================================
-            MAIN
-        ===================================================== */}
-
-        <main className="main">
-
-          {/* ===================================================
-              TOP BAR
-          =================================================== */}
-
-          <header className="topbar">
-
-            <button
-              className="topButton menuButton"
-              onClick={() =>
-                setSidebarOpen(true)
-              }
-              aria-label="Open menu"
-            >
-              <span></span>
-              <span></span>
-              <span></span>
-            </button>
-
-            <div className="topBrand">
-
-              <div className="topAvatarWrap">
-                <img
-                  src="/reze-avatar.png"
-                  alt="Reze"
-                  className="topAvatar"
-                />
-
-                {mode === "reze" && (
-                  <span className="onlineDot" />
-                )}
-              </div>
-
-              <span className="topName">
-                {mode === "reze"
-                  ? "Reze"
-                  : "FounderReply"}
-              </span>
-
-            </div>
-
-            <button
-              className="topButton plusButton"
-              onClick={newChat}
-              aria-label="New chat"
-            >
-              +
-            </button>
-
-          </header>
-
-          {/* ===================================================
-              CHAT AREA
-          =================================================== */}
-
-          <section className="chatArea">
-
-            {/* =================================================
-                REZE EMPTY STATE
-            ================================================= */}
-
-            {showWelcome && (
-              <div className="welcome">
-
-                <div className="welcomeAvatarWrap">
-
-                  <img
-                    src="/reze-avatar.png"
-                    alt="Reze"
-                    className="welcomeAvatar"
-                  />
-
-                  <span className="welcomeOnline" />
-
-                </div>
-
-                <h1>Reze</h1>
-
-                <p>
-                  How can Reze assist you
-                  today?
-                </p>
-
-              </div>
-            )}
-
-            {/* =================================================
-                FOUNDER EMPTY STATE
-            ================================================= */}
-
-            {showFounderWelcome && (
-              <div className="welcome">
-
-                <div className="welcomeAvatarWrap founderWelcomeAvatar">
-                  💼
-                </div>
-
-                <h1>
-                  FounderReply AI
-                </h1>
-
-                <p>
-                  Turn LinkedIn posts into
-                  thoughtful replies.
-                </p>
-
-              </div>
-            )}
-
-            {/* =================================================
-                MESSAGES
-            ================================================= */}
-
-            <div className="messages">
-
-              {messages.map(
-                (item, index) => (
-                  <div
-                    key={index}
-                    className={`messageRow ${
-                      item.role ===
-                      "user"
-                        ? "userRow"
-                        : "assistantRow"
-                    }`}
-                  >
-
-                    {item.role ===
-                      "assistant" && (
-                      <div className="smallAvatarWrap">
-                        {mode ===
-                        "reze" ? (
-                          <img
-                            src="/reze-avatar.png"
-                            alt="Reze"
-                            className="smallAvatar"
-                          />
-                        ) : (
-                          <div className="smallFounderAvatar">
-                            💼
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <div
-                      className={`messageBubble ${
-                        item.role ===
-                        "user"
-                          ? "userBubble"
-                          : "assistantBubble"
-                      } ${
-                        item.error
-                          ? "errorBubble"
-                          : ""
-                      }`}
-                    >
-                      {item.content}
-                    </div>
-
-                  </div>
-                )
-              )}
-
-              {/* =================================================
-                  LOADING
-              ================================================= */}
-
-              {loading && (
-                <div className="messageRow assistantRow">
-
-                  <div className="smallAvatarWrap">
-
-                    {mode === "reze" ? (
-                      <img
-                        src="/reze-avatar.png"
-                        alt="Reze"
-                        className="smallAvatar"
-                      />
-                    ) : (
-                      <div className="smallFounderAvatar">
-                        💼
-                      </div>
-                    )}
-
-                  </div>
-
-                  <div className="typing">
-
-                    <span></span>
-                    <span></span>
-                    <span></span>
-
-                  </div>
-
-                </div>
-              )}
-
-              <div
-                ref={messagesEndRef}
-              />
-
-            </div>
-
-          </section>
-
-          {/* ===================================================
-              INPUT
-          =================================================== */}
-
-          <div className="inputArea">
-
-            <div className="inputBox">
-
-              {mode === "reze" ? (
-                <textarea
-                  ref={inputRef}
-                  value={message}
-                  onChange={(event) =>
-                    setMessage(
-                      event.target.value
-                    )
-                  }
-                  onKeyDown={
-                    handleKeyDown
-                  }
-                  placeholder="Ask Reze anything..."
-                  rows={1}
-                  disabled={loading}
-                />
-              ) : (
-                <textarea
-                  ref={inputRef}
-                  value={linkedinPost}
-                  onChange={(event) =>
-                    setLinkedinPost(
-                      event.target.value
-                    )
-                  }
-                  onKeyDown={
-                    handleKeyDown
-                  }
-                  placeholder="Paste a LinkedIn post..."
-                  rows={1}
-                  disabled={loading}
-                />
-              )}
-
-              <button
-                className="sendButton"
-                onClick={handleSend}
-                disabled={
-                  loading ||
-                  (mode === "reze"
-                    ? !message.trim()
-                    : !linkedinPost.trim())
-                }
-                aria-label="Send"
-              >
-                {loading ? (
-                  <span className="buttonLoader">
-                    ...
-                  </span>
-                ) : (
-                  "↑"
-                )}
-              </button>
-
-            </div>
-
-            <div className="bottomHint">
-              {mode === "reze"
-                ? "Reze can make mistakes. Check important information."
-                : "FounderReply AI helps you create thoughtful LinkedIn replies."}
-            </div>
-
-          </div>
-
-        </main>
-      </div>
-
-      {/* =======================================================
-          CSS
-      ======================================================= */}
-
-      <style jsx>{`
-
-        .app {
-          width: 100vw;
-          height: 100vh;
           display: flex;
-          background: #11131b;
+          flex-direction: column;
+
+          background:
+            radial-gradient(
+              circle at 50% 20%,
+              rgba(76, 68, 108, 0.08),
+              transparent 35%
+            ),
+            #151820;
+
           overflow: hidden;
         }
 
-        /* =====================================================
-           SIDEBAR
-        ===================================================== */
+        /* ===================================================
+           TOP BAR
+        =================================================== */
 
-        .sidebar {
-          width: 290px;
-          height: 100vh;
-          flex-shrink: 0;
-          background: #121521;
-          border-right: 1px solid #2a2d3b;
-          padding: 28px 22px;
-          position: relative;
-          z-index: 50;
-        }
+        .top-bar {
+          height: 92px;
+          min-height: 92px;
 
-        .sidebarTop {
-          margin-bottom: 38px;
-        }
-
-        .newChat {
           width: 100%;
-          height: 58px;
-          border-radius: 18px;
-          border: 1px solid #4a4e62;
-          background: transparent;
-          color: #f4f4f7;
+
           display: flex;
           align-items: center;
-          justify-content: flex-start;
-          gap: 10px;
-          padding: 0 22px;
-          font-size: 18px;
-          cursor: pointer;
-          transition: 0.2s;
-        }
+          justify-content: center;
 
-        .newChat:hover {
-          background: #1d2030;
-        }
-
-        .newChat span:first-child {
-          font-size: 28px;
-          line-height: 1;
-        }
-
-        .sidebarItems {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .sidebarItem {
-          width: 100%;
-          height: 70px;
-          border: none;
-          border-radius: 18px;
-          background: transparent;
-          color: #a9adbd;
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          padding: 0 20px;
-          font-size: 20px;
-          text-align: left;
-          cursor: pointer;
-        }
-
-        .sidebarItem.active {
-          background: #302e3d;
-          color: #ffffff;
-        }
-
-        .sidebarAvatar {
-          width: 38px;
-          height: 38px;
-          border-radius: 50%;
-          object-fit: cover;
-        }
-
-        .founderIcon {
-          font-size: 26px;
-        }
-
-        /* =====================================================
-           MAIN
-        ===================================================== */
-
-        .main {
-          flex: 1;
-          min-width: 0;
-          height: 100vh;
-          display: flex;
-          flex-direction: column;
-          background: #151821;
-        }
-
-        /* =====================================================
-           TOPBAR
-        ===================================================== */
-
-        .topbar {
-          height: 112px;
-          min-height: 112px;
-          border-bottom: 1px solid #292c38;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0 30px;
           position: relative;
-          z-index: 20;
-          background: #12151d;
+
+          border-bottom: 1px solid
+            rgba(255, 255, 255, 0.055);
+
+          background:
+            rgba(15, 18, 25, 0.92);
+
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
         }
 
-        .topButton {
-          width: 70px;
-          height: 70px;
-          border-radius: 24px;
-          border: 1px solid #3c3f50;
-          background: #181a27;
-          color: white;
-          cursor: pointer;
+        .brand {
           display: flex;
           align-items: center;
           justify-content: center;
         }
 
-        .menuButton {
-          flex-direction: column;
-          gap: 7px;
+        .brand-name {
+          font-size: 25px;
+          font-weight: 700;
+          letter-spacing: -0.5px;
+          color: #f4f4f7;
         }
 
-        .menuButton span {
-          width: 34px;
-          height: 4px;
-          border-radius: 5px;
-          background: #e6e6eb;
-        }
+        /* ===================================================
+           NEW CHAT
+        =================================================== */
 
-        .plusButton {
-          font-size: 42px;
+        .new-chat-button {
+          position: absolute;
+
+          right: 24px;
+          top: 50%;
+          transform: translateY(-50%);
+
+          width: 58px;
+          height: 58px;
+
+          border-radius: 20px;
+
+          border: 1px solid
+            rgba(116, 108, 151, 0.45);
+
+          background: #1b1d27;
+
+          color: #f4f4f7;
+
+          font-size: 38px;
           font-weight: 300;
-        }
 
-        .topBrand {
+          line-height: 1;
+
           display: flex;
           align-items: center;
-          gap: 16px;
+          justify-content: center;
+
+          cursor: pointer;
+
+          transition:
+            background 0.2s ease,
+            transform 0.2s ease,
+            border-color 0.2s ease;
         }
 
-        .topAvatarWrap {
-          width: 62px;
-          height: 62px;
-          position: relative;
+        .new-chat-button:hover {
+          background: #272638;
+          border-color: #716a91;
         }
 
-        .topAvatar {
-          width: 62px;
-          height: 62px;
-          border-radius: 50%;
-          object-fit: cover;
+        .new-chat-button:active {
+          transform:
+            translateY(-50%)
+            scale(0.94);
         }
 
-        .onlineDot {
-          width: 18px;
-          height: 18px;
-          background: #2dde72;
-          border: 3px solid #12151d;
-          border-radius: 50%;
-          position: absolute;
-          right: -1px;
-          bottom: 1px;
-        }
+        /* ===================================================
+           CHAT AREA
+        =================================================== */
 
-        .topName {
-          font-size: 30px;
-          font-weight: 700;
-        }
-
-        /* =====================================================
-           CHAT
-        ===================================================== */
-
-        .chatArea {
+        .chat-area {
           flex: 1;
-          min-height: 0;
+
+          width: 100%;
+
           overflow-y: auto;
-          position: relative;
-          padding: 30px 8%;
+          overflow-x: hidden;
+
+          padding:
+            45px
+            24px
+            170px;
+
+          scrollbar-width: thin;
+          scrollbar-color:
+            #353746
+            transparent;
         }
+
+        .chat-area::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .chat-area::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+          background: #353746;
+          border-radius: 20px;
+        }
+
+        /* ===================================================
+           WELCOME
+        =================================================== */
 
         .welcome {
           min-height: 100%;
+
           display: flex;
-          align-items: center;
-          justify-content: flex-start;
           flex-direction: column;
-          padding-top: 55px;
-          text-align: center;
-        }
 
-        .welcomeAvatarWrap {
-          width: 82px;
-          height: 82px;
-          position: relative;
-        }
-
-        .welcomeAvatar {
-          width: 82px;
-          height: 82px;
-          border-radius: 50%;
-          object-fit: cover;
-        }
-
-        .welcomeOnline {
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: #2dde72;
-          border: 3px solid #151821;
-          position: absolute;
-          right: 0;
-          bottom: 2px;
-        }
-
-        .founderWelcomeAvatar {
-          border-radius: 50%;
-          background: #302e3d;
-          display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 38px;
+
+          text-align: center;
+
+          padding:
+            20px
+            0
+            100px;
         }
 
         .welcome h1 {
-          margin: 20px 0 6px;
-          font-size: 32px;
-          font-weight: 700;
+          margin: 0;
+
+          font-size: clamp(
+            42px,
+            8vw,
+            64px
+          );
+
+          line-height: 1.05;
+
+          font-weight: 500;
+
+          letter-spacing: -2px;
+
+          color: #f1f1f4;
         }
 
         .welcome p {
-          margin: 0;
-          color: #aeb1bd;
-          font-size: 18px;
+          margin:
+            24px
+            0
+            0;
+
+          font-size: clamp(
+            20px,
+            4vw,
+            30px
+          );
+
+          line-height: 1.3;
+
+          font-weight: 400;
+
+          color: #d0d0d6;
         }
+
+        /* ===================================================
+           MESSAGES
+        =================================================== */
 
         .messages {
           width: 100%;
+          max-width: 900px;
+
+          margin: 0 auto;
+
           display: flex;
           flex-direction: column;
-          gap: 24px;
-          padding-bottom: 30px;
+
+          gap: 22px;
         }
 
-        .messageRow {
+        .message-row {
           width: 100%;
+
           display: flex;
-          align-items: flex-end;
-          gap: 12px;
         }
 
-        .userRow {
+        .user-row {
           justify-content: flex-end;
         }
 
-        .assistantRow {
+        .assistant-row {
           justify-content: flex-start;
         }
 
-        .messageBubble {
-          max-width: min(760px, 78%);
-          padding: 18px 22px;
-          border-radius: 22px;
+        .message {
+          max-width: min(
+            78%,
+            720px
+          );
+
+          padding:
+            18px
+            21px;
+
+          border-radius: 24px;
+
           font-size: 18px;
           line-height: 1.55;
-          white-space: pre-wrap;
-          word-break: break-word;
+
+          word-wrap: break-word;
+          overflow-wrap: anywhere;
+
+          white-space: normal;
         }
 
-        .userBubble {
-          background: #39354f;
-          border: 1px solid #514b6a;
+        /* ===================================================
+           USER MESSAGE
+        =================================================== */
+
+        .user-message {
+          color: #f4f2fb;
+
+          background:
+            linear-gradient(
+              135deg,
+              #373149,
+              #403952
+            );
+
+          border:
+            1px solid
+            rgba(122, 112, 153, 0.35);
+
           border-bottom-right-radius: 8px;
+
+          box-shadow:
+            0 8px 30px
+            rgba(0, 0, 0, 0.12);
         }
 
-        .assistantBubble {
-          background: #20232d;
-          border: 1px solid #3a3d48;
+        /* ===================================================
+           ASSISTANT MESSAGE
+        =================================================== */
+
+        .assistant-message {
+          color: #eeeeF2;
+
+          background:
+            rgba(36, 39, 49, 0.92);
+
+          border:
+            1px solid
+            rgba(93, 97, 111, 0.42);
+
           border-bottom-left-radius: 8px;
+
+          box-shadow:
+            0 8px 30px
+            rgba(0, 0, 0, 0.1);
         }
 
-        .errorBubble {
-          border-color: #9c4c4c;
-          color: #ffb2b2;
+        .error-message {
+          border-color:
+            rgba(220, 91, 91, 0.6);
+
+          color: #f0caca;
         }
 
-        .smallAvatarWrap {
-          width: 42px;
-          height: 42px;
-          flex-shrink: 0;
-        }
-
-        .smallAvatar {
-          width: 42px;
-          height: 42px;
-          border-radius: 50%;
-          object-fit: cover;
-        }
-
-        .smallFounderAvatar {
-          width: 42px;
-          height: 42px;
-          border-radius: 50%;
-          background: #302e3d;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 21px;
-        }
-
-        /* =====================================================
+        /* ===================================================
            TYPING
-        ===================================================== */
+        =================================================== */
 
         .typing {
-          height: 48px;
-          min-width: 75px;
-          padding: 0 20px;
-          border-radius: 22px;
-          background: #20232d;
-          border: 1px solid #3a3d48;
           display: flex;
           align-items: center;
-          justify-content: center;
-          gap: 5px;
+
+          gap: 6px;
+
+          min-width: 72px;
+          min-height: 58px;
         }
 
         .typing span {
           width: 7px;
           height: 7px;
-          background: #aaa;
+
           border-radius: 50%;
-          animation: typing 1.2s infinite;
+
+          background: #aaa9b7;
+
+          animation:
+            typingAnimation
+            1.2s
+            infinite ease-in-out;
+        }
+
+        .typing span:nth-child(1) {
+          animation-delay: 0s;
         }
 
         .typing span:nth-child(2) {
@@ -1015,273 +689,365 @@ export default function HomePage() {
           animation-delay: 0.3s;
         }
 
-        @keyframes typing {
+        @keyframes typingAnimation {
+
           0%,
           60%,
           100% {
+            opacity: 0.3;
             transform: translateY(0);
-            opacity: 0.5;
           }
 
           30% {
-            transform: translateY(-5px);
             opacity: 1;
+            transform:
+              translateY(-4px);
           }
         }
 
-        /* =====================================================
-           INPUT
-        ===================================================== */
+        /* ===================================================
+           INPUT CONTAINER
+        =================================================== */
 
-        .inputArea {
-          padding: 18px 5% 22px;
-          background: #151821;
+        .input-container {
+          position: fixed;
+
+          left: 0;
+          right: 0;
+          bottom: 0;
+
+          width: 100%;
+
+          padding:
+            18px
+            24px
+            calc(
+              18px +
+              env(safe-area-inset-bottom)
+            );
+
+          background:
+            linear-gradient(
+              to top,
+              #151820 72%,
+              rgba(21, 24, 32, 0)
+            );
+
+          z-index: 20;
         }
 
-        .inputBox {
+        .input-box {
           width: 100%;
-          min-height: 82px;
-          border-radius: 28px;
-          border: 1px solid #3a3d4c;
-          background: #151821;
+          max-width: 900px;
+
+          margin: 0 auto;
+
+          min-height: 86px;
+
           display: flex;
           align-items: center;
-          padding: 10px 12px 10px 24px;
-          box-shadow: 0 0 0 1px rgba(255,255,255,0.02);
+
+          padding:
+            8px
+            8px
+            8px
+            24px;
+
+          border-radius: 28px;
+
+          border:
+            1px solid
+            rgba(87, 91, 108, 0.65);
+
+          background:
+            rgba(19, 22, 30, 0.96);
+
+          box-shadow:
+            0 12px 45px
+            rgba(0, 0, 0, 0.28);
+
+          transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease;
         }
 
-        .inputBox textarea {
+        .input-box:focus-within {
+          border-color:
+            rgba(113, 106, 145, 0.9);
+
+          box-shadow:
+            0 12px 45px
+            rgba(0, 0, 0, 0.32),
+            0 0 0 3px
+            rgba(91, 82, 123, 0.08);
+        }
+
+        .input-box textarea {
           flex: 1;
+
+          width: 100%;
+
           min-width: 0;
-          max-height: 150px;
+
+          max-height: 130px;
+
           resize: none;
-          border: none;
-          outline: none;
+
+          overflow-y: auto;
+
+          border: 0;
+          outline: 0;
+
           background: transparent;
-          color: #f5f5f7;
+
+          color: #f1f1f5;
+
           font-size: 20px;
           line-height: 1.4;
-          padding: 12px 10px;
+
+          padding:
+            12px
+            0;
         }
 
-        .inputBox textarea::placeholder {
-          color: #777b8b;
+        .input-box textarea::placeholder {
+          color: #777987;
+          opacity: 1;
         }
 
-        .sendButton {
-          width: 62px;
-          height: 62px;
+        .input-box textarea:disabled {
+          opacity: 0.65;
+        }
+
+        /* ===================================================
+           SEND BUTTON
+        =================================================== */
+
+        .send-button {
           flex-shrink: 0;
-          border: none;
-          border-radius: 21px;
-          background: #37324e;
-          color: #d9d6e8;
-          font-size: 36px;
-          cursor: pointer;
+
+          width: 66px;
+          height: 66px;
+
+          margin-left: 12px;
+
+          border: 0;
+
+          border-radius: 22px;
+
+          background:
+            #37324b;
+
+          color: #dcd8e8;
+
+          font-size: 35px;
+          font-weight: 300;
+
+          line-height: 1;
+
           display: flex;
           align-items: center;
           justify-content: center;
+
+          cursor: pointer;
+
+          transition:
+            background 0.2s ease,
+            transform 0.2s ease,
+            opacity 0.2s ease;
         }
 
-        .sendButton:disabled {
-          opacity: 0.45;
+        .send-button:hover:not(:disabled) {
+          background: #46405d;
+        }
+
+        .send-button:active:not(:disabled) {
+          transform: scale(0.94);
+        }
+
+        .send-button:disabled {
+          opacity: 0.4;
           cursor: not-allowed;
         }
 
-        .buttonLoader {
-          font-size: 20px;
-          letter-spacing: 2px;
-        }
-
-        .bottomHint {
-          text-align: center;
-          color: #676b78;
-          font-size: 12px;
-          margin-top: 9px;
-        }
-
-        /* =====================================================
-           OVERLAY
-        ===================================================== */
-
-        .overlay {
-          display: none;
-        }
-
-        /* =====================================================
+        /* ===================================================
            MOBILE
-        ===================================================== */
+        =================================================== */
 
         @media (max-width: 700px) {
 
-          .sidebar {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 290px;
-            transform: translateX(-105%);
-            transition: transform 0.25s ease;
-            box-shadow: 20px 0 50px rgba(0,0,0,0.45);
+          .top-bar {
+            height: 78px;
+            min-height: 78px;
           }
 
-          .sidebar.open {
-            transform: translateX(0);
+          .brand-name {
+            font-size: 24px;
           }
 
-          .overlay {
-            display: block;
-            position: fixed;
-            inset: 0;
-            z-index: 40;
-            border: none;
-            background: rgba(0,0,0,0.55);
+          .new-chat-button {
+            right: 14px;
+
+            width: 50px;
+            height: 50px;
+
+            border-radius: 17px;
+
+            font-size: 32px;
           }
 
-          .topbar {
-            height: 86px;
-            min-height: 86px;
-            padding: 0 14px;
-          }
-
-          .topButton {
-            width: 58px;
-            height: 58px;
-            border-radius: 20px;
-          }
-
-          .menuButton span {
-            width: 28px;
-            height: 3px;
-          }
-
-          .plusButton {
-            font-size: 34px;
-          }
-
-          .topAvatarWrap {
-            width: 48px;
-            height: 48px;
-          }
-
-          .topAvatar {
-            width: 48px;
-            height: 48px;
-          }
-
-          .topName {
-            font-size: 23px;
-          }
-
-          .onlineDot {
-            width: 15px;
-            height: 15px;
-            border-width: 2px;
-          }
-
-          .chatArea {
-            padding: 20px 18px;
+          .chat-area {
+            padding:
+              28px
+              14px
+              145px;
           }
 
           .welcome {
-            padding-top: 45px;
-          }
-
-          .welcomeAvatarWrap {
-            width: 76px;
-            height: 76px;
-          }
-
-          .welcomeAvatar {
-            width: 76px;
-            height: 76px;
+            padding:
+              0
+              0
+              80px;
           }
 
           .welcome h1 {
-            font-size: 28px;
-            margin-top: 18px;
+            font-size: 44px;
+            letter-spacing: -1.5px;
           }
 
           .welcome p {
+            margin-top: 18px;
+
+            font-size: 21px;
+
+            max-width: 330px;
+          }
+
+          .messages {
+            gap: 16px;
+          }
+
+          .message {
+            max-width: 88%;
+
+            padding:
+              14px
+              17px;
+
             font-size: 17px;
+
+            line-height: 1.5;
+
+            border-radius: 20px;
           }
 
-          .messageBubble {
-            max-width: 84%;
-            font-size: 17px;
-            padding: 15px 18px;
+          .user-message {
+            border-bottom-right-radius: 7px;
           }
 
-          .smallAvatarWrap,
-          .smallAvatar,
-          .smallFounderAvatar {
-            width: 38px;
-            height: 38px;
+          .assistant-message {
+            border-bottom-left-radius: 7px;
           }
 
-          .inputArea {
-            padding: 10px 12px 14px;
+          .input-container {
+            padding:
+              12px
+              12px
+              calc(
+                12px +
+                env(safe-area-inset-bottom)
+              );
           }
 
-          .inputBox {
+          .input-box {
             min-height: 72px;
-            border-radius: 25px;
-            padding-left: 15px;
+
+            border-radius: 23px;
+
+            padding:
+              6px
+              6px
+              6px
+              17px;
           }
 
-          .inputBox textarea {
-            font-size: 18px;
-            padding: 10px 5px;
+          .input-box textarea {
+            font-size: 17px;
+
+            padding:
+              10px
+              0;
           }
 
-          .sendButton {
-            width: 56px;
-            height: 56px;
+          .send-button {
+            width: 58px;
+            height: 58px;
+
+            margin-left: 8px;
+
             border-radius: 19px;
-            font-size: 31px;
-          }
 
-          .bottomHint {
-            font-size: 10px;
+            font-size: 31px;
           }
         }
 
-        /* =====================================================
+        /* ===================================================
            VERY SMALL PHONES
-        ===================================================== */
+        =================================================== */
 
         @media (max-width: 380px) {
 
-          .topbar {
-            padding: 0 9px;
+          .top-bar {
+            height: 70px;
+            min-height: 70px;
           }
 
-          .topButton {
-            width: 52px;
-            height: 52px;
+          .brand-name {
+            font-size: 22px;
           }
 
-          .topAvatarWrap,
-          .topAvatar {
-            width: 43px;
-            height: 43px;
+          .new-chat-button {
+            width: 46px;
+            height: 46px;
+
+            right: 10px;
+
+            border-radius: 15px;
           }
 
-          .topName {
-            font-size: 21px;
+          .chat-area {
+            padding:
+              22px
+              10px
+              135px;
           }
 
-          .chatArea {
-            padding-left: 12px;
-            padding-right: 12px;
+          .welcome h1 {
+            font-size: 40px;
           }
 
-          .messageBubble {
-            max-width: 88%;
+          .welcome p {
+            font-size: 19px;
+          }
+
+          .message {
+            max-width: 92%;
             font-size: 16px;
+          }
+
+          .input-box {
+            min-height: 68px;
+            padding-left: 14px;
+          }
+
+          .send-button {
+            width: 54px;
+            height: 54px;
           }
         }
 
       `}</style>
-    </>
+
+    </main>
   );
 }
