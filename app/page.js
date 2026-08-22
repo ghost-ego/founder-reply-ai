@@ -8,7 +8,6 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // Reze is now the FRONT page.
   const [mode, setMode] = useState("reze");
 
   // FounderReply AI
@@ -119,13 +118,9 @@ export default function Home() {
       return;
     }
 
-    // Clear the input immediately.
     setRezeMessage("");
-
-    // Clear only the previous error.
     setRezeError("");
 
-    // Add user message.
     setRezeMessages((previous) => [
       ...previous,
       {
@@ -167,7 +162,6 @@ export default function Home() {
         },
       ]);
     } catch (err) {
-      // Only ONE error message appears here.
       setRezeError(
         err?.message ||
           "Something went wrong with Reze."
@@ -292,9 +286,7 @@ export default function Home() {
           width: "100%",
         }}
       >
-        {/* =====================================================
-            SIDEBAR
-        ===================================================== */}
+        {/* ================= SIDEBAR ================= */}
 
         <aside
           style={{
@@ -318,17 +310,17 @@ export default function Home() {
               }}
               style={{
                 width: "100%",
-                padding: "11px",
+                padding: "12px",
                 border: "1px solid #4a5568",
                 background: "transparent",
                 color: "#fff",
-                borderRadius: "8px",
+                borderRadius: "9px",
                 cursor: "pointer",
                 textAlign: "left",
                 fontSize: "14px",
               }}
             >
-              + New Chat
+              ＋ New Chat
             </button>
 
             <div
@@ -340,9 +332,10 @@ export default function Home() {
               }}
             >
               <div
+                onClick={() => selectMode("reze")}
                 style={{
-                  padding: "10px",
-                  borderRadius: "8px",
+                  padding: "11px",
+                  borderRadius: "9px",
                   color:
                     mode === "reze"
                       ? "#fff"
@@ -353,15 +346,15 @@ export default function Home() {
                       : "transparent",
                   cursor: "pointer",
                 }}
-                onClick={() => selectMode("reze")}
               >
                 🤖 Reze
               </div>
 
               <div
+                onClick={() => selectMode("founder")}
                 style={{
-                  padding: "10px",
-                  borderRadius: "8px",
+                  padding: "11px",
+                  borderRadius: "9px",
                   color:
                     mode === "founder"
                       ? "#fff"
@@ -372,9 +365,6 @@ export default function Home() {
                       : "transparent",
                   cursor: "pointer",
                 }}
-                onClick={() =>
-                  selectMode("founder")
-                }
               >
                 💼 FounderReply AI
               </div>
@@ -393,10 +383,7 @@ export default function Home() {
             }}
           >
             <div>
-              👤{" "}
-              {user
-                ? user.email || "User"
-                : "Guest"}
+              👤 {user ? user.email || "User" : "Guest"}
             </div>
 
             <div>⚙️ My Account</div>
@@ -420,9 +407,7 @@ export default function Home() {
           </div>
         </aside>
 
-        {/* =====================================================
-            MAIN AREA
-        ===================================================== */}
+        {/* ================= MAIN ================= */}
 
         <div
           style={{
@@ -432,7 +417,7 @@ export default function Home() {
             flexDirection: "column",
           }}
         >
-          {/* TOP RIGHT MENU */}
+          {/* TOP MENU */}
 
           <div
             style={{
@@ -447,9 +432,7 @@ export default function Home() {
               }}
             >
               <button
-                onClick={() =>
-                  setMenuOpen(!menuOpen)
-                }
+                onClick={() => setMenuOpen(!menuOpen)}
                 aria-label="Open AI menu"
                 style={{
                   width: "42px",
@@ -462,7 +445,6 @@ export default function Home() {
                   color: "#fff",
                   cursor: "pointer",
                   fontSize: "22px",
-                  lineHeight: "1",
                 }}
               >
                 ⋮
@@ -486,9 +468,7 @@ export default function Home() {
                   }}
                 >
                   <button
-                    onClick={() =>
-                      selectMode("reze")
-                    }
+                    onClick={() => selectMode("reze")}
                     style={{
                       width: "100%",
                       textAlign: "left",
@@ -504,6 +484,7 @@ export default function Home() {
                     }}
                   >
                     🤖 Reze
+
                     <div
                       style={{
                         color: "#a0aec0",
@@ -516,9 +497,7 @@ export default function Home() {
                   </button>
 
                   <button
-                    onClick={() =>
-                      selectMode("founder")
-                    }
+                    onClick={() => selectMode("founder")}
                     style={{
                       width: "100%",
                       textAlign: "left",
@@ -535,6 +514,7 @@ export default function Home() {
                     }}
                   >
                     💼 FounderReply AI
+
                     <div
                       style={{
                         color: "#a0aec0",
@@ -550,9 +530,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* ===================================================
-              REZE
-          =================================================== */}
+          {/* ================= REZE ================= */}
 
           {mode === "reze" ? (
             <div
@@ -561,26 +539,27 @@ export default function Home() {
                 display: "flex",
                 flexDirection: "column",
                 width: "100%",
-                maxWidth: "800px",
+                maxWidth: "850px",
                 margin: "0 auto",
-                padding:
-                  "10px 24px 24px",
+                padding: "5px 24px 24px",
                 boxSizing: "border-box",
               }}
             >
-              {/* HEADER */}
+              {/* REZE HEADER */}
 
               <div
                 style={{
                   textAlign: "center",
-                  paddingTop: "15px",
+                  paddingTop: "10px",
                 }}
               >
                 <h1
                   style={{
-                    fontSize: "28px",
+                    fontSize: "30px",
                     color: "#fff",
                     margin: 0,
+                    fontWeight: "700",
+                    letterSpacing: "-0.5px",
                   }}
                 >
                   Hi, I'm REZE.
@@ -588,33 +567,43 @@ export default function Home() {
 
                 <h1
                   style={{
-                    fontSize: "28px",
+                    fontSize: "30px",
                     color: "#fff",
-                    margin:
-                      "4px 0 0",
+                    margin: "5px 0 0",
+                    fontWeight: "700",
+                    letterSpacing: "-0.5px",
                   }}
                 >
                   How can I help you today?
                 </h1>
 
+                {/* REAL REZE IMAGE */}
+
                 <div
                   style={{
-                    margin:
-                      "16px auto 4px",
-                    width: "70px",
-                    height: "70px",
+                    margin: "18px auto 5px",
+                    width: "82px",
+                    height: "82px",
                     borderRadius: "50%",
                     background: "#fff",
                     border:
-                      "2px solid #a0aec0",
+                      "2px solid rgba(255,255,255,0.35)",
                     overflow: "hidden",
+                    boxShadow:
+                      "0 8px 30px rgba(0,0,0,0.35)",
                   }}
                 >
                   <img
-                    src="https://api.dicebear.com/7.x/bottts/svg?seed=Reze"
+                    src="/reze-avatar.png"
                     width="100%"
                     height="100%"
                     alt="Reze"
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
                   />
                 </div>
 
@@ -622,8 +611,7 @@ export default function Home() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    justifyContent:
-                      "center",
+                    justifyContent: "center",
                     gap: "6px",
                     fontSize: "12px",
                     fontWeight: "bold",
@@ -631,6 +619,7 @@ export default function Home() {
                   }}
                 >
                   REZE
+
                   <span
                     style={{
                       width: "8px",
@@ -638,47 +627,40 @@ export default function Home() {
                       background: "#48bb78",
                       borderRadius: "50%",
                       display: "inline-block",
+                      boxShadow:
+                        "0 0 8px rgba(72,187,120,0.7)",
                     }}
                   />
                 </div>
               </div>
 
-              {/* MESSAGES */}
+              {/* CHAT */}
 
               <div
                 style={{
                   flex: 1,
                   overflowY: "auto",
-                  margin:
-                    "20px 0",
-                  minHeight: "200px",
-                  padding:
-                    "0 4px",
+                  margin: "20px 0",
+                  minHeight: "220px",
+                  padding: "0 4px",
                 }}
               >
-                {rezeMessages.length ===
-                0 ? (
+                {rezeMessages.length === 0 ? (
                   <div
                     style={{
                       display: "flex",
-                      flexDirection:
-                        "column",
-                      alignItems:
-                        "center",
-                      justifyContent:
-                        "center",
-                      minHeight:
-                        "260px",
-                      textAlign:
-                        "center",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      minHeight: "280px",
+                      textAlign: "center",
                       color: "#a0aec0",
                     }}
                   >
                     <div
                       style={{
                         fontSize: "30px",
-                        marginBottom:
-                          "12px",
+                        marginBottom: "12px",
                       }}
                     >
                       ✨
@@ -687,96 +669,83 @@ export default function Home() {
                     <div
                       style={{
                         color: "#e2e8f0",
-                        fontSize:
-                          "15px",
+                        fontSize: "15px",
                       }}
                     >
                       Ask REZE anything...
                     </div>
+
+                    <div
+                      style={{
+                        color: "#718096",
+                        fontSize: "13px",
+                        marginTop: "7px",
+                      }}
+                    >
+                      I'm listening.
+                    </div>
                   </div>
                 ) : (
-                  rezeMessages.map(
-                    (item, index) => (
+                  rezeMessages.map((item, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        marginBottom: "16px",
+                      }}
+                    >
                       <div
-                        key={index}
                         style={{
-                          display: "flex",
-                          flexDirection:
-                            "column",
-                          marginBottom:
-                            "16px",
+                          maxWidth: "75%",
+                          padding: "14px 18px",
+                          borderRadius: "16px",
+                          fontSize: "14px",
+                          lineHeight: "1.55",
+                          whiteSpace: "pre-wrap",
+                          alignSelf:
+                            item.role === "user"
+                              ? "flex-end"
+                              : "flex-start",
+                          background:
+                            item.role === "user"
+                              ? "#3c304f"
+                              : "#363442",
+                          color:
+                            item.role === "user"
+                              ? "#d6c8f4"
+                              : "#e2e8f0",
+                          borderBottomRightRadius:
+                            item.role === "user"
+                              ? "3px"
+                              : "16px",
+                          borderBottomLeftRadius:
+                            item.role === "assistant"
+                              ? "3px"
+                              : "16px",
                         }}
                       >
-                        <div
-                          style={{
-                            maxWidth:
-                              "75%",
-                            padding:
-                              "14px 18px",
-                            borderRadius:
-                              "16px",
-                            fontSize:
-                              "14px",
-                            lineHeight:
-                              "1.5",
-                            whiteSpace:
-                              "pre-wrap",
-                            alignSelf:
-                              item.role ===
-                              "user"
-                                ? "flex-end"
-                                : "flex-start",
-                            background:
-                              item.role ===
-                              "user"
-                                ? "#3c304f"
-                                : "#363442",
-                            color:
-                              item.role ===
-                              "user"
-                                ? "#c5b5e8"
-                                : "#e2e8f0",
-                            borderBottomRightRadius:
-                              item.role ===
-                              "user"
-                                ? "2px"
-                                : "16px",
-                            borderBottomLeftRadius:
-                              item.role ===
-                              "assistant"
-                                ? "2px"
-                                : "16px",
-                          }}
-                        >
-                          {item.content}
-                        </div>
+                        {item.content}
                       </div>
-                    )
-                  )
+                    </div>
+                  ))
                 )}
 
                 {rezeLoading && (
                   <div
                     style={{
                       display: "flex",
-                      justifyContent:
-                        "flex-start",
+                      justifyContent: "flex-start",
                     }}
                   >
                     <div
                       style={{
-                        padding:
-                          "14px 18px",
-                        borderRadius:
-                          "16px",
-                        borderBottomLeftRadius:
-                          "2px",
-                        background:
-                          "#363442",
-                        color:
-                          "#a0aec0",
-                        fontSize:
-                          "14px",
+                        padding: "14px 18px",
+                        borderRadius: "16px",
+                        borderBottomLeftRadius: "3px",
+                        background: "#363442",
+                        color: "#a0aec0",
+                        fontSize: "14px",
                       }}
                     >
                       REZE is thinking...
@@ -785,7 +754,7 @@ export default function Home() {
                 )}
               </div>
 
-              {/* ONLY ONE ERROR MESSAGE */}
+              {/* ERROR */}
 
               {rezeError && (
                 <div
@@ -795,14 +764,10 @@ export default function Home() {
                     border:
                       "1px solid rgba(248,113,113,0.25)",
                     color: "#fca5a5",
-                    borderRadius:
-                      "10px",
-                    padding:
-                      "10px 12px",
-                    marginBottom:
-                      "10px",
-                    fontSize:
-                      "13px",
+                    borderRadius: "10px",
+                    padding: "10px 12px",
+                    marginBottom: "10px",
+                    fontSize: "13px",
                   }}
                 >
                   {rezeError}
@@ -818,39 +783,33 @@ export default function Home() {
                 }}
                 style={{
                   display: "flex",
-                  background:
-                    "#363442",
-                  borderRadius:
-                    "12px",
-                  padding:
-                    "8px 12px",
+                  alignItems: "center",
+                  background: "#363442",
+                  borderRadius: "14px",
+                  padding: "8px 10px 8px 15px",
                   border:
-                    "1px solid #4a5568",
+                    "1px solid rgba(255,255,255,0.12)",
                   gap: "8px",
+                  boxShadow:
+                    "0 10px 35px rgba(0,0,0,0.18)",
                 }}
               >
                 <input
                   type="text"
                   value={rezeMessage}
                   onChange={(event) =>
-                    setRezeMessage(
-                      event.target.value
-                    )
+                    setRezeMessage(event.target.value)
                   }
                   placeholder="Ask REZE anything..."
-                  disabled={
-                    rezeLoading
-                  }
+                  disabled={rezeLoading}
                   style={{
                     flex: 1,
                     minWidth: 0,
-                    background:
-                      "transparent",
+                    background: "transparent",
                     border: "none",
                     outline: "none",
                     color: "#fff",
-                    fontSize:
-                      "14px",
+                    fontSize: "14px",
                   }}
                 />
 
@@ -868,81 +827,71 @@ export default function Home() {
                         : "#7052db",
                     color: "#fff",
                     border: "none",
-                    padding:
-                      "8px 18px",
-                    borderRadius:
-                      "8px",
+                    padding: "9px 18px",
+                    borderRadius: "9px",
                     cursor:
                       rezeLoading ||
                       !rezeMessage.trim()
                         ? "not-allowed"
                         : "pointer",
-                    fontWeight:
-                      "600",
+                    fontWeight: "600",
                   }}
                 >
-                  Send
+                  {rezeLoading ? "..." : "Send"}
                 </button>
               </form>
+
+              <div
+                style={{
+                  textAlign: "center",
+                  color: "#5b6172",
+                  fontSize: "11px",
+                  marginTop: "9px",
+                }}
+              >
+                REZE can make mistakes. Check important information.
+              </div>
             </div>
           ) : (
-            /* =================================================
-               FOUNDERREPLY AI
-            ================================================= */
+            /* ================= FOUNDERREPLY ================= */
 
             <div
               style={{
                 width: "100%",
                 maxWidth: "900px",
-                margin:
-                  "0 auto",
-                padding:
-                  "20px 24px 60px",
-                boxSizing:
-                  "border-box",
+                margin: "0 auto",
+                padding: "20px 24px 60px",
+                boxSizing: "border-box",
               }}
             >
               <header
                 style={{
-                  textAlign:
-                    "center",
-                  padding:
-                    "30px 10px 35px",
+                  textAlign: "center",
+                  padding: "30px 10px 35px",
                 }}
               >
                 <div
                   style={{
-                    display:
-                      "inline-flex",
-                    alignItems:
-                      "center",
+                    display: "inline-flex",
+                    alignItems: "center",
                     gap: "8px",
-                    padding:
-                      "8px 14px",
-                    borderRadius:
-                      "999px",
+                    padding: "8px 14px",
+                    borderRadius: "999px",
                     background:
                       "rgba(255,255,255,0.06)",
                     border:
                       "1px solid rgba(255,255,255,0.1)",
-                    fontSize:
-                      "14px",
-                    color:
-                      "#cbd5e1",
-                    marginBottom:
-                      "22px",
+                    fontSize: "14px",
+                    color: "#cbd5e1",
+                    marginBottom: "22px",
                   }}
                 >
                   <span
                     style={{
-                      width:
-                        "8px",
-                      height:
-                        "8px",
-                      borderRadius:
-                        "50%",
-                      background:
-                        "#4ade80",
+                      width: "8px",
+                      height: "8px",
+                      borderRadius: "50%",
+                      background: "#4ade80",
                     }}
                   />
 
@@ -953,13 +902,10 @@ export default function Home() {
                   style={{
                     fontSize:
                       "clamp(40px, 8vw, 72px)",
-                    lineHeight:
-                      "1",
-                    letterSpacing:
-                      "-3px",
+                    lineHeight: "1",
+                    letterSpacing: "-3px",
                     margin: 0,
-                    fontWeight:
-                      "800",
+                    fontWeight: "800",
                   }}
                 >
                   Write replies that
@@ -969,8 +915,7 @@ export default function Home() {
                     style={{
                       background:
                         "linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6)",
-                      WebkitBackgroundClip:
-                        "text",
+                      WebkitBackgroundClip: "text",
                       WebkitTextFillColor:
                         "transparent",
                     }}
@@ -981,23 +926,15 @@ export default function Home() {
 
                 <p
                   style={{
-                    maxWidth:
-                      "650px",
-                    margin:
-                      "22px auto 0",
-                    color:
-                      "#94a3b8",
-                    fontSize:
-                      "18px",
-                    lineHeight:
-                      "1.7",
+                    maxWidth: "650px",
+                    margin: "22px auto 0",
+                    color: "#94a3b8",
+                    fontSize: "18px",
+                    lineHeight: "1.7",
                   }}
                 >
-                  Turn any LinkedIn
-                  post into thoughtful,
-                  natural comments
-                  that sound like a
-                  real founder.
+                  Turn any LinkedIn post into thoughtful,
+                  natural comments that sound like a real founder.
                 </p>
               </header>
 
@@ -1007,91 +944,61 @@ export default function Home() {
                     "rgba(255,255,255,0.055)",
                   border:
                     "1px solid rgba(255,255,255,0.1)",
-                  borderRadius:
-                    "24px",
-                  padding:
-                    "22px",
+                  borderRadius: "24px",
+                  padding: "22px",
                   boxShadow:
                     "0 25px 80px rgba(0,0,0,0.35)",
                 }}
               >
                 <div
                   style={{
-                    display:
-                      "flex",
-                    justifyContent:
-                      "space-between",
-                    marginBottom:
-                      "12px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: "12px",
                   }}
                 >
-                  <strong>
-                    LinkedIn post
-                  </strong>
+                  <strong>LinkedIn post</strong>
 
                   <span
                     style={{
-                      color:
-                        "#64748b",
-                      fontSize:
-                        "13px",
+                      color: "#64748b",
+                      fontSize: "13px",
                     }}
                   >
-                    {post.length}{" "}
-                    characters
+                    {post.length} characters
                   </span>
                 </div>
 
                 <textarea
                   value={post}
                   onChange={(e) =>
-                    setPost(
-                      e.target.value
-                    )
+                    setPost(e.target.value)
                   }
                   placeholder="Paste a LinkedIn post here..."
                   style={{
-                    width:
-                      "100%",
-                    minHeight:
-                      "220px",
-                    boxSizing:
-                      "border-box",
-                    resize:
-                      "vertical",
+                    width: "100%",
+                    minHeight: "220px",
+                    boxSizing: "border-box",
+                    resize: "vertical",
                     background:
                       "rgba(0,0,0,0.25)",
-                    color:
-                      "#fff",
+                    color: "#fff",
                     border:
                       "1px solid rgba(255,255,255,0.1)",
-                    borderRadius:
-                      "16px",
-                    padding:
-                      "18px",
-                    fontSize:
-                      "16px",
-                    lineHeight:
-                      "1.6",
-                    outline:
-                      "none",
+                    borderRadius: "16px",
+                    padding: "18px",
+                    fontSize: "16px",
+                    lineHeight: "1.6",
+                    outline: "none",
                   }}
                 />
 
-                <div
-                  style={{
-                    marginTop:
-                      "22px",
-                  }}
-                >
+                <div style={{ marginTop: "22px" }}>
                   <div
                     style={{
-                      fontSize:
-                        "14px",
-                      fontWeight:
-                        "700",
-                      marginBottom:
-                        "10px",
+                      fontSize: "14px",
+                      fontWeight: "700",
+                      marginBottom: "10px",
                     }}
                   >
                     Tone
@@ -1099,80 +1006,51 @@ export default function Home() {
 
                   <div
                     style={{
-                      display:
-                        "grid",
+                      display: "grid",
                       gridTemplateColumns:
                         "repeat(auto-fit, minmax(140px, 1fr))",
-                      gap:
-                        "10px",
+                      gap: "10px",
                     }}
                   >
-                    {tones.map(
-                      (item) => {
-                        const selected =
-                          tone ===
-                          item.name;
+                    {tones.map((item) => {
+                      const selected =
+                        tone === item.name;
 
-                        return (
-                          <button
-                            key={
-                              item.name
-                            }
-                            onClick={() =>
-                              setTone(
-                                item.name
-                              )
-                            }
-                            style={{
-                              padding:
-                                "13px 12px",
-                              borderRadius:
-                                "12px",
-                              border:
-                                selected
-                                  ? "1px solid #8b5cf6"
-                                  : "1px solid rgba(255,255,255,0.1)",
-                              background:
-                                selected
-                                  ? "rgba(124,58,237,0.2)"
-                                  : "rgba(255,255,255,0.04)",
-                              color:
-                                "#fff",
-                              cursor:
-                                "pointer",
-                              fontWeight:
-                                selected
-                                  ? "700"
-                                  : "500",
-                            }}
-                          >
-                            {
-                              item.icon
-                            }{" "}
-                            {
-                              item.name
-                            }
-                          </button>
-                        );
-                      }
-                    )}
+                      return (
+                        <button
+                          key={item.name}
+                          onClick={() =>
+                            setTone(item.name)
+                          }
+                          style={{
+                            padding: "13px 12px",
+                            borderRadius: "12px",
+                            border: selected
+                              ? "1px solid #8b5cf6"
+                              : "1px solid rgba(255,255,255,0.1)",
+                            background: selected
+                              ? "rgba(124,58,237,0.2)"
+                              : "rgba(255,255,255,0.04)",
+                            color: "#fff",
+                            cursor: "pointer",
+                            fontWeight: selected
+                              ? "700"
+                              : "500",
+                          }}
+                        >
+                          {item.icon} {item.name}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    marginTop:
-                      "22px",
-                  }}
-                >
+                <div style={{ marginTop: "22px" }}>
                   <div
                     style={{
-                      fontSize:
-                        "14px",
-                      fontWeight:
-                        "700",
-                      marginBottom:
-                        "10px",
+                      fontSize: "14px",
+                      fontWeight: "700",
+                      marginBottom: "10px",
                     }}
                   >
                     Length
@@ -1180,116 +1058,79 @@ export default function Home() {
 
                   <div
                     style={{
-                      display:
-                        "grid",
+                      display: "grid",
                       gridTemplateColumns:
                         "repeat(auto-fit, minmax(140px, 1fr))",
-                      gap:
-                        "10px",
+                      gap: "10px",
                     }}
                   >
-                    {lengths.map(
-                      (item) => {
-                        const selected =
-                          length ===
-                          item.name;
+                    {lengths.map((item) => {
+                      const selected =
+                        length === item.name;
 
-                        return (
-                          <button
-                            key={
-                              item.name
-                            }
-                            onClick={() =>
-                              setLength(
-                                item.name
-                              )
-                            }
+                      return (
+                        <button
+                          key={item.name}
+                          onClick={() =>
+                            setLength(item.name)
+                          }
+                          style={{
+                            padding: "13px 12px",
+                            borderRadius: "12px",
+                            border: selected
+                              ? "1px solid #3b82f6"
+                              : "1px solid rgba(255,255,255,0.1)",
+                            background: selected
+                              ? "rgba(37,99,235,0.2)"
+                              : "rgba(255,255,255,0.04)",
+                            color: "#fff",
+                            cursor: "pointer",
+                            textAlign: "left",
+                          }}
+                        >
+                          <div
                             style={{
-                              padding:
-                                "13px 12px",
-                              borderRadius:
-                                "12px",
-                              border:
-                                selected
-                                  ? "1px solid #3b82f6"
-                                  : "1px solid rgba(255,255,255,0.1)",
-                              background:
-                                selected
-                                  ? "rgba(37,99,235,0.2)"
-                                  : "rgba(255,255,255,0.04)",
-                              color:
-                                "#fff",
-                              cursor:
-                                "pointer",
-                              textAlign:
-                                "left",
+                              fontWeight: "700",
                             }}
                           >
-                            <div
-                              style={{
-                                fontWeight:
-                                  "700",
-                              }}
-                            >
-                              {
-                                item.name
-                              }
-                            </div>
+                            {item.name}
+                          </div>
 
-                            <div
-                              style={{
-                                fontSize:
-                                  "12px",
-                                color:
-                                  "#94a3b8",
-                                marginTop:
-                                  "3px",
-                              }}
-                            >
-                              {
-                                item.description
-                              }
-                            </div>
-                          </button>
-                        );
-                      }
-                    )}
+                          <div
+                            style={{
+                              fontSize: "12px",
+                              color: "#94a3b8",
+                              marginTop: "3px",
+                            }}
+                          >
+                            {item.description}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
                 <button
-                  onClick={
-                    generateComments
-                  }
+                  onClick={generateComments}
                   disabled={
-                    loading ||
-                    !post.trim()
+                    loading || !post.trim()
                   }
                   style={{
-                    width:
-                      "100%",
-                    marginTop:
-                      "22px",
-                    padding:
-                      "16px 22px",
-                    borderRadius:
-                      "14px",
-                    border:
-                      "none",
+                    width: "100%",
+                    marginTop: "22px",
+                    padding: "16px 22px",
+                    borderRadius: "14px",
+                    border: "none",
                     background:
-                      loading ||
-                      !post.trim()
+                      loading || !post.trim()
                         ? "#334155"
                         : "linear-gradient(90deg, #2563eb, #7c3aed)",
-                    color:
-                      "#fff",
-                    fontSize:
-                      "16px",
-                    fontWeight:
-                      "700",
+                    color: "#fff",
+                    fontSize: "16px",
+                    fontWeight: "700",
                     cursor:
-                      loading ||
-                      !post.trim()
+                      loading || !post.trim()
                         ? "not-allowed"
                         : "pointer",
                   }}
@@ -1302,12 +1143,9 @@ export default function Home() {
                 {error && (
                   <p
                     style={{
-                      color:
-                        "#f87171",
-                      marginTop:
-                        "15px",
-                      textAlign:
-                        "center",
+                      color: "#f87171",
+                      marginTop: "15px",
+                      textAlign: "center",
                     }}
                   >
                     {error}
@@ -1315,173 +1153,122 @@ export default function Home() {
                 )}
               </section>
 
-              {comments.length >
-                0 && (
+              {comments.length > 0 && (
                 <section
                   style={{
-                    marginTop:
-                      "30px",
+                    marginTop: "30px",
                   }}
                 >
                   <div
                     style={{
-                      display:
-                        "flex",
-                      justifyContent:
-                        "space-between",
-                      alignItems:
-                        "center",
-                      marginBottom:
-                        "15px",
-                      flexWrap:
-                        "wrap",
-                      gap:
-                        "12px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "15px",
+                      flexWrap: "wrap",
+                      gap: "12px",
                     }}
                   >
                     <div
                       style={{
-                        color:
-                          "#94a3b8",
-                        fontSize:
-                          "13px",
-                        fontWeight:
-                          "600",
-                        textTransform:
-                          "uppercase",
+                        color: "#94a3b8",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        textTransform: "uppercase",
                       }}
                     >
                       Choose your reply
                     </div>
 
                     <button
-                      onClick={
-                        copyAll
-                      }
+                      onClick={copyAll}
                       style={{
-                        padding:
-                          "9px 14px",
-                        borderRadius:
-                          "10px",
+                        padding: "9px 14px",
+                        borderRadius: "10px",
                         border:
                           "1px solid rgba(255,255,255,0.12)",
                         background:
                           "rgba(255,255,255,0.06)",
-                        color:
-                          "#fff",
-                        cursor:
-                          "pointer",
+                        color: "#fff",
+                        cursor: "pointer",
                       }}
                     >
                       📋 Copy All
                     </button>
                   </div>
 
-                  {comments.map(
-                    (
-                      comment,
-                      index
-                    ) => (
+                  {comments.map((comment, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        background:
+                          "rgba(255,255,255,0.055)",
+                        border:
+                          "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "22px",
+                        padding: "24px",
+                        marginBottom: "16px",
+                      }}
+                    >
                       <div
-                        key={
-                          index
-                        }
                         style={{
-                          background:
-                            "rgba(255,255,255,0.055)",
-                          border:
-                            "1px solid rgba(255,255,255,0.1)",
-                          borderRadius:
-                            "22px",
-                          padding:
-                            "24px",
-                          marginBottom:
-                            "16px",
+                          fontWeight: "700",
+                          marginBottom: "14px",
                         }}
                       >
-                        <div
-                          style={{
-                            fontWeight:
-                              "700",
-                            marginBottom:
-                              "14px",
-                          }}
-                        >
-                          {
-                            [
-                              "💡 Thoughtful",
-                              "🔥 Strong perspective",
-                              "⚡ Natural & concise",
-                            ][index]
-                          }
-                        </div>
-
-                        <p
-                          style={{
-                            color:
-                              "#e2e8f0",
-                            fontSize:
-                              "17px",
-                            lineHeight:
-                              "1.75",
-                          }}
-                        >
-                          {
-                            comment
-                          }
-                        </p>
-
-                        <button
-                          onClick={() =>
-                            copyComment(
-                              comment
-                            )
-                          }
-                          style={{
-                            padding:
-                              "10px 16px",
-                            borderRadius:
-                              "10px",
-                            border:
-                              "1px solid rgba(255,255,255,0.12)",
-                            background:
-                              "rgba(255,255,255,0.06)",
-                            color:
-                              "#fff",
-                            cursor:
-                              "pointer",
-                          }}
-                        >
-                          📋 Copy
-                        </button>
+                        {
+                          [
+                            "💡 Thoughtful",
+                            "🔥 Strong perspective",
+                            "⚡ Natural & concise",
+                          ][index]
+                        }
                       </div>
-                    )
-                  )}
+
+                      <p
+                        style={{
+                          color: "#e2e8f0",
+                          fontSize: "17px",
+                          lineHeight: "1.75",
+                        }}
+                      >
+                        {comment}
+                      </p>
+
+                      <button
+                        onClick={() =>
+                          copyComment(comment)
+                        }
+                        style={{
+                          padding: "10px 16px",
+                          borderRadius: "10px",
+                          border:
+                            "1px solid rgba(255,255,255,0.12)",
+                          background:
+                            "rgba(255,255,255,0.06)",
+                          color: "#fff",
+                          cursor: "pointer",
+                        }}
+                      >
+                        📋 Copy
+                      </button>
+                    </div>
+                  ))}
 
                   <button
-                    onClick={
-                      generateComments
-                    }
-                    disabled={
-                      loading
-                    }
+                    onClick={generateComments}
+                    disabled={loading}
                     style={{
-                      width:
-                        "100%",
-                      padding:
-                        "15px",
-                      borderRadius:
-                        "14px",
+                      width: "100%",
+                      padding: "15px",
+                      borderRadius: "14px",
                       border:
                         "1px solid rgba(255,255,255,0.12)",
                       background:
                         "rgba(255,255,255,0.06)",
-                      color:
-                        "#fff",
-                      cursor:
-                        "pointer",
-                      fontWeight:
-                        "700",
+                      color: "#fff",
+                      cursor: "pointer",
+                      fontWeight: "700",
                     }}
                   >
                     🔄 Regenerate
@@ -1489,120 +1276,87 @@ export default function Home() {
                 </section>
               )}
 
-              {recent.length >
-                0 && (
+              {recent.length > 0 && (
                 <section
                   style={{
-                    marginTop:
-                      "45px",
+                    marginTop: "45px",
                   }}
                 >
                   <div
                     style={{
-                      display:
-                        "flex",
-                      justifyContent:
-                        "space-between",
-                      alignItems:
-                        "center",
-                      marginBottom:
-                        "16px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "16px",
                     }}
                   >
-                    <h2
-                      style={{
-                        margin: 0,
-                      }}
-                    >
+                    <h2 style={{ margin: 0 }}>
                       Recent Generations
                     </h2>
 
                     <button
-                      onClick={
-                        clearRecent
-                      }
+                      onClick={clearRecent}
                       style={{
-                        padding:
-                          "8px 12px",
-                        borderRadius:
-                          "9px",
+                        padding: "8px 12px",
+                        borderRadius: "9px",
                         border:
                           "1px solid rgba(255,255,255,0.1)",
                         background:
                           "rgba(255,255,255,0.04)",
-                        color:
-                          "#94a3b8",
-                        cursor:
-                          "pointer",
+                        color: "#94a3b8",
+                        cursor: "pointer",
                       }}
                     >
                       Clear
                     </button>
                   </div>
 
-                  {recent.map(
-                    (item) => (
-                      <div
-                        key={
-                          item.id
-                        }
+                  {recent.map((item) => (
+                    <div
+                      key={item.id}
+                      style={{
+                        background:
+                          "rgba(255,255,255,0.04)",
+                        border:
+                          "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: "18px",
+                        padding: "18px",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <p
                         style={{
-                          background:
-                            "rgba(255,255,255,0.04)",
-                          border:
-                            "1px solid rgba(255,255,255,0.08)",
-                          borderRadius:
-                            "18px",
-                          padding:
-                            "18px",
-                          marginBottom:
-                            "12px",
+                          color: "#cbd5e1",
+                          lineHeight: "1.6",
                         }}
                       >
-                        <p
-                          style={{
-                            color:
-                              "#cbd5e1",
-                            lineHeight:
-                              "1.6",
-                          }}
-                        >
-                          {item.post
-                            .length >
-                          180
-                            ? `${item.post.slice(
-                                0,
-                                180
-                              )}...`
-                            : item.post}
-                        </p>
+                        {item.post.length > 180
+                          ? `${item.post.slice(
+                              0,
+                              180
+                            )}...`
+                          : item.post}
+                      </p>
 
-                        <button
-                          onClick={() =>
-                            useAgain(
-                              item
-                            )
-                          }
-                          style={{
-                            padding:
-                              "8px 13px",
-                            borderRadius:
-                              "9px",
-                            border:
-                              "1px solid rgba(255,255,255,0.1)",
-                            background:
-                              "rgba(255,255,255,0.06)",
-                            color:
-                              "#fff",
-                            cursor:
-                              "pointer",
-                          }}
-                        >
-                          Use Again
-                        </button>
-                      </div>
-                    )
-                  )}
+                      <button
+                        onClick={() =>
+                          useAgain(item)
+                        }
+                        style={{
+                          padding: "8px 13px",
+                          borderRadius: "9px",
+                          border:
+                            "1px solid rgba(255,255,255,0.1)",
+                          background:
+                            "rgba(255,255,255,0.06)",
+                          color: "#fff",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Use Again
+                      </button>
+                    </div>
+                  ))}
                 </section>
               )}
             </div>
@@ -1613,8 +1367,7 @@ export default function Home() {
               textAlign: "center",
               color: "#475569",
               fontSize: "13px",
-              padding:
-                "0 20px 18px",
+              padding: "0 20px 18px",
             }}
           >
             FounderReply AI · Reze
