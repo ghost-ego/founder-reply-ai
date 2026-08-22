@@ -1,67 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "../lib/supabase/client";
+import { useEffect, useRef, useState } from "react";
 
-export default function Home() {
-  const [supabase, setSupabase] = useState(null);
-  const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
-
-  const [mode, setMode] = useState("reze");
-
-  // FounderReply AI
-  const [post, setPost] = useState("");
-  const [comments, setComments] = useState([]);
+export default function HomePage() {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [conversationId, setConversationId] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [tone, setTone] = useState("Professional");
-  const [length, setLength] = useState("Medium");
-  const [recent, setRecent] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Menu
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  // Reze
-  const [rezeMessage, setRezeMessage] = useState("");
-  const [rezeMessages, setRezeMessages] = useState([]);
-  const [rezeLoading, setRezeLoading] = useState(false);
-  const [rezeError, setRezeError] = useState("");
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
-    const client = createClient();
-
-    setSupabase(client);
-
-    client.auth.getSession().then(({ data, error }) => {
-      if (error) {
-        console.error(error);
-      }
-
-      setUser(data?.session?.user || null);
-      setAuthLoading(false);
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
     });
+  }, [messages, loading]);
 
-    const {
-      data: { subscription },
-    } = client.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
-    });
+  function startNewChat() {
+    setMessages([]);
+    setConversationId(null);
+    setInput("");
+    setSidebarOpen(false);
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+  }
 
-  async function generateComments() {
-    if (!post.trim()) {
-      setError("Paste a LinkedIn post first.");
+  async function sendMessage() {
+    const message = input.trim();
+
+    if (!message || loading) {
       return;
     }
 
+    setInput("");
+
+    const userMessage = {
+      role: "user",
+      content: message,
+    };
+
+    setMessages((previous) => [
+      ...previous,
+      userMessage,
+    ]);
+
     setLoading(true);
-    setComments([]);
-    setError("");
 
     try {
       const response = await fetch("/api/chat", {
@@ -70,75 +57,8 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt: post.trim(),
-          tone,
-          length,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data?.error || "Failed to generate comments."
-        );
-      }
-
-      if (!Array.isArray(data?.comments)) {
-        throw new Error("No comments were generated.");
-      }
-
-      setComments(data.comments);
-
-      const generation = {
-        id: Date.now(),
-        post: post.trim(),
-        tone,
-        length,
-        comments: data.comments,
-      };
-
-      setRecent((previous) =>
-        [generation, ...previous].slice(0, 5)
-      );
-    } catch (err) {
-      setError(
-        err?.message ||
-          "Something went wrong. Please try again."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function sendToReze() {
-    const message = rezeMessage.trim();
-
-    if (!message || rezeLoading) {
-      return;
-    }
-
-    setRezeMessage("");
-    setRezeError("");
-
-    setRezeMessages((previous) => [
-      ...previous,
-      {
-        role: "user",
-        content: message,
-      },
-    ]);
-
-    setRezeLoading(true);
-
-    try {
-      const response = await fetch("/api/reze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
           message,
+          conversationId,
         }),
       });
 
@@ -146,1234 +66,1221 @@ export default function Home() {
 
       if (!response.ok) {
         throw new Error(
-          data?.error || "Reze could not answer."
+          data?.error ||
+            "Reze could not answer right now."
         );
       }
 
-      if (!data?.answer) {
-        throw new Error("Reze could not answer.");
+      if (data?.conversationId) {
+        setConversationId(
+          data.conversationId
+        );
       }
 
-      setRezeMessages((previous) => [
+      setMessages((previous) => [
         ...previous,
         {
           role: "assistant",
-          content: data.answer,
+          content:
+            data?.answer ||
+            "I'm here. Try asking me again.",
         },
       ]);
-    } catch (err) {
-      setRezeError(
-        err?.message ||
-          "Something went wrong with Reze."
-      );
+    } catch (error) {
+      setMessages((previous) => [
+        ...previous,
+        {
+          role: "assistant",
+          content:
+            error?.message ||
+            "Something went wrong. Try again.",
+          error: true,
+        },
+      ]);
     } finally {
-      setRezeLoading(false);
+      setLoading(false);
+
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
     }
   }
 
-  async function copyComment(comment) {
-    try {
-      await navigator.clipboard.writeText(comment);
-    } catch {
-      setError("Could not copy the comment.");
+  function handleKeyDown(event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
     }
-  }
-
-  async function copyAll() {
-    if (!comments.length) return;
-
-    try {
-      const text = comments
-        .map(
-          (comment, index) =>
-            `Comment ${index + 1}:\n${comment}`
-        )
-        .join("\n\n");
-
-      await navigator.clipboard.writeText(text);
-    } catch {
-      setError("Could not copy the comments.");
-    }
-  }
-
-  async function logout() {
-    if (!supabase) return;
-
-    await supabase.auth.signOut();
-    setUser(null);
-  }
-
-  function useAgain(item) {
-    setPost(item.post);
-    setTone(item.tone);
-    setLength(item.length);
-    setComments(item.comments);
-    setError("");
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  }
-
-  function clearRecent() {
-    setRecent([]);
-  }
-
-  function selectMode(selectedMode) {
-    setMode(selectedMode);
-    setMenuOpen(false);
-    setError("");
-    setRezeError("");
-  }
-
-  const tones = [
-    { name: "Professional", icon: "💼" },
-    { name: "Bold", icon: "🔥" },
-    { name: "Friendly", icon: "😊" },
-    { name: "Funny", icon: "😄" },
-  ];
-
-  const lengths = [
-    {
-      name: "Short",
-      description: "1–2 sentences",
-    },
-    {
-      name: "Medium",
-      description: "2–4 sentences",
-    },
-    {
-      name: "Detailed",
-      description: "4–6 sentences",
-    },
-  ];
-
-  if (authLoading) {
-    return (
-      <main
-        style={{
-          minHeight: "100vh",
-          background: "#141622",
-          color: "#fff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "Inter, system-ui, sans-serif",
-        }}
-      >
-        Loading Reze...
-      </main>
-    );
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#2c2a38",
-        color: "#e2e8f0",
-        fontFamily:
-          "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          minHeight: "100vh",
-          width: "100%",
-        }}
-      >
-        {/* ================= SIDEBAR ================= */}
+    <>
+      <style jsx global>{`
+        * {
+          box-sizing: border-box;
+        }
 
-        <aside
-          style={{
-            width: "260px",
-            background: "#141622",
-            padding: "16px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            boxSizing: "border-box",
-            flexShrink: 0,
-          }}
-        >
-          <div>
-            <button
-              onClick={() => {
-                setMode("reze");
-                setRezeMessages([]);
-                setRezeError("");
-                setMenuOpen(false);
-              }}
-              style={{
-                width: "100%",
-                padding: "12px",
-                border: "1px solid #4a5568",
-                background: "transparent",
-                color: "#fff",
-                borderRadius: "9px",
-                cursor: "pointer",
-                textAlign: "left",
-                fontSize: "14px",
-              }}
-            >
-              ＋ New Chat
-            </button>
+        html,
+        body {
+          margin: 0;
+          padding: 0;
+          width: 100%;
+          min-height: 100%;
+          background: #11131b;
+          color: #ffffff;
+          font-family:
+            Inter,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            Roboto,
+            Helvetica,
+            Arial,
+            sans-serif;
+        }
 
-            <div
-              style={{
-                marginTop: "20px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-              }}
-            >
-              <div
-                onClick={() => selectMode("reze")}
-                style={{
-                  padding: "11px",
-                  borderRadius: "9px",
-                  color:
-                    mode === "reze"
-                      ? "#fff"
-                      : "#a0aec0",
-                  background:
-                    mode === "reze"
-                      ? "#2d2b3a"
-                      : "transparent",
-                  cursor: "pointer",
+        body {
+          overflow-x: hidden;
+        }
+
+        button,
+        textarea {
+          font-family: inherit;
+        }
+
+        ::-webkit-scrollbar {
+          width: 7px;
+        }
+
+        ::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background: #363442;
+          border-radius: 10px;
+        }
+      `}</style>
+
+      <div className="app">
+        {/* =================================================
+            MOBILE TOP BAR
+        ================================================= */}
+
+        <header className="mobileTopBar">
+          <button
+            className="menuButton"
+            onClick={() =>
+              setSidebarOpen(true)
+            }
+            aria-label="Open menu"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+
+          <div className="mobileBrand">
+            <div className="miniAvatar">
+              <img
+                src="/reze-avatar.png"
+                alt="Reze"
+                onError={(event) => {
+                  event.currentTarget.style.display =
+                    "none";
                 }}
-              >
-                🤖 Reze
-              </div>
-
-              <div
-                onClick={() => selectMode("founder")}
-                style={{
-                  padding: "11px",
-                  borderRadius: "9px",
-                  color:
-                    mode === "founder"
-                      ? "#fff"
-                      : "#a0aec0",
-                  background:
-                    mode === "founder"
-                      ? "#2d2b3a"
-                      : "transparent",
-                  cursor: "pointer",
-                }}
-              >
-                💼 FounderReply AI
-              </div>
+              />
             </div>
+
+            <span>Reze</span>
           </div>
 
-          <div
-            style={{
-              borderTop: "1px solid #2d3748",
-              paddingTop: "16px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-              fontSize: "14px",
-              color: "#a0aec0",
-            }}
+          <button
+            className="newChatMobile"
+            onClick={startNewChat}
+            aria-label="New chat"
           >
-            <div>
-              👤 {user ? user.email || "User" : "Guest"}
-            </div>
+            +
+          </button>
+        </header>
 
-            <div>⚙️ My Account</div>
+        {/* =================================================
+            SIDEBAR OVERLAY
+        ================================================= */}
 
-            {user && (
+        {sidebarOpen && (
+          <div
+            className="sidebarOverlay"
+            onClick={() =>
+              setSidebarOpen(false)
+            }
+          />
+        )}
+
+        {/* =================================================
+            SIDEBAR
+        ================================================= */}
+
+        <aside
+          className={`sidebar ${
+            sidebarOpen ? "sidebarVisible" : ""
+          }`}
+        >
+          <div className="sidebarInner">
+            <button
+              className="newChatButton"
+              onClick={startNewChat}
+            >
+              <span className="plus">+</span>
+              <span>New Chat</span>
+            </button>
+
+            <div className="navItems">
               <button
-                onClick={logout}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "#a0aec0",
-                  padding: 0,
-                  textAlign: "left",
-                  cursor: "pointer",
-                  fontSize: "14px",
+                className="navItem active"
+                onClick={() => {
+                  setSidebarOpen(false);
                 }}
               >
-                🚪 Logout
+                <span className="navIcon">
+                  🤖
+                </span>
+
+                <span>Reze</span>
               </button>
-            )}
+
+              <button
+                className="navItem"
+                onClick={() => {
+                  window.location.href =
+                    "/founder-reply";
+                }}
+              >
+                <span className="navIcon">
+                  💼
+                </span>
+
+                <span>FounderReply AI</span>
+              </button>
+            </div>
           </div>
         </aside>
 
-        {/* ================= MAIN ================= */}
+        {/* =================================================
+            MAIN
+        ================================================= */}
 
-        <div
-          style={{
-            flex: 1,
-            minWidth: 0,
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          {/* TOP MENU */}
+        <main className="main">
+          {/* =================================================
+              DESKTOP HEADER
+          ================================================= */}
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              padding: "18px 24px 0",
-            }}
-          >
-            <div
-              style={{
-                position: "relative",
-              }}
+          <div className="desktopHeader">
+            <button
+              className="desktopMenuButton"
+              aria-label="Menu"
             >
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                aria-label="Open AI menu"
-                style={{
-                  width: "42px",
-                  height: "42px",
-                  borderRadius: "10px",
-                  border:
-                    "1px solid rgba(255,255,255,0.12)",
-                  background:
-                    "rgba(20,22,34,0.8)",
-                  color: "#fff",
-                  cursor: "pointer",
-                  fontSize: "22px",
-                }}
-              >
-                ⋮
-              </button>
+              <span>⋮</span>
+            </button>
+          </div>
 
-              {menuOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    right: 0,
-                    top: "50px",
-                    width: "220px",
-                    background: "#141622",
-                    border:
-                      "1px solid rgba(255,255,255,0.12)",
-                    borderRadius: "14px",
-                    padding: "8px",
-                    boxShadow:
-                      "0 20px 50px rgba(0,0,0,0.5)",
-                    zIndex: 100,
-                  }}
-                >
-                  <button
-                    onClick={() => selectMode("reze")}
-                    style={{
-                      width: "100%",
-                      textAlign: "left",
-                      padding: "13px",
-                      borderRadius: "9px",
-                      border: "none",
-                      background:
-                        mode === "reze"
-                          ? "#2d2b3a"
-                          : "transparent",
-                      color: "#fff",
-                      cursor: "pointer",
+          {/* =================================================
+              WELCOME AREA
+          ================================================= */}
+
+          <section
+            className={`welcome ${
+              messages.length > 0
+                ? "welcomeSmall"
+                : ""
+            }`}
+          >
+            {messages.length === 0 ? (
+              <>
+                <h1>Reze</h1>
+
+                <p className="welcomeText">
+                  How can Reze assist you today?
+                </p>
+
+                <div className="heroAvatar">
+                  <img
+                    src="/reze-avatar.png"
+                    alt="Reze"
+                    onError={(event) => {
+                      event.currentTarget.style.display =
+                        "none";
+
+                      event.currentTarget.parentElement.classList.add(
+                        "avatarFallback"
+                      );
                     }}
+                  />
+
+                  <span className="onlineDot" />
+                </div>
+              </>
+            ) : (
+              <div className="smallBrand">
+                <div className="smallBrandAvatar">
+                  <img
+                    src="/reze-avatar.png"
+                    alt="Reze"
+                    onError={(event) => {
+                      event.currentTarget.style.display =
+                        "none";
+                    }}
+                  />
+
+                  <span className="smallOnlineDot" />
+                </div>
+
+                <span>Reze</span>
+              </div>
+            )}
+          </section>
+
+          {/* =================================================
+              CHAT
+          ================================================= */}
+
+          <section className="chatArea">
+            <div className="messages">
+              {messages.map(
+                (message, index) => (
+                  <div
+                    key={`${index}-${message.role}`}
+                    className={`messageRow ${
+                      message.role === "user"
+                        ? "userRow"
+                        : "assistantRow"
+                    }`}
                   >
-                    🤖 Reze
+                    {message.role ===
+                      "assistant" && (
+                      <div className="messageAvatar">
+                        <img
+                          src="/reze-avatar.png"
+                          alt="Reze"
+                          onError={(event) => {
+                            event.currentTarget.style.display =
+                              "none";
+                          }}
+                        />
+                      </div>
+                    )}
 
                     <div
-                      style={{
-                        color: "#a0aec0",
-                        fontSize: "12px",
-                        marginTop: "4px",
-                      }}
+                      className={`messageBubble ${
+                        message.role === "user"
+                          ? "userBubble"
+                          : "assistantBubble"
+                      } ${
+                        message.error
+                          ? "errorBubble"
+                          : ""
+                      }`}
                     >
-                      Your AI assistant
+                      {message.content}
                     </div>
-                  </button>
+                  </div>
+                )
+              )}
 
-                  <button
-                    onClick={() => selectMode("founder")}
-                    style={{
-                      width: "100%",
-                      textAlign: "left",
-                      padding: "13px",
-                      borderRadius: "9px",
-                      border: "none",
-                      background:
-                        mode === "founder"
-                          ? "#2d2b3a"
-                          : "transparent",
-                      color: "#fff",
-                      cursor: "pointer",
-                      marginTop: "4px",
-                    }}
-                  >
-                    💼 FounderReply AI
-
-                    <div
-                      style={{
-                        color: "#a0aec0",
-                        fontSize: "12px",
-                        marginTop: "4px",
+              {loading && (
+                <div className="messageRow assistantRow">
+                  <div className="messageAvatar">
+                    <img
+                      src="/reze-avatar.png"
+                      alt="Reze"
+                      onError={(event) => {
+                        event.currentTarget.style.display =
+                          "none";
                       }}
-                    >
-                      Generate founder comments
-                    </div>
-                  </button>
+                    />
+                  </div>
+
+                  <div className="typingBubble">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
                 </div>
               )}
+
+              <div ref={messagesEndRef} />
+            </div>
+          </section>
+
+          {/* =================================================
+              INPUT AREA
+          ================================================= */}
+
+          <div className="inputSection">
+            <div className="inputBox">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(event) =>
+                  setInput(event.target.value)
+                }
+                onKeyDown={handleKeyDown}
+                placeholder="Ask Reze anything..."
+                rows={1}
+                disabled={loading}
+              />
+
+              <button
+                className={`sendButton ${
+                  input.trim()
+                    ? "sendActive"
+                    : ""
+                }`}
+                onClick={sendMessage}
+                disabled={
+                  !input.trim() || loading
+                }
+              >
+                {loading ? (
+                  <span className="sendLoader">
+                    •••
+                  </span>
+                ) : (
+                  <>
+                    <span className="sendText">
+                      Send
+                    </span>
+
+                    <span className="sendArrow">
+                      ↑
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="inputHint">
+              Reze can make mistakes. Check
+              important information.
             </div>
           </div>
 
-          {/* ================= REZE ================= */}
+          {/* =================================================
+              BOTTOM BRAND
+          ================================================= */}
 
-          {mode === "reze" ? (
-            <div
-              style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                width: "100%",
-                maxWidth: "850px",
-                margin: "0 auto",
-                padding: "5px 24px 24px",
-                boxSizing: "border-box",
-              }}
-            >
-              {/* REZE HEADER */}
+          {messages.length === 0 && (
+            <div className="bottomBrand">
+              <span className="sparkle">
+                ✨
+              </span>
 
-              <div
-                style={{
-                  textAlign: "center",
-                  paddingTop: "10px",
-                }}
-              >
-                <h1
-                  style={{
-                    fontSize: "30px",
-                    color: "#fff",
-                    margin: 0,
-                    fontWeight: "700",
-                    letterSpacing: "-0.5px",
-                  }}
-                >
-                  Hi, I'm REZE.
-                </h1>
+              <span>REZE</span>
 
-                <h1
-                  style={{
-                    fontSize: "30px",
-                    color: "#fff",
-                    margin: "5px 0 0",
-                    fontWeight: "700",
-                    letterSpacing: "-0.5px",
-                  }}
-                >
-                  How can I help you today?
-                </h1>
-
-                {/* REAL REZE IMAGE */}
-
-                <div
-                  style={{
-                    margin: "18px auto 5px",
-                    width: "82px",
-                    height: "82px",
-                    borderRadius: "50%",
-                    background: "#fff",
-                    border:
-                      "2px solid rgba(255,255,255,0.35)",
-                    overflow: "hidden",
-                    boxShadow:
-                      "0 8px 30px rgba(0,0,0,0.35)",
-                  }}
-                >
-                  <img
-                    src="/reze-avatar.png"
-                    width="100%"
-                    height="100%"
-                    alt="Reze"
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
-                    fontSize: "12px",
-                    fontWeight: "bold",
-                    color: "#cbd5e0",
-                  }}
-                >
-                  REZE
-
-                  <span
-                    style={{
-                      width: "8px",
-                      height: "8px",
-                      background: "#48bb78",
-                      borderRadius: "50%",
-                      display: "inline-block",
-                      boxShadow:
-                        "0 0 8px rgba(72,187,120,0.7)",
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* CHAT */}
-
-              <div
-                style={{
-                  flex: 1,
-                  overflowY: "auto",
-                  margin: "20px 0",
-                  minHeight: "220px",
-                  padding: "0 4px",
-                }}
-              >
-                {rezeMessages.length === 0 ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      minHeight: "280px",
-                      textAlign: "center",
-                      color: "#a0aec0",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "30px",
-                        marginBottom: "12px",
-                      }}
-                    >
-                      ✨
-                    </div>
-
-                    <div
-                      style={{
-                        color: "#e2e8f0",
-                        fontSize: "15px",
-                      }}
-                    >
-                      Ask REZE anything...
-                    </div>
-
-                    <div
-                      style={{
-                        color: "#718096",
-                        fontSize: "13px",
-                        marginTop: "7px",
-                      }}
-                    >
-                      I'm listening.
-                    </div>
-                  </div>
-                ) : (
-                  rezeMessages.map((item, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        marginBottom: "16px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          maxWidth: "75%",
-                          padding: "14px 18px",
-                          borderRadius: "16px",
-                          fontSize: "14px",
-                          lineHeight: "1.55",
-                          whiteSpace: "pre-wrap",
-                          alignSelf:
-                            item.role === "user"
-                              ? "flex-end"
-                              : "flex-start",
-                          background:
-                            item.role === "user"
-                              ? "#3c304f"
-                              : "#363442",
-                          color:
-                            item.role === "user"
-                              ? "#d6c8f4"
-                              : "#e2e8f0",
-                          borderBottomRightRadius:
-                            item.role === "user"
-                              ? "3px"
-                              : "16px",
-                          borderBottomLeftRadius:
-                            item.role === "assistant"
-                              ? "3px"
-                              : "16px",
-                        }}
-                      >
-                        {item.content}
-                      </div>
-                    </div>
-                  ))
-                )}
-
-                {rezeLoading && (
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "flex-start",
-                    }}
-                  >
-                    <div
-                      style={{
-                        padding: "14px 18px",
-                        borderRadius: "16px",
-                        borderBottomLeftRadius: "3px",
-                        background: "#363442",
-                        color: "#a0aec0",
-                        fontSize: "14px",
-                      }}
-                    >
-                      REZE is thinking...
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* ERROR */}
-
-              {rezeError && (
-                <div
-                  style={{
-                    background:
-                      "rgba(220,38,38,0.10)",
-                    border:
-                      "1px solid rgba(248,113,113,0.25)",
-                    color: "#fca5a5",
-                    borderRadius: "10px",
-                    padding: "10px 12px",
-                    marginBottom: "10px",
-                    fontSize: "13px",
-                  }}
-                >
-                  {rezeError}
-                </div>
-              )}
-
-              {/* INPUT */}
-
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  sendToReze();
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  background: "#363442",
-                  borderRadius: "14px",
-                  padding: "8px 10px 8px 15px",
-                  border:
-                    "1px solid rgba(255,255,255,0.12)",
-                  gap: "8px",
-                  boxShadow:
-                    "0 10px 35px rgba(0,0,0,0.18)",
-                }}
-              >
-                <input
-                  type="text"
-                  value={rezeMessage}
-                  onChange={(event) =>
-                    setRezeMessage(event.target.value)
-                  }
-                  placeholder="Ask REZE anything..."
-                  disabled={rezeLoading}
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    background: "transparent",
-                    border: "none",
-                    outline: "none",
-                    color: "#fff",
-                    fontSize: "14px",
-                  }}
-                />
-
-                <button
-                  type="submit"
-                  disabled={
-                    rezeLoading ||
-                    !rezeMessage.trim()
-                  }
-                  style={{
-                    background:
-                      rezeLoading ||
-                      !rezeMessage.trim()
-                        ? "#4a5568"
-                        : "#7052db",
-                    color: "#fff",
-                    border: "none",
-                    padding: "9px 18px",
-                    borderRadius: "9px",
-                    cursor:
-                      rezeLoading ||
-                      !rezeMessage.trim()
-                        ? "not-allowed"
-                        : "pointer",
-                    fontWeight: "600",
-                  }}
-                >
-                  {rezeLoading ? "..." : "Send"}
-                </button>
-              </form>
-
-              <div
-                style={{
-                  textAlign: "center",
-                  color: "#5b6172",
-                  fontSize: "11px",
-                  marginTop: "9px",
-                }}
-              >
-                REZE can make mistakes. Check important information.
-              </div>
-            </div>
-          ) : (
-            /* ================= FOUNDERREPLY ================= */
-
-            <div
-              style={{
-                width: "100%",
-                maxWidth: "900px",
-                margin: "0 auto",
-                padding: "20px 24px 60px",
-                boxSizing: "border-box",
-              }}
-            >
-              <header
-                style={{
-                  textAlign: "center",
-                  padding: "30px 10px 35px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "8px 14px",
-                    borderRadius: "999px",
-                    background:
-                      "rgba(255,255,255,0.06)",
-                    border:
-                      "1px solid rgba(255,255,255,0.1)",
-                    fontSize: "14px",
-                    color: "#cbd5e1",
-                    marginBottom: "22px",
-                  }}
-                >
-                  <span
-                    style={{
-                      width: "8px",
-                      height: "8px",
-                      borderRadius: "50%",
-                      background: "#4ade80",
-                    }}
-                  />
-
-                  FounderReply AI
-                </div>
-
-                <h1
-                  style={{
-                    fontSize:
-                      "clamp(40px, 8vw, 72px)",
-                    lineHeight: "1",
-                    letterSpacing: "-3px",
-                    margin: 0,
-                    fontWeight: "800",
-                  }}
-                >
-                  Write replies that
-                  <br />
-
-                  <span
-                    style={{
-                      background:
-                        "linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor:
-                        "transparent",
-                    }}
-                  >
-                    founders would write.
-                  </span>
-                </h1>
-
-                <p
-                  style={{
-                    maxWidth: "650px",
-                    margin: "22px auto 0",
-                    color: "#94a3b8",
-                    fontSize: "18px",
-                    lineHeight: "1.7",
-                  }}
-                >
-                  Turn any LinkedIn post into thoughtful,
-                  natural comments that sound like a real founder.
-                </p>
-              </header>
-
-              <section
-                style={{
-                  background:
-                    "rgba(255,255,255,0.055)",
-                  border:
-                    "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: "24px",
-                  padding: "22px",
-                  boxShadow:
-                    "0 25px 80px rgba(0,0,0,0.35)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <strong>LinkedIn post</strong>
-
-                  <span
-                    style={{
-                      color: "#64748b",
-                      fontSize: "13px",
-                    }}
-                  >
-                    {post.length} characters
-                  </span>
-                </div>
-
-                <textarea
-                  value={post}
-                  onChange={(e) =>
-                    setPost(e.target.value)
-                  }
-                  placeholder="Paste a LinkedIn post here..."
-                  style={{
-                    width: "100%",
-                    minHeight: "220px",
-                    boxSizing: "border-box",
-                    resize: "vertical",
-                    background:
-                      "rgba(0,0,0,0.25)",
-                    color: "#fff",
-                    border:
-                      "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: "16px",
-                    padding: "18px",
-                    fontSize: "16px",
-                    lineHeight: "1.6",
-                    outline: "none",
-                  }}
-                />
-
-                <div style={{ marginTop: "22px" }}>
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: "700",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    Tone
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(140px, 1fr))",
-                      gap: "10px",
-                    }}
-                  >
-                    {tones.map((item) => {
-                      const selected =
-                        tone === item.name;
-
-                      return (
-                        <button
-                          key={item.name}
-                          onClick={() =>
-                            setTone(item.name)
-                          }
-                          style={{
-                            padding: "13px 12px",
-                            borderRadius: "12px",
-                            border: selected
-                              ? "1px solid #8b5cf6"
-                              : "1px solid rgba(255,255,255,0.1)",
-                            background: selected
-                              ? "rgba(124,58,237,0.2)"
-                              : "rgba(255,255,255,0.04)",
-                            color: "#fff",
-                            cursor: "pointer",
-                            fontWeight: selected
-                              ? "700"
-                              : "500",
-                          }}
-                        >
-                          {item.icon} {item.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div style={{ marginTop: "22px" }}>
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: "700",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    Length
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(140px, 1fr))",
-                      gap: "10px",
-                    }}
-                  >
-                    {lengths.map((item) => {
-                      const selected =
-                        length === item.name;
-
-                      return (
-                        <button
-                          key={item.name}
-                          onClick={() =>
-                            setLength(item.name)
-                          }
-                          style={{
-                            padding: "13px 12px",
-                            borderRadius: "12px",
-                            border: selected
-                              ? "1px solid #3b82f6"
-                              : "1px solid rgba(255,255,255,0.1)",
-                            background: selected
-                              ? "rgba(37,99,235,0.2)"
-                              : "rgba(255,255,255,0.04)",
-                            color: "#fff",
-                            cursor: "pointer",
-                            textAlign: "left",
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontWeight: "700",
-                            }}
-                          >
-                            {item.name}
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: "12px",
-                              color: "#94a3b8",
-                              marginTop: "3px",
-                            }}
-                          >
-                            {item.description}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <button
-                  onClick={generateComments}
-                  disabled={
-                    loading || !post.trim()
-                  }
-                  style={{
-                    width: "100%",
-                    marginTop: "22px",
-                    padding: "16px 22px",
-                    borderRadius: "14px",
-                    border: "none",
-                    background:
-                      loading || !post.trim()
-                        ? "#334155"
-                        : "linear-gradient(90deg, #2563eb, #7c3aed)",
-                    color: "#fff",
-                    fontSize: "16px",
-                    fontWeight: "700",
-                    cursor:
-                      loading || !post.trim()
-                        ? "not-allowed"
-                        : "pointer",
-                  }}
-                >
-                  {loading
-                    ? "Generating..."
-                    : "Generate 3 Comments →"}
-                </button>
-
-                {error && (
-                  <p
-                    style={{
-                      color: "#f87171",
-                      marginTop: "15px",
-                      textAlign: "center",
-                    }}
-                  >
-                    {error}
-                  </p>
-                )}
-              </section>
-
-              {comments.length > 0 && (
-                <section
-                  style={{
-                    marginTop: "30px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "15px",
-                      flexWrap: "wrap",
-                      gap: "12px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        color: "#94a3b8",
-                        fontSize: "13px",
-                        fontWeight: "600",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Choose your reply
-                    </div>
-
-                    <button
-                      onClick={copyAll}
-                      style={{
-                        padding: "9px 14px",
-                        borderRadius: "10px",
-                        border:
-                          "1px solid rgba(255,255,255,0.12)",
-                        background:
-                          "rgba(255,255,255,0.06)",
-                        color: "#fff",
-                        cursor: "pointer",
-                      }}
-                    >
-                      📋 Copy All
-                    </button>
-                  </div>
-
-                  {comments.map((comment, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        background:
-                          "rgba(255,255,255,0.055)",
-                        border:
-                          "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: "22px",
-                        padding: "24px",
-                        marginBottom: "16px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontWeight: "700",
-                          marginBottom: "14px",
-                        }}
-                      >
-                        {
-                          [
-                            "💡 Thoughtful",
-                            "🔥 Strong perspective",
-                            "⚡ Natural & concise",
-                          ][index]
-                        }
-                      </div>
-
-                      <p
-                        style={{
-                          color: "#e2e8f0",
-                          fontSize: "17px",
-                          lineHeight: "1.75",
-                        }}
-                      >
-                        {comment}
-                      </p>
-
-                      <button
-                        onClick={() =>
-                          copyComment(comment)
-                        }
-                        style={{
-                          padding: "10px 16px",
-                          borderRadius: "10px",
-                          border:
-                            "1px solid rgba(255,255,255,0.12)",
-                          background:
-                            "rgba(255,255,255,0.06)",
-                          color: "#fff",
-                          cursor: "pointer",
-                        }}
-                      >
-                        📋 Copy
-                      </button>
-                    </div>
-                  ))}
-
-                  <button
-                    onClick={generateComments}
-                    disabled={loading}
-                    style={{
-                      width: "100%",
-                      padding: "15px",
-                      borderRadius: "14px",
-                      border:
-                        "1px solid rgba(255,255,255,0.12)",
-                      background:
-                        "rgba(255,255,255,0.06)",
-                      color: "#fff",
-                      cursor: "pointer",
-                      fontWeight: "700",
-                    }}
-                  >
-                    🔄 Regenerate
-                  </button>
-                </section>
-              )}
-
-              {recent.length > 0 && (
-                <section
-                  style={{
-                    marginTop: "45px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    <h2 style={{ margin: 0 }}>
-                      Recent Generations
-                    </h2>
-
-                    <button
-                      onClick={clearRecent}
-                      style={{
-                        padding: "8px 12px",
-                        borderRadius: "9px",
-                        border:
-                          "1px solid rgba(255,255,255,0.1)",
-                        background:
-                          "rgba(255,255,255,0.04)",
-                        color: "#94a3b8",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Clear
-                    </button>
-                  </div>
-
-                  {recent.map((item) => (
-                    <div
-                      key={item.id}
-                      style={{
-                        background:
-                          "rgba(255,255,255,0.04)",
-                        border:
-                          "1px solid rgba(255,255,255,0.08)",
-                        borderRadius: "18px",
-                        padding: "18px",
-                        marginBottom: "12px",
-                      }}
-                    >
-                      <p
-                        style={{
-                          color: "#cbd5e1",
-                          lineHeight: "1.6",
-                        }}
-                      >
-                        {item.post.length > 180
-                          ? `${item.post.slice(
-                              0,
-                              180
-                            )}...`
-                          : item.post}
-                      </p>
-
-                      <button
-                        onClick={() =>
-                          useAgain(item)
-                        }
-                        style={{
-                          padding: "8px 13px",
-                          borderRadius: "9px",
-                          border:
-                            "1px solid rgba(255,255,255,0.1)",
-                          background:
-                            "rgba(255,255,255,0.06)",
-                          color: "#fff",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Use Again
-                      </button>
-                    </div>
-                  ))}
-                </section>
-              )}
+              <span className="statusLine" />
             </div>
           )}
-
-          <footer
-            style={{
-              textAlign: "center",
-              color: "#475569",
-              fontSize: "13px",
-              padding: "0 20px 18px",
-            }}
-          >
-            FounderReply AI · Reze
-          </footer>
-        </div>
+        </main>
       </div>
-    </main>
+
+      <style jsx>{`
+        .app {
+          width: 100%;
+          min-height: 100dvh;
+          display: flex;
+          background: #11131b;
+          overflow: hidden;
+        }
+
+        /* ================================================
+           SIDEBAR
+        ================================================= */
+
+        .sidebar {
+          width: 340px;
+          min-width: 340px;
+          min-height: 100dvh;
+          background: #121520;
+          border-right: 1px solid #252735;
+          position: relative;
+          z-index: 30;
+        }
+
+        .sidebarInner {
+          padding: 32px 28px;
+        }
+
+        .newChatButton {
+          width: 100%;
+          height: 88px;
+          border: 2px solid #50556a;
+          border-radius: 22px;
+          background: transparent;
+          color: #ffffff;
+          display: flex;
+          align-items: center;
+          padding: 0 30px;
+          gap: 18px;
+          font-size: 28px;
+          cursor: pointer;
+          transition: 0.2s ease;
+        }
+
+        .newChatButton:hover {
+          background: #1a1d2a;
+          border-color: #696f87;
+        }
+
+        .plus {
+          font-size: 34px;
+          font-weight: 300;
+        }
+
+        .navItems {
+          margin-top: 38px;
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+        }
+
+        .navItem {
+          width: 100%;
+          height: 80px;
+          border: 0;
+          border-radius: 20px;
+          background: transparent;
+          color: #9ea2b6;
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          padding: 0 24px;
+          font-size: 27px;
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .navItem.active {
+          background: #302e3c;
+          color: #ffffff;
+        }
+
+        .navIcon {
+          font-size: 29px;
+        }
+
+        /* ================================================
+           MAIN
+        ================================================= */
+
+        .main {
+          flex: 1;
+          min-width: 0;
+          min-height: 100dvh;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          background:
+            radial-gradient(
+              circle at 50% 25%,
+              rgba(89, 82, 117, 0.08),
+              transparent 38%
+            ),
+            #181a22;
+        }
+
+        .desktopHeader {
+          position: absolute;
+          top: 32px;
+          right: 32px;
+          z-index: 10;
+        }
+
+        .desktopMenuButton {
+          width: 82px;
+          height: 82px;
+          border-radius: 22px;
+          border: 1px solid #3c3b49;
+          background: #1d1c28;
+          color: white;
+          font-size: 43px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+
+        .desktopMenuButton span {
+          transform: translateY(-6px);
+        }
+
+        /* ================================================
+           WELCOME
+        ================================================= */
+
+        .welcome {
+          padding-top: 105px;
+          text-align: center;
+          transition: 0.25s ease;
+        }
+
+        .welcome h1 {
+          margin: 0;
+          font-size: 62px;
+          line-height: 1.1;
+          font-weight: 400;
+          letter-spacing: -1px;
+        }
+
+        .welcomeText {
+          margin: 26px 20px 30px;
+          color: #e5e5eb;
+          font-size: 29px;
+          font-weight: 400;
+        }
+
+        .heroAvatar {
+          width: 112px;
+          height: 112px;
+          margin: 0 auto;
+          border-radius: 50%;
+          background: #f0eff5;
+          position: relative;
+          overflow: visible;
+          border: 2px solid rgba(
+            255,
+            255,
+            255,
+            0.35
+          );
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .heroAvatar img {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .onlineDot {
+          width: 21px;
+          height: 21px;
+          background: #32d86d;
+          border-radius: 50%;
+          position: absolute;
+          right: 3px;
+          bottom: 3px;
+          border: 3px solid #181a22;
+        }
+
+        .avatarFallback::after {
+          content: "R";
+          font-size: 48px;
+          font-weight: 700;
+          color: #292735;
+        }
+
+        .welcomeSmall {
+          padding-top: 35px;
+        }
+
+        .smallBrand {
+          display: inline-flex;
+          align-items: center;
+          gap: 12px;
+          font-size: 24px;
+          font-weight: 600;
+          color: #eeeeF4;
+        }
+
+        .smallBrandAvatar {
+          width: 45px;
+          height: 45px;
+          border-radius: 50%;
+          overflow: visible;
+          background: #eeeef3;
+          position: relative;
+        }
+
+        .smallBrandAvatar img {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+
+        .smallOnlineDot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: #32d86d;
+          position: absolute;
+          right: 0;
+          bottom: 0;
+          border: 2px solid #181a22;
+        }
+
+        /* ================================================
+           CHAT
+        ================================================= */
+
+        .chatArea {
+          flex: 1;
+          width: 100%;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding: 30px 7% 170px;
+        }
+
+        .messages {
+          width: 100%;
+          max-width: 850px;
+          margin: 0 auto;
+        }
+
+        .messageRow {
+          width: 100%;
+          display: flex;
+          margin-bottom: 24px;
+          gap: 12px;
+          align-items: flex-end;
+        }
+
+        .userRow {
+          justify-content: flex-end;
+        }
+
+        .assistantRow {
+          justify-content: flex-start;
+        }
+
+        .messageAvatar {
+          width: 38px;
+          height: 38px;
+          min-width: 38px;
+          border-radius: 50%;
+          overflow: hidden;
+          background: #eeeeF3;
+        }
+
+        .messageAvatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .messageBubble {
+          max-width: min(78%, 720px);
+          padding: 17px 21px;
+          border-radius: 20px;
+          font-size: 18px;
+          line-height: 1.55;
+          white-space: pre-wrap;
+          word-break: break-word;
+        }
+
+        .userBubble {
+          background: #3a374d;
+          border: 1px solid #4a465e;
+          border-bottom-right-radius: 7px;
+        }
+
+        .assistantBubble {
+          background: #292934;
+          border: 1px solid #3c3c48;
+          border-bottom-left-radius: 7px;
+        }
+
+        .errorBubble {
+          border-color: #7e4242;
+        }
+
+        .typingBubble {
+          min-width: 72px;
+          height: 48px;
+          border-radius: 18px;
+          background: #292934;
+          border: 1px solid #3c3c48;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+        }
+
+        .typingBubble span {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #aaa8b8;
+          animation: typing 1.2s infinite;
+        }
+
+        .typingBubble span:nth-child(2) {
+          animation-delay: 0.15s;
+        }
+
+        .typingBubble span:nth-child(3) {
+          animation-delay: 0.3s;
+        }
+
+        @keyframes typing {
+          0%,
+          60%,
+          100% {
+            opacity: 0.3;
+            transform: translateY(0);
+          }
+
+          30% {
+            opacity: 1;
+            transform: translateY(-4px);
+          }
+        }
+
+        /* ================================================
+           INPUT
+        ================================================= */
+
+        .inputSection {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          padding: 18px 6% 24px;
+          background: linear-gradient(
+            to top,
+            #181a22 65%,
+            rgba(24, 26, 34, 0)
+          );
+          z-index: 15;
+        }
+
+        .inputBox {
+          max-width: 900px;
+          margin: 0 auto;
+          min-height: 76px;
+          border-radius: 21px;
+          border: 1px solid #3d3d4d;
+          background: #171923;
+          display: flex;
+          align-items: center;
+          padding: 8px 9px 8px 20px;
+          box-shadow:
+            0 12px 40px rgba(0, 0, 0, 0.22);
+        }
+
+        textarea {
+          flex: 1;
+          min-width: 0;
+          resize: none;
+          border: 0;
+          outline: none;
+          background: transparent;
+          color: white;
+          font-size: 19px;
+          line-height: 1.4;
+          padding: 13px 10px;
+          max-height: 130px;
+        }
+
+        textarea::placeholder {
+          color: #8c8d9a;
+        }
+
+        .sendButton {
+          min-width: 105px;
+          height: 58px;
+          border: 0;
+          border-radius: 15px;
+          background: #302d42;
+          color: #777589;
+          font-size: 17px;
+          cursor: pointer;
+          transition: 0.2s ease;
+        }
+
+        .sendButton:disabled {
+          cursor: not-allowed;
+        }
+
+        .sendActive {
+          background: #7068c8;
+          color: white;
+        }
+
+        .sendArrow {
+          display: none;
+        }
+
+        .sendLoader {
+          letter-spacing: 3px;
+        }
+
+        .inputHint {
+          max-width: 900px;
+          margin: 8px auto 0;
+          text-align: center;
+          color: #6f707c;
+          font-size: 11px;
+        }
+
+        /* ================================================
+           BOTTOM BRAND
+        ================================================= */
+
+        .bottomBrand {
+          position: absolute;
+          bottom: 125px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          color: #aaaab5;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          pointer-events: none;
+        }
+
+        .sparkle {
+          position: absolute;
+          bottom: -55px;
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 28px;
+        }
+
+        .statusLine {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #32d86d;
+        }
+
+        /* ================================================
+           MOBILE HEADER
+        ================================================= */
+
+        .mobileTopBar {
+          display: none;
+        }
+
+        /* ================================================
+           MOBILE
+        ================================================= */
+
+        @media (max-width: 700px) {
+          .app {
+            min-height: 100dvh;
+            height: 100dvh;
+          }
+
+          .mobileTopBar {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            z-index: 50;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 14px;
+            background: rgba(
+              17,
+              19,
+              27,
+              0.92
+            );
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid
+              rgba(255, 255, 255, 0.05);
+          }
+
+          .menuButton,
+          .newChatMobile {
+            width: 44px;
+            height: 44px;
+            border-radius: 13px;
+            border: 1px solid #383948;
+            background: #1b1c27;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .menuButton {
+            flex-direction: column;
+            gap: 4px;
+            padding: 10px;
+          }
+
+          .menuButton span {
+            display: block;
+            width: 19px;
+            height: 2px;
+            background: #dedee5;
+            border-radius: 5px;
+          }
+
+          .newChatMobile {
+            font-size: 27px;
+            font-weight: 300;
+            cursor: pointer;
+          }
+
+          .mobileBrand {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 18px;
+            font-weight: 600;
+          }
+
+          .miniAvatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #eeeef3;
+          }
+
+          .miniAvatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+
+          .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: min(82vw, 320px);
+            min-width: 0;
+            transform: translateX(-105%);
+            transition: transform 0.25s ease;
+            box-shadow: 15px 0 50px
+              rgba(0, 0, 0, 0.35);
+          }
+
+          .sidebarVisible {
+            transform: translateX(0);
+          }
+
+          .sidebarInner {
+            padding: 88px 20px 25px;
+          }
+
+          .newChatButton {
+            height: 62px;
+            border-radius: 16px;
+            padding: 0 20px;
+            font-size: 20px;
+          }
+
+          .plus {
+            font-size: 27px;
+          }
+
+          .navItems {
+            margin-top: 25px;
+            gap: 9px;
+          }
+
+          .navItem {
+            height: 59px;
+            border-radius: 15px;
+            padding: 0 17px;
+            font-size: 19px;
+          }
+
+          .navIcon {
+            font-size: 21px;
+          }
+
+          .sidebarOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 25;
+            backdrop-filter: blur(2px);
+          }
+
+          .main {
+            width: 100%;
+            min-width: 0;
+            height: 100dvh;
+            min-height: 100dvh;
+          }
+
+          .desktopHeader {
+            display: none;
+          }
+
+          .welcome {
+            padding: 105px 20px 20px;
+          }
+
+          .welcome h1 {
+            font-size: 42px;
+            letter-spacing: -0.5px;
+          }
+
+          .welcomeText {
+            margin: 14px auto 23px;
+            max-width: 330px;
+            font-size: 19px;
+            line-height: 1.35;
+          }
+
+          .heroAvatar {
+            width: 88px;
+            height: 88px;
+          }
+
+          .onlineDot {
+            width: 17px;
+            height: 17px;
+            border-width: 2px;
+          }
+
+          .welcomeSmall {
+            padding-top: 78px;
+            padding-bottom: 0;
+          }
+
+          .smallBrand {
+            font-size: 18px;
+          }
+
+          .smallBrandAvatar {
+            width: 35px;
+            height: 35px;
+          }
+
+          .chatArea {
+            padding:
+              15px 13px
+              120px;
+          }
+
+          .messages {
+            max-width: 100%;
+          }
+
+          .messageRow {
+            margin-bottom: 14px;
+            gap: 8px;
+          }
+
+          .messageAvatar {
+            width: 30px;
+            height: 30px;
+            min-width: 30px;
+          }
+
+          .messageBubble {
+            max-width: 86%;
+            padding: 12px 15px;
+            border-radius: 17px;
+            font-size: 15.5px;
+            line-height: 1.48;
+          }
+
+          .typingBubble {
+            min-width: 60px;
+            height: 42px;
+          }
+
+          .inputSection {
+            padding:
+              9px 11px
+              max(10px, env(safe-area-inset-bottom));
+            background: linear-gradient(
+              to top,
+              #181a22 78%,
+              rgba(24, 26, 34, 0)
+            );
+          }
+
+          .inputBox {
+            min-height: 58px;
+            border-radius: 18px;
+            padding: 5px 6px 5px 13px;
+          }
+
+          textarea {
+            font-size: 15.5px;
+            padding: 10px 6px;
+            max-height: 90px;
+          }
+
+          .sendButton {
+            min-width: 55px;
+            width: 55px;
+            height: 46px;
+            border-radius: 13px;
+            font-size: 21px;
+          }
+
+          .sendText {
+            display: none;
+          }
+
+          .sendArrow {
+            display: inline;
+            font-size: 24px;
+          }
+
+          .inputHint {
+            display: none;
+          }
+
+          .bottomBrand {
+            bottom: 93px;
+            font-size: 11px;
+          }
+
+          .sparkle {
+            bottom: -38px;
+            font-size: 20px;
+          }
+        }
+
+        /* ================================================
+           VERY SMALL PHONES
+        ================================================= */
+
+        @media (max-width: 380px) {
+          .welcome {
+            padding-top: 95px;
+          }
+
+          .welcome h1 {
+            font-size: 38px;
+          }
+
+          .welcomeText {
+            font-size: 17px;
+          }
+
+          .heroAvatar {
+            width: 78px;
+            height: 78px;
+          }
+
+          .messageBubble {
+            max-width: 88%;
+            font-size: 15px;
+          }
+        }
+      `}</style>
+    </>
   );
 }
