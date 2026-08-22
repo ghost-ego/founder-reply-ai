@@ -11,7 +11,9 @@ function getSupabase() {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   if (!url || !key) {
-    throw new Error("Supabase environment variables are missing.");
+    throw new Error(
+      "Supabase environment variables are missing."
+    );
   }
 
   return createClient(url, key);
@@ -25,16 +27,13 @@ function getAnonymousId(request) {
 }
 
 /* =========================================================
-   GET
-   - Without conversationId:
-     Return conversation history
-   - With conversationId:
-     Return messages from that conversation
+   GET CONVERSATION HISTORY
 ========================================================= */
 
 export async function GET(request) {
   try {
     const supabase = getSupabase();
+
     const anonymousId = getAnonymousId(request);
 
     if (!anonymousId) {
@@ -42,80 +41,6 @@ export async function GET(request) {
         conversations: [],
       });
     }
-
-    const { searchParams } = new URL(request.url);
-    const conversationId =
-      searchParams.get("conversationId");
-
-    /* =====================================================
-       LOAD ONE CONVERSATION
-    ===================================================== */
-
-    if (conversationId) {
-      const { data: conversation, error: conversationError } =
-        await supabase
-          .from("reze_conversations")
-          .select("id, title, created_at, updated_at")
-          .eq("id", conversationId)
-          .eq("anonymous_id", anonymousId)
-          .maybeSingle();
-
-      if (conversationError) {
-        console.error(
-          "Conversation load error:",
-          conversationError
-        );
-
-        return NextResponse.json(
-          {
-            error: "Could not load conversation.",
-          },
-          { status: 500 }
-        );
-      }
-
-      if (!conversation) {
-        return NextResponse.json(
-          {
-            error: "Conversation not found.",
-          },
-          { status: 404 }
-        );
-      }
-
-      const { data: messages, error: messagesError } =
-        await supabase
-          .from("reze_messages")
-          .select("id, role, content, created_at")
-          .eq("conversation_id", conversationId)
-          .eq("anonymous_id", anonymousId)
-          .order("created_at", {
-            ascending: true,
-          });
-
-      if (messagesError) {
-        console.error(
-          "Message history error:",
-          messagesError
-        );
-
-        return NextResponse.json(
-          {
-            error: "Could not load messages.",
-          },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({
-        conversation,
-        messages: messages || [],
-      });
-    }
-
-    /* =====================================================
-       LOAD ALL CONVERSATIONS
-    ===================================================== */
 
     const { data, error } = await supabase
       .from("reze_conversations")
@@ -125,19 +50,23 @@ export async function GET(request) {
       .eq("anonymous_id", anonymousId)
       .order("updated_at", {
         ascending: false,
-      });
+      })
+      .limit(50);
 
     if (error) {
       console.error(
-        "Conversation history error:",
+        "History loading error:",
         error
       );
 
       return NextResponse.json(
         {
-          error: "Could not load chat history.",
+          error:
+            "Could not load Reze history.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
@@ -154,28 +83,34 @@ export async function GET(request) {
       {
         error:
           error?.message ||
-          "Something went wrong.",
+          "Could not load history.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }
 
 /* =========================================================
-   DELETE CONVERSATION
+   LOAD ONE CONVERSATION
 ========================================================= */
 
-export async function DELETE(request) {
+export async function POST(request) {
   try {
     const supabase = getSupabase();
+
     const anonymousId = getAnonymousId(request);
 
     if (!anonymousId) {
       return NextResponse.json(
         {
-          error: "No Reze session found.",
+          error:
+            "No Reze session found.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
@@ -187,82 +122,108 @@ export async function DELETE(request) {
     if (!conversationId) {
       return NextResponse.json(
         {
-          error: "Conversation ID is required.",
-        },
-        { status: 400 }
-      );
-    }
-
-    /* =====================================================
-       DELETE MESSAGES FIRST
-    ===================================================== */
-
-    const { error: messagesError } =
-      await supabase
-        .from("reze_messages")
-        .delete()
-        .eq(
-          "conversation_id",
-          conversationId
-        )
-        .eq(
-          "anonymous_id",
-          anonymousId
-        );
-
-    if (messagesError) {
-      console.error(
-        "Delete messages error:",
-        messagesError
-      );
-
-      return NextResponse.json(
-        {
           error:
-            "Could not delete conversation messages.",
+            "Conversation ID is required.",
         },
-        { status: 500 }
+        {
+          status: 400,
+        }
       );
     }
 
     /* =====================================================
-       DELETE CONVERSATION
+       VERIFY CONVERSATION BELONGS TO THIS USER
     ===================================================== */
 
-    const { error: conversationError } =
-      await supabase
-        .from("reze_conversations")
-        .delete()
-        .eq(
-          "id",
-          conversationId
-        )
-        .eq(
-          "anonymous_id",
-          anonymousId
-        );
+    const {
+      data: conversation,
+      error: conversationError,
+    } = await supabase
+      .from("reze_conversations")
+      .select(
+        "id, title, created_at, updated_at"
+      )
+      .eq("id", conversationId)
+      .eq("anonymous_id", anonymousId)
+      .maybeSingle();
 
     if (conversationError) {
       console.error(
-        "Delete conversation error:",
+        "Conversation lookup error:",
         conversationError
       );
 
       return NextResponse.json(
         {
           error:
-            "Could not delete conversation.",
+            "Could not load conversation.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (!conversation) {
+      return NextResponse.json(
+        {
+          error:
+            "Conversation not found.",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
+
+    /* =====================================================
+       LOAD MESSAGES
+    ===================================================== */
+
+    const {
+      data: messages,
+      error: messagesError,
+    } = await supabase
+      .from("reze_messages")
+      .select(
+        "id, role, content, created_at"
+      )
+      .eq(
+        "conversation_id",
+        conversationId
+      )
+      .eq(
+        "anonymous_id",
+        anonymousId
+      )
+      .order("created_at", {
+        ascending: true,
+      });
+
+    if (messagesError) {
+      console.error(
+        "Conversation messages error:",
+        messagesError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Could not load conversation messages.",
+        },
+        {
+          status: 500,
+        }
       );
     }
 
     return NextResponse.json({
-      success: true,
+      conversation,
+      messages: messages || [],
     });
   } catch (error) {
     console.error(
-      "Delete history error:",
+      "Load conversation error:",
       error
     );
 
@@ -270,9 +231,11 @@ export async function DELETE(request) {
       {
         error:
           error?.message ||
-          "Could not delete conversation.",
+          "Could not load conversation.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }
