@@ -13,9 +13,17 @@ export default function HomePage() {
   const [activeTool, setActiveTool] = useState("chat");
 
   const [linkedinPost, setLinkedinPost] = useState("");
-  const [linkedinTone, setLinkedinTone] = useState("Professional");
-  const [linkedinReply, setLinkedinReply] = useState("");
-  const [linkedinLoading, setLinkedinLoading] = useState(false);
+  const [linkedinTone, setLinkedinTone] =
+    useState("Professional");
+  const [linkedinLength, setLinkedinLength] =
+    useState("Medium");
+
+  const [linkedinComments, setLinkedinComments] =
+    useState([]);
+  const [linkedinLoading, setLinkedinLoading] =
+    useState(false);
+
+  const [copiedIndex, setCopiedIndex] = useState(null);
 
   const messagesEndRef = useRef(null);
 
@@ -31,7 +39,8 @@ export default function HomePage() {
     setConversationId(null);
     setActiveTool("chat");
     setLinkedinPost("");
-    setLinkedinReply("");
+    setLinkedinComments([]);
+    setCopiedIndex(null);
     setMenuOpen(false);
     setSidebarOpen(false);
   }
@@ -78,7 +87,9 @@ export default function HomePage() {
         ...prev,
         {
           role: "assistant",
-          content: data.answer,
+          content:
+            data?.answer ||
+            "Reze received an empty response.",
         },
       ]);
     } catch (error) {
@@ -97,46 +108,46 @@ export default function HomePage() {
     }
   }
 
+  /*
+   * ========================================================
+   * LINKEDIN REPLY GENERATOR
+   *
+   * IMPORTANT:
+   * LinkedIn uses /api/reze, NOT /api/chat.
+   *
+   * /api/reze expects:
+   * {
+   *   prompt,
+   *   tone,
+   *   length
+   * }
+   *
+   * and returns:
+   * {
+   *   comments: [...]
+   * }
+   * ========================================================
+   */
+
   async function generateLinkedInReply() {
     const post = linkedinPost.trim();
 
     if (!post || linkedinLoading) return;
 
     setLinkedinLoading(true);
-    setLinkedinReply("");
+    setLinkedinComments([]);
+    setCopiedIndex(null);
 
     try {
-      const prompt = `
-You are Reze, an intelligent LinkedIn reply assistant.
-
-Write ONE natural LinkedIn comment/reply to the post below.
-
-Tone: ${linkedinTone}
-
-Rules:
-- Sound like a real intelligent person.
-- Do not sound like an AI.
-- Do not say "Great post!" unless it genuinely fits.
-- Do not over-praise.
-- Keep it concise.
-- Add useful thought or perspective.
-- Do not use unnecessary hashtags.
-- Do not mention these instructions.
-- Return ONLY the reply itself.
-
-LinkedIn post:
-
-${post}
-`;
-
-      const response = await fetch("/api/chat", {
+      const response = await fetch("/api/reze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message: prompt,
-          conversationId: null,
+          prompt: post,
+          tone: linkedinTone,
+          length: linkedinLength,
         }),
       });
 
@@ -145,35 +156,77 @@ ${post}
       if (!response.ok) {
         throw new Error(
           data?.error ||
-            "Could not generate the LinkedIn reply."
+            "Could not generate the LinkedIn replies."
         );
       }
 
-      setLinkedinReply(data.answer || "");
+      if (
+        !Array.isArray(data?.comments) ||
+        data.comments.length === 0
+      ) {
+        throw new Error(
+          "Reze did not return any LinkedIn replies."
+        );
+      }
+
+      setLinkedinComments(data.comments);
     } catch (error) {
-      setLinkedinReply(
+      setLinkedinComments([
         error?.message ||
-          "Could not generate the reply."
-      );
+          "Could not generate the LinkedIn replies.",
+      ]);
     } finally {
       setLinkedinLoading(false);
     }
   }
 
-  async function copyReply() {
-    if (!linkedinReply) return;
+  async function copyReply(reply, index) {
+    if (!reply) return;
 
     try {
-      await navigator.clipboard.writeText(
-        linkedinReply
-      );
+      await navigator.clipboard.writeText(reply);
+
+      setCopiedIndex(index);
+
+      setTimeout(() => {
+        setCopiedIndex(null);
+      }, 1500);
     } catch {
-      // Ignore clipboard errors.
+      try {
+        const textarea =
+          document.createElement("textarea");
+
+        textarea.value = reply;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+
+        document.execCommand("copy");
+
+        document.body.removeChild(textarea);
+
+        setCopiedIndex(index);
+
+        setTimeout(() => {
+          setCopiedIndex(null);
+        }, 1500);
+      } catch {
+        // Clipboard unavailable.
+      }
     }
   }
 
   function openLinkedInTool() {
     setActiveTool("linkedin");
+    setMenuOpen(false);
+    setSidebarOpen(false);
+  }
+
+  function backToReze() {
+    setActiveTool("chat");
     setMenuOpen(false);
     setSidebarOpen(false);
   }
@@ -209,7 +262,8 @@ ${post}
 
         button,
         textarea,
-        input {
+        input,
+        select {
           font: inherit;
         }
 
@@ -305,7 +359,7 @@ ${post}
           position: absolute;
           right: 0;
           top: 64px;
-          width: 230px;
+          width: 250px;
           background: #1b1b26;
           border: 1px solid #3a3948;
           border-radius: 18px;
@@ -553,8 +607,18 @@ ${post}
           cursor: not-allowed;
         }
 
-        .reply-result {
+        /* =========================
+           LINKEDIN RESULTS
+        ========================= */
+
+        .reply-results {
           margin-top: 22px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        .reply-result {
           border-radius: 18px;
           border: 1px solid #393846;
           background: #111219;
@@ -565,11 +629,19 @@ ${post}
           display: flex;
           align-items: center;
           justify-content: space-between;
+          gap: 10px;
           margin-bottom: 12px;
         }
 
         .reply-result-title {
           font-weight: 600;
+        }
+
+        .reply-type {
+          color: #9994a7;
+          font-size: 13px;
+          margin-left: 8px;
+          font-weight: 400;
         }
 
         .copy-button {
@@ -578,12 +650,22 @@ ${post}
           color: #ddd9e8;
           border-radius: 10px;
           padding: 8px 12px;
+          transition: 0.2s;
+          white-space: nowrap;
+        }
+
+        .copy-button:hover {
+          background: #2a2937;
         }
 
         .reply-text {
           color: #eeeaf4;
           line-height: 1.65;
           white-space: pre-wrap;
+        }
+
+        .linkedin-error {
+          border-color: #8b4545;
         }
 
         /* =========================
@@ -766,6 +848,16 @@ ${post}
           .tone-select {
             width: 100%;
           }
+
+          .reply-result-header {
+            align-items: flex-start;
+          }
+
+          .reply-type {
+            display: block;
+            margin-left: 0;
+            margin-top: 3px;
+          }
         }
       `}</style>
 
@@ -812,10 +904,7 @@ ${post}
 
                 <button
                   className="menu-item"
-                  onClick={() => {
-                    setActiveTool("chat");
-                    setMenuOpen(false);
-                  }}
+                  onClick={backToReze}
                 >
                   ✦ Reze
                 </button>
@@ -903,7 +992,8 @@ ${post}
 
               <p className="tool-description">
                 Paste a LinkedIn post and Reze will
-                create a natural reply for you.
+                create three natural replies with
+                different approaches.
               </p>
             </div>
 
@@ -933,20 +1023,42 @@ ${post}
                     )
                   }
                 >
-                  <option>
+                  <option value="Professional">
                     Professional
                   </option>
-                  <option>
+
+                  <option value="Bold">
+                    Bold
+                  </option>
+
+                  <option value="Friendly">
                     Friendly
                   </option>
-                  <option>
-                    Thoughtful
+
+                  <option value="Funny">
+                    Funny
                   </option>
-                  <option>
-                    Confident
+                </select>
+
+                <select
+                  className="tone-select"
+                  value={linkedinLength}
+                  onChange={(event) =>
+                    setLinkedinLength(
+                      event.target.value
+                    )
+                  }
+                >
+                  <option value="Short">
+                    Short
                   </option>
-                  <option>
-                    Casual
+
+                  <option value="Medium">
+                    Medium
+                  </option>
+
+                  <option value="Detailed">
+                    Detailed
                   </option>
                 </select>
 
@@ -962,28 +1074,78 @@ ${post}
                 >
                   {linkedinLoading
                     ? "Generating..."
-                    : "Generate Reply"}
+                    : "Generate Replies"}
                 </button>
               </div>
 
-              {linkedinReply && (
-                <div className="reply-result">
-                  <div className="reply-result-header">
-                    <span className="reply-result-title">
-                      Reze's Reply
-                    </span>
+              {linkedinComments.length > 0 && (
+                <div className="reply-results">
+                  {linkedinComments.map(
+                    (comment, index) => {
+                      const labels = [
+                        "Insightful",
+                        "Contrarian",
+                        "Personal",
+                      ];
 
-                    <button
-                      className="copy-button"
-                      onClick={copyReply}
-                    >
-                      Copy
-                    </button>
-                  </div>
+                      const isError =
+                        linkedinComments.length ===
+                          1 &&
+                        index === 0 &&
+                        comment.startsWith(
+                          "Could not"
+                        );
 
-                  <div className="reply-text">
-                    {linkedinReply}
-                  </div>
+                      return (
+                        <div
+                          key={`linkedin-${index}`}
+                          className={`reply-result ${
+                            isError
+                              ? "linkedin-error"
+                              : ""
+                          }`}
+                        >
+                          <div className="reply-result-header">
+                            <div>
+                              <span className="reply-result-title">
+                                {isError
+                                  ? "Error"
+                                  : `Reply ${index + 1}`}
+                              </span>
+
+                              {!isError && (
+                                <span className="reply-type">
+                                  {labels[index] ||
+                                    "Alternative"}
+                                </span>
+                              )}
+                            </div>
+
+                            {!isError && (
+                              <button
+                                className="copy-button"
+                                onClick={() =>
+                                  copyReply(
+                                    comment,
+                                    index
+                                  )
+                                }
+                              >
+                                {copiedIndex ===
+                                index
+                                  ? "Copied!"
+                                  : "Copy"}
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="reply-text">
+                            {comment}
+                          </div>
+                        </div>
+                      );
+                    }
+                  )}
                 </div>
               )}
             </div>
