@@ -2,18 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export default function RezePage() {
+export default function HomePage() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeTool, setActiveTool] = useState("chat");
+
+  const [linkedinPost, setLinkedinPost] = useState("");
+  const [linkedinTone, setLinkedinTone] = useState("Professional");
+  const [linkedinReply, setLinkedinReply] = useState("");
+  const [linkedinLoading, setLinkedinLoading] = useState(false);
 
   const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
-
-  /* =========================================================
-     SCROLL TO BOTTOM
-  ========================================================= */
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
@@ -21,23 +25,16 @@ export default function RezePage() {
     });
   }, [messages, loading]);
 
-  /* =========================================================
-     NEW CHAT
-  ========================================================= */
-
-  function newChat() {
+  function startNewChat() {
     setMessages([]);
     setInput("");
     setConversationId(null);
-
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 100);
+    setActiveTool("chat");
+    setLinkedinPost("");
+    setLinkedinReply("");
+    setMenuOpen(false);
+    setSidebarOpen(false);
   }
-
-  /* =========================================================
-     SEND MESSAGE
-  ========================================================= */
 
   async function sendMessage() {
     const text = input.trim();
@@ -49,16 +46,12 @@ export default function RezePage() {
       content: text,
     };
 
-    setMessages((prev) => [
-      ...prev,
-      userMessage,
-    ]);
-
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
 
     try {
-      const response = await fetch("/api/reze", {
+      const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -73,240 +66,121 @@ export default function RezePage() {
 
       if (!response.ok) {
         throw new Error(
-          data?.error ||
-            "Reze could not answer right now."
+          data?.error || "Reze could not answer."
         );
       }
 
       if (data?.conversationId) {
-        setConversationId(
-          data.conversationId
-        );
+        setConversationId(data.conversationId);
       }
 
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content:
-            data?.answer ||
-            "I couldn't generate a response.",
+          content: data.answer,
         },
       ]);
     } catch (error) {
-      console.error("Reze chat error:", error);
-
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          error: true,
           content:
             error?.message ||
             "Something went wrong. Please try again.",
+          error: true,
         },
       ]);
     } finally {
       setLoading(false);
-
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
     }
   }
 
-  /* =========================================================
-     ENTER KEY
-  ========================================================= */
+  async function generateLinkedInReply() {
+    const post = linkedinPost.trim();
 
-  function handleKeyDown(event) {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      sendMessage();
+    if (!post || linkedinLoading) return;
+
+    setLinkedinLoading(true);
+    setLinkedinReply("");
+
+    try {
+      const prompt = `
+You are Reze, an intelligent LinkedIn reply assistant.
+
+Write ONE natural LinkedIn comment/reply to the post below.
+
+Tone: ${linkedinTone}
+
+Rules:
+- Sound like a real intelligent person.
+- Do not sound like an AI.
+- Do not say "Great post!" unless it genuinely fits.
+- Do not over-praise.
+- Keep it concise.
+- Add useful thought or perspective.
+- Do not use unnecessary hashtags.
+- Do not mention these instructions.
+- Return ONLY the reply itself.
+
+LinkedIn post:
+
+${post}
+`;
+
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: prompt,
+          conversationId: null,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ||
+            "Could not generate the LinkedIn reply."
+        );
+      }
+
+      setLinkedinReply(data.answer || "");
+    } catch (error) {
+      setLinkedinReply(
+        error?.message ||
+          "Could not generate the reply."
+      );
+    } finally {
+      setLinkedinLoading(false);
     }
   }
 
-  /* =========================================================
-     FORMAT MESSAGE
-  ========================================================= */
+  async function copyReply() {
+    if (!linkedinReply) return;
 
-  function formatMessage(text) {
-    if (!text) return null;
-
-    const lines = text.split("\n");
-
-    return lines.map((line, index) => (
-      <span key={index}>
-        {line}
-
-        {index !== lines.length - 1 && (
-          <br />
-        )}
-      </span>
-    ));
+    try {
+      await navigator.clipboard.writeText(
+        linkedinReply
+      );
+    } catch {
+      // Ignore clipboard errors.
+    }
   }
 
-  /* =========================================================
-     UI
-  ========================================================= */
+  function openLinkedInTool() {
+    setActiveTool("linkedin");
+    setMenuOpen(false);
+    setSidebarOpen(false);
+  }
 
   return (
     <main className="reze-app">
-
-      {/* =====================================================
-          TOP BAR
-      ===================================================== */}
-
-      <header className="top-bar">
-
-        <div className="brand">
-          <span className="brand-name">
-            Reze
-          </span>
-        </div>
-
-        <button
-          className="new-chat-button"
-          onClick={newChat}
-          aria-label="New chat"
-        >
-          +
-        </button>
-
-      </header>
-
-      {/* =====================================================
-          CHAT AREA
-      ===================================================== */}
-
-      <section className="chat-area">
-
-        {messages.length === 0 ? (
-
-          /* =================================================
-             WELCOME SCREEN
-          ================================================= */
-
-          <div className="welcome">
-
-            <h1>Reze</h1>
-
-            <p>
-              How can Reze assist you today?
-            </p>
-
-          </div>
-
-        ) : (
-
-          /* =================================================
-             MESSAGES
-          ================================================= */
-
-          <div className="messages">
-
-            {messages.map(
-              (message, index) => {
-
-                const isUser =
-                  message.role === "user";
-
-                return (
-                  <div
-                    key={index}
-                    className={
-                      isUser
-                        ? "message-row user-row"
-                        : "message-row assistant-row"
-                    }
-                  >
-
-                    <div
-                      className={
-                        isUser
-                          ? "message user-message"
-                          : message.error
-                          ? "message assistant-message error-message"
-                          : "message assistant-message"
-                      }
-                    >
-                      {formatMessage(
-                        message.content
-                      )}
-                    </div>
-
-                  </div>
-                );
-              }
-            )}
-
-            {/* =============================================
-                LOADING
-            ============================================= */}
-
-            {loading && (
-              <div className="message-row assistant-row">
-
-                <div className="message assistant-message typing">
-
-                  <span></span>
-                  <span></span>
-                  <span></span>
-
-                </div>
-
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
-
-          </div>
-        )}
-
-      </section>
-
-      {/* =====================================================
-          INPUT AREA
-      ===================================================== */}
-
-      <div className="input-container">
-
-        <div className="input-box">
-
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(event) =>
-              setInput(event.target.value)
-            }
-            onKeyDown={handleKeyDown}
-            placeholder="Ask Reze anything..."
-            rows={1}
-            disabled={loading}
-          />
-
-          <button
-            className="send-button"
-            onClick={sendMessage}
-            disabled={
-              loading ||
-              !input.trim()
-            }
-            aria-label="Send message"
-          >
-            ↑
-          </button>
-
-        </div>
-
-      </div>
-
-      {/* =====================================================
-          STYLES
-      ===================================================== */}
-
       <style jsx global>{`
-
         * {
           box-sizing: border-box;
         }
@@ -317,15 +191,15 @@ export default function RezePage() {
           padding: 0;
           width: 100%;
           min-height: 100%;
-          background: #151820;
-          color: #f4f4f7;
+          background: #101117;
+          color: #f4f2fa;
           font-family:
+            Inter,
+            ui-sans-serif,
+            system-ui,
             -apple-system,
             BlinkMacSystemFont,
             "Segoe UI",
-            Roboto,
-            Helvetica,
-            Arial,
             sans-serif;
         }
 
@@ -334,351 +208,232 @@ export default function RezePage() {
         }
 
         button,
-        textarea {
-          font-family: inherit;
+        textarea,
+        input {
+          font: inherit;
         }
 
-        /* ===================================================
-           APP
-        =================================================== */
+        button {
+          cursor: pointer;
+        }
 
         .reze-app {
+          min-height: 100vh;
           width: 100%;
-          height: 100dvh;
-          min-height: 100dvh;
-
-          display: flex;
-          flex-direction: column;
-
           background:
             radial-gradient(
-              circle at 50% 20%,
-              rgba(76, 68, 108, 0.08),
-              transparent 35%
+              circle at 50% -20%,
+              rgba(112, 93, 160, 0.16),
+              transparent 38%
             ),
-            #151820;
-
-          overflow: hidden;
+            #101117;
+          display: flex;
+          flex-direction: column;
         }
 
-        /* ===================================================
-           TOP BAR
-        =================================================== */
+        /* =========================
+           HEADER
+        ========================= */
 
-        .top-bar {
-          height: 92px;
-          min-height: 92px;
-
-          width: 100%;
-
+        .topbar {
+          height: 88px;
+          min-height: 88px;
+          border-bottom: 1px solid #292a34;
           display: flex;
           align-items: center;
-          justify-content: center;
-
-          position: relative;
-
-          border-bottom: 1px solid
-            rgba(255, 255, 255, 0.055);
-
-          background:
-            rgba(15, 18, 25, 0.92);
-
-          backdrop-filter: blur(14px);
-          -webkit-backdrop-filter: blur(14px);
+          justify-content: space-between;
+          padding: 0 30px;
+          background: rgba(15, 16, 23, 0.96);
+          position: sticky;
+          top: 0;
+          z-index: 20;
         }
 
         .brand {
           display: flex;
           align-items: center;
-          justify-content: center;
-        }
-
-        .brand-name {
+          gap: 12px;
           font-size: 25px;
           font-weight: 700;
           letter-spacing: -0.5px;
-          color: #f4f4f7;
         }
 
-        /* ===================================================
-           NEW CHAT
-        =================================================== */
+        .brand-star {
+          font-size: 22px;
+          color: #a89bd3;
+        }
 
-        .new-chat-button {
-          position: absolute;
+        .top-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
 
-          right: 24px;
-          top: 50%;
-          transform: translateY(-50%);
-
-          width: 58px;
-          height: 58px;
-
-          border-radius: 20px;
-
-          border: 1px solid
-            rgba(116, 108, 151, 0.45);
-
-          background: #1b1d27;
-
-          color: #f4f4f7;
-
-          font-size: 38px;
-          font-weight: 300;
-
-          line-height: 1;
-
+        .icon-button {
+          width: 54px;
+          height: 54px;
+          border-radius: 17px;
+          border: 1px solid #3a3949;
+          background: #181923;
+          color: #f2f0f8;
           display: flex;
           align-items: center;
           justify-content: center;
-
-          cursor: pointer;
-
-          transition:
-            background 0.2s ease,
-            transform 0.2s ease,
-            border-color 0.2s ease;
+          font-size: 28px;
+          transition: 0.2s;
         }
 
-        .new-chat-button:hover {
-          background: #272638;
-          border-color: #716a91;
+        .icon-button:hover {
+          background: #242333;
+          border-color: #57526e;
         }
 
-        .new-chat-button:active {
-          transform:
-            translateY(-50%)
-            scale(0.94);
+        .hamburger {
+          font-size: 27px;
+          line-height: 1;
         }
 
-        /* ===================================================
-           CHAT AREA
-        =================================================== */
+        /* =========================
+           MENU
+        ========================= */
 
-        .chat-area {
-          flex: 1;
+        .menu-wrapper {
+          position: relative;
+        }
 
+        .menu-panel {
+          position: absolute;
+          right: 0;
+          top: 64px;
+          width: 230px;
+          background: #1b1b26;
+          border: 1px solid #3a3948;
+          border-radius: 18px;
+          padding: 8px;
+          box-shadow:
+            0 20px 50px rgba(0, 0, 0, 0.45);
+          z-index: 100;
+        }
+
+        .menu-item {
           width: 100%;
-
-          overflow-y: auto;
-          overflow-x: hidden;
-
-          padding:
-            45px
-            24px
-            170px;
-
-          scrollbar-width: thin;
-          scrollbar-color:
-            #353746
-            transparent;
-        }
-
-        .chat-area::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .chat-area::-webkit-scrollbar-track {
+          border: 0;
           background: transparent;
+          color: #f0eef7;
+          padding: 14px;
+          border-radius: 12px;
+          text-align: left;
+          font-size: 15px;
         }
 
-        .chat-area::-webkit-scrollbar-thumb {
-          background: #353746;
-          border-radius: 20px;
+        .menu-item:hover {
+          background: #2a2938;
         }
 
-        /* ===================================================
-           WELCOME
-        =================================================== */
+        .menu-item-danger {
+          color: #ff9d9d;
+        }
+
+        /* =========================
+           MAIN
+        ========================= */
+
+        .main {
+          flex: 1;
+          width: 100%;
+          max-width: 950px;
+          margin: 0 auto;
+          padding: 48px 22px 155px;
+        }
 
         .welcome {
-          min-height: 100%;
-
-          display: flex;
-          flex-direction: column;
-
-          align-items: center;
-          justify-content: center;
-
           text-align: center;
-
-          padding:
-            20px
-            0
-            100px;
+          margin-bottom: 44px;
         }
 
-        .welcome h1 {
+        .welcome-title {
           margin: 0;
-
-          font-size: clamp(
-            42px,
-            8vw,
-            64px
-          );
-
-          line-height: 1.05;
-
+          font-size: clamp(44px, 7vw, 70px);
           font-weight: 500;
-
           letter-spacing: -2px;
-
-          color: #f1f1f4;
         }
 
-        .welcome p {
-          margin:
-            24px
-            0
-            0;
-
-          font-size: clamp(
-            20px,
-            4vw,
-            30px
-          );
-
-          line-height: 1.3;
-
+        .welcome-subtitle {
+          margin-top: 12px;
+          color: #d1ceda;
+          font-size: clamp(20px, 3vw, 29px);
           font-weight: 400;
-
-          color: #d0d0d6;
         }
-
-        /* ===================================================
-           MESSAGES
-        =================================================== */
 
         .messages {
-          width: 100%;
-          max-width: 900px;
-
-          margin: 0 auto;
-
           display: flex;
           flex-direction: column;
-
           gap: 22px;
         }
 
         .message-row {
-          width: 100%;
-
           display: flex;
+          width: 100%;
         }
 
-        .user-row {
+        .message-row.user {
           justify-content: flex-end;
         }
 
-        .assistant-row {
+        .message-row.assistant {
           justify-content: flex-start;
         }
 
-        .message {
-          max-width: min(
-            78%,
-            720px
-          );
-
-          padding:
-            18px
-            21px;
-
-          border-radius: 24px;
-
-          font-size: 18px;
+        .bubble {
+          max-width: 78%;
+          padding: 18px 21px;
+          border-radius: 22px;
+          font-size: 17px;
           line-height: 1.55;
-
-          word-wrap: break-word;
-          overflow-wrap: anywhere;
-
-          white-space: normal;
+          white-space: pre-wrap;
+          word-break: break-word;
         }
 
-        /* ===================================================
-           USER MESSAGE
-        =================================================== */
-
-        .user-message {
-          color: #f4f2fb;
-
-          background:
-            linear-gradient(
-              135deg,
-              #373149,
-              #403952
-            );
-
-          border:
-            1px solid
-            rgba(122, 112, 153, 0.35);
-
-          border-bottom-right-radius: 8px;
-
-          box-shadow:
-            0 8px 30px
-            rgba(0, 0, 0, 0.12);
+        .user-bubble {
+          background: #39344c;
+          border: 1px solid #504968;
+          color: #eeeaf9;
+          border-bottom-right-radius: 7px;
         }
 
-        /* ===================================================
-           ASSISTANT MESSAGE
-        =================================================== */
-
-        .assistant-message {
-          color: #eeeeF2;
-
-          background:
-            rgba(36, 39, 49, 0.92);
-
-          border:
-            1px solid
-            rgba(93, 97, 111, 0.42);
-
-          border-bottom-left-radius: 8px;
-
-          box-shadow:
-            0 8px 30px
-            rgba(0, 0, 0, 0.1);
+        .assistant-bubble {
+          background: #1a1b23;
+          border: 1px solid #363642;
+          color: #f0eef5;
+          border-bottom-left-radius: 7px;
+          width: min(100%, 720px);
+          max-width: 86%;
         }
 
-        .error-message {
-          border-color:
-            rgba(220, 91, 91, 0.6);
-
-          color: #f0caca;
+        .assistant-bubble.error {
+          border-color: #8b4545;
         }
 
-        /* ===================================================
-           TYPING
-        =================================================== */
+        .empty-message {
+          text-align: center;
+          color: #777582;
+          margin-top: 80px;
+          font-size: 15px;
+        }
 
         .typing {
           display: flex;
+          gap: 5px;
           align-items: center;
-
-          gap: 6px;
-
-          min-width: 72px;
-          min-height: 58px;
+          padding: 7px 3px;
         }
 
         .typing span {
           width: 7px;
           height: 7px;
-
           border-radius: 50%;
-
-          background: #aaa9b7;
-
-          animation:
-            typingAnimation
-            1.2s
-            infinite ease-in-out;
-        }
-
-        .typing span:nth-child(1) {
-          animation-delay: 0s;
+          background: #aaa3bd;
+          animation: pulse 1.2s infinite;
         }
 
         .typing span:nth-child(2) {
@@ -689,365 +444,596 @@ export default function RezePage() {
           animation-delay: 0.3s;
         }
 
-        @keyframes typingAnimation {
-
+        @keyframes pulse {
           0%,
-          60%,
+          70%,
           100% {
             opacity: 0.3;
-            transform: translateY(0);
           }
 
-          30% {
+          35% {
             opacity: 1;
-            transform:
-              translateY(-4px);
           }
         }
 
-        /* ===================================================
-           INPUT CONTAINER
-        =================================================== */
+        /* =========================
+           LINKEDIN TOOL
+        ========================= */
 
-        .input-container {
-          position: fixed;
-
-          left: 0;
-          right: 0;
-          bottom: 0;
-
-          width: 100%;
-
-          padding:
-            18px
-            24px
-            calc(
-              18px +
-              env(safe-area-inset-bottom)
-            );
-
-          background:
-            linear-gradient(
-              to top,
-              #151820 72%,
-              rgba(21, 24, 32, 0)
-            );
-
-          z-index: 20;
-        }
-
-        .input-box {
-          width: 100%;
-          max-width: 900px;
-
+        .tool-page {
+          max-width: 850px;
           margin: 0 auto;
-
-          min-height: 86px;
-
-          display: flex;
-          align-items: center;
-
-          padding:
-            8px
-            8px
-            8px
-            24px;
-
-          border-radius: 28px;
-
-          border:
-            1px solid
-            rgba(87, 91, 108, 0.65);
-
-          background:
-            rgba(19, 22, 30, 0.96);
-
-          box-shadow:
-            0 12px 45px
-            rgba(0, 0, 0, 0.28);
-
-          transition:
-            border-color 0.2s ease,
-            box-shadow 0.2s ease;
         }
 
-        .input-box:focus-within {
-          border-color:
-            rgba(113, 106, 145, 0.9);
-
-          box-shadow:
-            0 12px 45px
-            rgba(0, 0, 0, 0.32),
-            0 0 0 3px
-            rgba(91, 82, 123, 0.08);
+        .tool-header {
+          margin-bottom: 28px;
         }
 
-        .input-box textarea {
-          flex: 1;
-
-          width: 100%;
-
-          min-width: 0;
-
-          max-height: 130px;
-
-          resize: none;
-
-          overflow-y: auto;
-
-          border: 0;
-          outline: 0;
-
-          background: transparent;
-
-          color: #f1f1f5;
-
-          font-size: 20px;
-          line-height: 1.4;
-
-          padding:
-            12px
-            0;
+        .tool-title {
+          margin: 0;
+          font-size: 38px;
+          font-weight: 600;
+          letter-spacing: -1px;
         }
 
-        .input-box textarea::placeholder {
-          color: #777987;
-          opacity: 1;
+        .tool-description {
+          margin-top: 10px;
+          color: #a9a6b3;
+          font-size: 16px;
+          line-height: 1.6;
         }
 
-        .input-box textarea:disabled {
-          opacity: 0.65;
-        }
-
-        /* ===================================================
-           SEND BUTTON
-        =================================================== */
-
-        .send-button {
-          flex-shrink: 0;
-
-          width: 66px;
-          height: 66px;
-
-          margin-left: 12px;
-
-          border: 0;
-
+        .tool-card {
+          background: #181922;
+          border: 1px solid #353541;
           border-radius: 22px;
+          padding: 22px;
+        }
 
-          background:
-            #37324b;
+        .tool-label {
+          display: block;
+          color: #e9e6f0;
+          font-weight: 600;
+          margin-bottom: 10px;
+        }
 
-          color: #dcd8e8;
+        .linkedin-textarea {
+          width: 100%;
+          min-height: 260px;
+          resize: vertical;
+          border-radius: 16px;
+          border: 1px solid #3d3c4a;
+          background: #111219;
+          color: #f4f2f8;
+          padding: 17px;
+          outline: none;
+          font-size: 16px;
+          line-height: 1.55;
+        }
 
-          font-size: 35px;
-          font-weight: 300;
+        .linkedin-textarea:focus {
+          border-color: #71668e;
+          box-shadow:
+            0 0 0 3px rgba(113, 102, 142, 0.12);
+        }
 
-          line-height: 1;
-
+        .tool-controls {
           display: flex;
           align-items: center;
-          justify-content: center;
-
-          cursor: pointer;
-
-          transition:
-            background 0.2s ease,
-            transform 0.2s ease,
-            opacity 0.2s ease;
+          gap: 12px;
+          margin-top: 15px;
         }
 
-        .send-button:hover:not(:disabled) {
-          background: #46405d;
+        .tone-select {
+          background: #111219;
+          border: 1px solid #3d3c4a;
+          color: #eeeaf7;
+          padding: 13px 14px;
+          border-radius: 13px;
+          outline: none;
         }
 
-        .send-button:active:not(:disabled) {
-          transform: scale(0.94);
+        .primary-button {
+          margin-left: auto;
+          border: 0;
+          background: #71658e;
+          color: white;
+          padding: 13px 22px;
+          border-radius: 13px;
+          font-weight: 600;
+          transition: 0.2s;
         }
 
-        .send-button:disabled {
-          opacity: 0.4;
+        .primary-button:hover {
+          background: #81739f;
+        }
+
+        .primary-button:disabled {
+          opacity: 0.5;
           cursor: not-allowed;
         }
 
-        /* ===================================================
-           MOBILE
-        =================================================== */
-
-        @media (max-width: 700px) {
-
-          .top-bar {
-            height: 78px;
-            min-height: 78px;
-          }
-
-          .brand-name {
-            font-size: 24px;
-          }
-
-          .new-chat-button {
-            right: 14px;
-
-            width: 50px;
-            height: 50px;
-
-            border-radius: 17px;
-
-            font-size: 32px;
-          }
-
-          .chat-area {
-            padding:
-              28px
-              14px
-              145px;
-          }
-
-          .welcome {
-            padding:
-              0
-              0
-              80px;
-          }
-
-          .welcome h1 {
-            font-size: 44px;
-            letter-spacing: -1.5px;
-          }
-
-          .welcome p {
-            margin-top: 18px;
-
-            font-size: 21px;
-
-            max-width: 330px;
-          }
-
-          .messages {
-            gap: 16px;
-          }
-
-          .message {
-            max-width: 88%;
-
-            padding:
-              14px
-              17px;
-
-            font-size: 17px;
-
-            line-height: 1.5;
-
-            border-radius: 20px;
-          }
-
-          .user-message {
-            border-bottom-right-radius: 7px;
-          }
-
-          .assistant-message {
-            border-bottom-left-radius: 7px;
-          }
-
-          .input-container {
-            padding:
-              12px
-              12px
-              calc(
-                12px +
-                env(safe-area-inset-bottom)
-              );
-          }
-
-          .input-box {
-            min-height: 72px;
-
-            border-radius: 23px;
-
-            padding:
-              6px
-              6px
-              6px
-              17px;
-          }
-
-          .input-box textarea {
-            font-size: 17px;
-
-            padding:
-              10px
-              0;
-          }
-
-          .send-button {
-            width: 58px;
-            height: 58px;
-
-            margin-left: 8px;
-
-            border-radius: 19px;
-
-            font-size: 31px;
-          }
+        .reply-result {
+          margin-top: 22px;
+          border-radius: 18px;
+          border: 1px solid #393846;
+          background: #111219;
+          padding: 18px;
         }
 
-        /* ===================================================
-           VERY SMALL PHONES
-        =================================================== */
+        .reply-result-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 12px;
+        }
 
-        @media (max-width: 380px) {
+        .reply-result-title {
+          font-weight: 600;
+        }
 
-          .top-bar {
-            height: 70px;
-            min-height: 70px;
+        .copy-button {
+          border: 1px solid #454454;
+          background: #20202b;
+          color: #ddd9e8;
+          border-radius: 10px;
+          padding: 8px 12px;
+        }
+
+        .reply-text {
+          color: #eeeaf4;
+          line-height: 1.65;
+          white-space: pre-wrap;
+        }
+
+        /* =========================
+           BOTTOM INPUT
+        ========================= */
+
+        .input-area {
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 15;
+          padding: 18px 20px 22px;
+          background:
+            linear-gradient(
+              to top,
+              #101117 70%,
+              rgba(16, 17, 23, 0)
+            );
+        }
+
+        .input-inner {
+          width: min(900px, 100%);
+          margin: 0 auto;
+          display: flex;
+          align-items: flex-end;
+          gap: 10px;
+          border: 1px solid #393846;
+          border-radius: 22px;
+          background: #15161e;
+          padding: 9px;
+          box-shadow:
+            0 10px 35px rgba(0, 0, 0, 0.25);
+        }
+
+        .chat-input {
+          flex: 1;
+          min-height: 55px;
+          max-height: 160px;
+          resize: none;
+          border: 0;
+          outline: 0;
+          background: transparent;
+          color: #f5f3fa;
+          padding: 14px 12px;
+          font-size: 17px;
+          line-height: 1.45;
+        }
+
+        .chat-input::placeholder {
+          color: #777582;
+        }
+
+        .send-button {
+          min-width: 108px;
+          height: 55px;
+          border: 0;
+          border-radius: 15px;
+          background: #71658e;
+          color: white;
+          font-size: 16px;
+          font-weight: 600;
+        }
+
+        .send-button:hover {
+          background: #81739f;
+        }
+
+        .send-button:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+        }
+
+        .footer-note {
+          text-align: center;
+          color: #64616d;
+          font-size: 11px;
+          margin-top: 8px;
+        }
+
+        /* =========================
+           MOBILE
+        ========================= */
+
+        @media (max-width: 700px) {
+          .topbar {
+            height: 72px;
+            min-height: 72px;
+            padding: 0 14px;
           }
 
-          .brand-name {
-            font-size: 22px;
+          .brand {
+            font-size: 21px;
           }
 
-          .new-chat-button {
-            width: 46px;
-            height: 46px;
-
-            right: 10px;
-
-            border-radius: 15px;
-          }
-
-          .chat-area {
-            padding:
-              22px
-              10px
-              135px;
-          }
-
-          .welcome h1 {
-            font-size: 40px;
-          }
-
-          .welcome p {
+          .brand-star {
             font-size: 19px;
           }
 
-          .message {
-            max-width: 92%;
+          .icon-button {
+            width: 47px;
+            height: 47px;
+            border-radius: 15px;
+          }
+
+          .main {
+            padding: 38px 15px 145px;
+          }
+
+          .welcome {
+            margin-bottom: 35px;
+          }
+
+          .welcome-title {
+            font-size: 48px;
+          }
+
+          .welcome-subtitle {
+            font-size: 20px;
+            line-height: 1.35;
+          }
+
+          .bubble {
+            max-width: 91%;
+            font-size: 16px;
+            padding: 15px 17px;
+          }
+
+          .assistant-bubble {
+            max-width: 94%;
+          }
+
+          .input-area {
+            padding: 10px 12px 16px;
+          }
+
+          .input-inner {
+            border-radius: 19px;
+            padding: 7px;
+          }
+
+          .chat-input {
+            min-height: 50px;
             font-size: 16px;
           }
 
-          .input-box {
-            min-height: 68px;
-            padding-left: 14px;
+          .send-button {
+            min-width: 74px;
+            height: 50px;
+            border-radius: 14px;
+            font-size: 15px;
           }
 
-          .send-button {
-            width: 54px;
-            height: 54px;
+          .footer-note {
+            display: none;
+          }
+
+          .tool-title {
+            font-size: 31px;
+          }
+
+          .tool-card {
+            padding: 16px;
+            border-radius: 18px;
+          }
+
+          .linkedin-textarea {
+            min-height: 230px;
+          }
+
+          .tool-controls {
+            flex-wrap: wrap;
+          }
+
+          .primary-button {
+            width: 100%;
+            margin-left: 0;
+          }
+
+          .tone-select {
+            width: 100%;
           }
         }
-
       `}</style>
 
+      {/* =========================
+          HEADER
+      ========================= */}
+
+      <header className="topbar">
+        <div className="brand">
+          <span className="brand-star">✦</span>
+          <span>Reze</span>
+        </div>
+
+        <div className="top-actions">
+          <button
+            className="icon-button"
+            onClick={startNewChat}
+            aria-label="New chat"
+            title="New chat"
+          >
+            +
+          </button>
+
+          <div className="menu-wrapper">
+            <button
+              className="icon-button hamburger"
+              onClick={() =>
+                setMenuOpen((value) => !value)
+              }
+              aria-label="Menu"
+              title="Menu"
+            >
+              ⋮
+            </button>
+
+            {menuOpen && (
+              <div className="menu-panel">
+                <button
+                  className="menu-item"
+                  onClick={startNewChat}
+                >
+                  ＋ New Chat
+                </button>
+
+                <button
+                  className="menu-item"
+                  onClick={() => {
+                    setActiveTool("chat");
+                    setMenuOpen(false);
+                  }}
+                >
+                  ✦ Reze
+                </button>
+
+                <button
+                  className="menu-item"
+                  onClick={openLinkedInTool}
+                >
+                  in LinkedIn Post Reply
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* =========================
+          MAIN CONTENT
+      ========================= */}
+
+      <section className="main">
+        {activeTool === "chat" ? (
+          <>
+            {messages.length === 0 ? (
+              <div className="welcome">
+                <h1 className="welcome-title">
+                  Reze
+                </h1>
+
+                <div className="welcome-subtitle">
+                  How can Reze assist you today?
+                </div>
+              </div>
+            ) : (
+              <div className="messages">
+                {messages.map((message, index) => (
+                  <div
+                    key={`${message.role}-${index}`}
+                    className={`message-row ${message.role}`}
+                  >
+                    <div
+                      className={`bubble ${
+                        message.role === "user"
+                          ? "user-bubble"
+                          : "assistant-bubble"
+                      } ${
+                        message.error
+                          ? "error"
+                          : ""
+                      }`}
+                    >
+                      {message.content}
+                    </div>
+                  </div>
+                ))}
+
+                {loading && (
+                  <div className="message-row assistant">
+                    <div className="bubble assistant-bubble">
+                      <div className="typing">
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+
+            {messages.length === 0 && (
+              <div className="empty-message">
+                Ask Reze anything.
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="tool-page">
+            <div className="tool-header">
+              <h1 className="tool-title">
+                LinkedIn Post Reply
+              </h1>
+
+              <p className="tool-description">
+                Paste a LinkedIn post and Reze will
+                create a natural reply for you.
+              </p>
+            </div>
+
+            <div className="tool-card">
+              <label className="tool-label">
+                LinkedIn post
+              </label>
+
+              <textarea
+                className="linkedin-textarea"
+                value={linkedinPost}
+                onChange={(event) =>
+                  setLinkedinPost(
+                    event.target.value
+                  )
+                }
+                placeholder="Paste the LinkedIn post here..."
+              />
+
+              <div className="tool-controls">
+                <select
+                  className="tone-select"
+                  value={linkedinTone}
+                  onChange={(event) =>
+                    setLinkedinTone(
+                      event.target.value
+                    )
+                  }
+                >
+                  <option>
+                    Professional
+                  </option>
+                  <option>
+                    Friendly
+                  </option>
+                  <option>
+                    Thoughtful
+                  </option>
+                  <option>
+                    Confident
+                  </option>
+                  <option>
+                    Casual
+                  </option>
+                </select>
+
+                <button
+                  className="primary-button"
+                  onClick={
+                    generateLinkedInReply
+                  }
+                  disabled={
+                    linkedinLoading ||
+                    !linkedinPost.trim()
+                  }
+                >
+                  {linkedinLoading
+                    ? "Generating..."
+                    : "Generate Reply"}
+                </button>
+              </div>
+
+              {linkedinReply && (
+                <div className="reply-result">
+                  <div className="reply-result-header">
+                    <span className="reply-result-title">
+                      Reze's Reply
+                    </span>
+
+                    <button
+                      className="copy-button"
+                      onClick={copyReply}
+                    >
+                      Copy
+                    </button>
+                  </div>
+
+                  <div className="reply-text">
+                    {linkedinReply}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* =========================
+          CHAT INPUT
+      ========================= */}
+
+      {activeTool === "chat" && (
+        <div className="input-area">
+          <div className="input-inner">
+            <textarea
+              className="chat-input"
+              value={input}
+              onChange={(event) =>
+                setInput(event.target.value)
+              }
+              onKeyDown={(event) => {
+                if (
+                  event.key === "Enter" &&
+                  !event.shiftKey
+                ) {
+                  event.preventDefault();
+                  sendMessage();
+                }
+              }}
+              placeholder="Ask Reze anything..."
+              rows={1}
+            />
+
+            <button
+              className="send-button"
+              onClick={sendMessage}
+              disabled={
+                loading || !input.trim()
+              }
+            >
+              {loading ? "..." : "Send"}
+            </button>
+          </div>
+
+          <div className="footer-note">
+            Reze can make mistakes. Consider
+            checking important information.
+          </div>
+        </div>
+      )}
     </main>
   );
 }
