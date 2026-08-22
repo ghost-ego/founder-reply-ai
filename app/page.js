@@ -5,30 +5,200 @@ import { useEffect, useRef, useState } from "react";
 export default function HomePage() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [conversationId, setConversationId] = useState(null);
+  const [conversationId, setConversationId] =
+    useState(null);
   const [loading, setLoading] = useState(false);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTool, setActiveTool] = useState("chat");
 
-  const [linkedinPost, setLinkedinPost] = useState("");
+  /* =========================================================
+     HISTORY
+  ========================================================= */
+
+  const [historyOpen, setHistoryOpen] =
+    useState(false);
+
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] =
+    useState(false);
+
+  const [loadingConversation, setLoadingConversation] =
+    useState(false);
+
+  /* =========================================================
+     LINKEDIN
+  ========================================================= */
+
+  const [linkedinPost, setLinkedinPost] =
+    useState("");
+
   const [linkedinTone, setLinkedinTone] =
     useState("Professional");
+
   const [linkedinLength, setLinkedinLength] =
     useState("Medium");
+
   const [linkedinComments, setLinkedinComments] =
     useState([]);
+
   const [linkedinLoading, setLinkedinLoading] =
     useState(false);
-  const [copiedIndex, setCopiedIndex] = useState(null);
+
+  const [copiedIndex, setCopiedIndex] =
+    useState(null);
 
   const messagesEndRef = useRef(null);
+
+  /* =========================================================
+     AUTO SCROLL
+  ========================================================= */
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth",
     });
   }, [messages, loading]);
+
+  /* =========================================================
+     LOAD HISTORY
+  ========================================================= */
+
+  async function loadHistory() {
+    setHistoryLoading(true);
+
+    try {
+      const response = await fetch(
+        "/api/history",
+        {
+          method: "GET",
+          cache: "no-store",
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ||
+            "Could not load history."
+        );
+      }
+
+      setHistory(
+        Array.isArray(data?.conversations)
+          ? data.conversations
+          : []
+      );
+    } catch (error) {
+      console.error(
+        "History loading error:",
+        error
+      );
+
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  /* =========================================================
+     OPEN HISTORY
+  ========================================================= */
+
+  function openHistory() {
+    setMenuOpen(false);
+    setHistoryOpen(true);
+    loadHistory();
+  }
+
+  /* =========================================================
+     CLOSE HISTORY
+  ========================================================= */
+
+  function closeHistory() {
+    setHistoryOpen(false);
+  }
+
+  /* =========================================================
+     LOAD ONE OLD CHAT
+  ========================================================= */
+
+  async function loadConversation(
+    selectedConversationId
+  ) {
+    if (
+      !selectedConversationId ||
+      loadingConversation
+    ) {
+      return;
+    }
+
+    setLoadingConversation(true);
+
+    try {
+      const response = await fetch(
+        "/api/history",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            conversationId:
+              selectedConversationId,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ||
+            "Could not load conversation."
+        );
+      }
+
+      const loadedMessages =
+        Array.isArray(data?.messages)
+          ? data.messages.map(
+              (message) => ({
+                role:
+                  message.role ===
+                  "assistant"
+                    ? "assistant"
+                    : "user",
+                content:
+                  message.content || "",
+              })
+            )
+          : [];
+
+      setMessages(loadedMessages);
+
+      setConversationId(
+        selectedConversationId
+      );
+
+      setActiveTool("chat");
+      setHistoryOpen(false);
+      setMenuOpen(false);
+    } catch (error) {
+      console.error(
+        "Conversation loading error:",
+        error
+      );
+
+      alert(
+        error?.message ||
+          "Could not load this conversation."
+      );
+    } finally {
+      setLoadingConversation(false);
+    }
+  }
 
   /* =========================================================
      NEW CHAT
@@ -45,13 +215,11 @@ export default function HomePage() {
 
     setActiveTool("chat");
     setMenuOpen(false);
+    setHistoryOpen(false);
   }
 
   /* =========================================================
      REZE CHAT
-     
-     IMPORTANT:
-     Reze backend is /api/reze
   ========================================================= */
 
   async function sendMessage() {
@@ -75,18 +243,22 @@ export default function HomePage() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/reze", {
-        method: "POST",
+      const response = await fetch(
+        "/api/reze",
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json",
-        },
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
 
-        body: JSON.stringify({
-          message: text,
-          conversationId,
-        }),
-      });
+          body: JSON.stringify({
+            message: text,
+            conversationId,
+          }),
+        }
+      );
 
       let data;
 
@@ -120,6 +292,12 @@ export default function HomePage() {
             "Reze returned an empty response.",
         },
       ]);
+
+      /*
+       Refresh history after a
+       successful conversation update.
+      */
+      loadHistory();
     } catch (error) {
       console.error(
         "Reze chat error:",
@@ -143,13 +321,11 @@ export default function HomePage() {
 
   /* =========================================================
      LINKEDIN REPLY GENERATOR
-
-     IMPORTANT:
-     LinkedIn backend is /api/chat
   ========================================================= */
 
   async function generateLinkedInReplies() {
-    const post = linkedinPost.trim();
+    const post =
+      linkedinPost.trim();
 
     if (!post || linkedinLoading) {
       return;
@@ -160,19 +336,23 @@ export default function HomePage() {
     setCopiedIndex(null);
 
     try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
+      const response = await fetch(
+        "/api/chat",
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json",
-        },
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
 
-        body: JSON.stringify({
-          prompt: post,
-          tone: linkedinTone,
-          length: linkedinLength,
-        }),
-      });
+          body: JSON.stringify({
+            prompt: post,
+            tone: linkedinTone,
+            length: linkedinLength,
+          }),
+        }
+      );
 
       let data;
 
@@ -192,7 +372,9 @@ export default function HomePage() {
       }
 
       if (
-        !Array.isArray(data?.comments)
+        !Array.isArray(
+          data?.comments
+        )
       ) {
         throw new Error(
           "LinkedIn AI returned an invalid comments response."
@@ -256,7 +438,9 @@ export default function HomePage() {
 
         textarea.style.position =
           "fixed";
-        textarea.style.left = "-9999px";
+
+        textarea.style.left =
+          "-9999px";
 
         document.body.appendChild(
           textarea
@@ -265,7 +449,9 @@ export default function HomePage() {
         textarea.focus();
         textarea.select();
 
-        document.execCommand("copy");
+        document.execCommand(
+          "copy"
+        );
 
         document.body.removeChild(
           textarea
@@ -292,11 +478,38 @@ export default function HomePage() {
   function openReze() {
     setActiveTool("chat");
     setMenuOpen(false);
+    setHistoryOpen(false);
   }
 
   function openLinkedInTool() {
     setActiveTool("linkedin");
     setMenuOpen(false);
+    setHistoryOpen(false);
+  }
+
+  /* =========================================================
+     DATE FORMAT
+  ========================================================= */
+
+  function formatHistoryDate(date) {
+    if (!date) {
+      return "";
+    }
+
+    try {
+      return new Date(
+        date
+      ).toLocaleDateString(
+        undefined,
+        {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }
+      );
+    } catch {
+      return "";
+    }
   }
 
   return (
@@ -314,7 +527,6 @@ export default function HomePage() {
           min-height: 100%;
           background: #101117;
           color: #f4f2fa;
-
           font-family:
             Inter,
             ui-sans-serif,
@@ -508,6 +720,215 @@ export default function HomePage() {
         }
 
         /* =====================================================
+           HISTORY PANEL
+        ===================================================== */
+
+        .history-overlay {
+          position: fixed;
+          inset: 0;
+
+          background:
+            rgba(
+              0,
+              0,
+              0,
+              0.45
+            );
+
+          z-index: 80;
+        }
+
+        .history-panel {
+          position: fixed;
+
+          top: 0;
+          left: 0;
+
+          width: 340px;
+          max-width: 88vw;
+          height: 100vh;
+
+          background: #171821;
+
+          border-right:
+            1px solid #343441;
+
+          box-shadow:
+            20px 0 60px
+            rgba(
+              0,
+              0,
+              0,
+              0.35
+            );
+
+          z-index: 90;
+
+          display: flex;
+          flex-direction: column;
+
+          animation:
+            historySlide
+            0.2s
+            ease-out;
+        }
+
+        @keyframes historySlide {
+          from {
+            transform:
+              translateX(
+                -100%
+              );
+          }
+
+          to {
+            transform:
+              translateX(0);
+          }
+        }
+
+        .history-header {
+          min-height: 78px;
+
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+
+          padding:
+            0
+            18px;
+
+          border-bottom:
+            1px solid #30313c;
+        }
+
+        .history-title {
+          font-size: 20px;
+          font-weight: 650;
+        }
+
+        .history-close {
+          width: 42px;
+          height: 42px;
+
+          border-radius: 12px;
+
+          border:
+            1px solid #3c3c4b;
+
+          background: #20212b;
+
+          color: #eeeaf7;
+
+          font-size: 20px;
+        }
+
+        .history-list {
+          flex: 1;
+
+          overflow-y: auto;
+
+          padding: 12px;
+        }
+
+        .history-empty {
+          color: #85818f;
+
+          text-align: center;
+
+          padding:
+            45px
+            18px;
+
+          line-height: 1.6;
+
+          font-size: 14px;
+        }
+
+        .history-loading {
+          color: #aaa6b5;
+
+          text-align: center;
+
+          padding: 40px 18px;
+        }
+
+        .history-item {
+          width: 100%;
+
+          border: 1px solid
+            transparent;
+
+          background: transparent;
+
+          color: #eeeaf4;
+
+          text-align: left;
+
+          padding: 14px;
+
+          border-radius: 14px;
+
+          margin-bottom: 7px;
+
+          transition: 0.2s;
+        }
+
+        .history-item:hover {
+          background: #252531;
+
+          border-color: #393947;
+        }
+
+        .history-item.active {
+          background: #29273a;
+
+          border-color: #4c4661;
+        }
+
+        .history-item-title {
+          font-size: 15px;
+
+          font-weight: 600;
+
+          overflow: hidden;
+
+          text-overflow: ellipsis;
+
+          white-space: nowrap;
+        }
+
+        .history-item-date {
+          margin-top: 6px;
+
+          font-size: 12px;
+
+          color: #85818f;
+        }
+
+        .history-new {
+          margin:
+            12px;
+
+          border: 1px solid
+            #454158;
+
+          background: #252235;
+
+          color: #eeeaf7;
+
+          padding: 13px;
+
+          border-radius: 13px;
+
+          font-weight: 600;
+        }
+
+        .history-new:hover {
+          background: #302b43;
+        }
+
+        /* =====================================================
            MAIN
         ===================================================== */
 
@@ -568,17 +989,20 @@ export default function HomePage() {
         }
 
         /* =====================================================
-           CHAT MESSAGES
+           CHAT
         ===================================================== */
 
         .messages {
           display: flex;
+
           flex-direction: column;
+
           gap: 22px;
         }
 
         .message-row {
           display: flex;
+
           width: 100%;
         }
 
@@ -705,11 +1129,12 @@ export default function HomePage() {
         }
 
         /* =====================================================
-           LINKEDIN TOOL
+           LINKEDIN
         ===================================================== */
 
         .tool-page {
           max-width: 850px;
+
           margin: 0 auto;
         }
 
@@ -797,10 +1222,6 @@ export default function HomePage() {
             );
         }
 
-        /* =====================================================
-           LINKEDIN CONTROLS
-        ===================================================== */
-
         .tool-controls {
           display: flex;
 
@@ -857,10 +1278,6 @@ export default function HomePage() {
 
           cursor: not-allowed;
         }
-
-        /* =====================================================
-           LINKEDIN RESULTS
-        ===================================================== */
 
         .reply-results {
           margin-top: 22px;
@@ -947,7 +1364,7 @@ export default function HomePage() {
         }
 
         /* =====================================================
-           BOTTOM INPUT
+           INPUT
         ===================================================== */
 
         .input-area {
@@ -1215,8 +1632,101 @@ export default function HomePage() {
 
             margin-top: 3px;
           }
+
+          .history-panel {
+            width: 310px;
+          }
         }
       `}</style>
+
+      {/* =====================================================
+          HISTORY
+      ===================================================== */}
+
+      {historyOpen && (
+        <>
+          <div
+            className="history-overlay"
+            onClick={closeHistory}
+          />
+
+          <aside className="history-panel">
+            <div className="history-header">
+              <div className="history-title">
+                Reze History
+              </div>
+
+              <button
+                className="history-close"
+                onClick={closeHistory}
+                aria-label="Close history"
+              >
+                ×
+              </button>
+            </div>
+
+            <button
+              className="history-new"
+              onClick={startNewChat}
+            >
+              ＋ New Chat
+            </button>
+
+            <div className="history-list">
+              {historyLoading ? (
+                <div className="history-loading">
+                  Loading history...
+                </div>
+              ) : history.length ===
+                0 ? (
+                <div className="history-empty">
+                  No previous conversations yet.
+                  <br />
+                  Start chatting with Reze and
+                  your conversations will appear
+                  here.
+                </div>
+              ) : (
+                history.map(
+                  (conversation) => (
+                    <button
+                      key={
+                        conversation.id
+                      }
+                      className={`history-item ${
+                        conversationId ===
+                        conversation.id
+                          ? "active"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        loadConversation(
+                          conversation.id
+                        )
+                      }
+                      disabled={
+                        loadingConversation
+                      }
+                    >
+                      <div className="history-item-title">
+                        {conversation.title ||
+                          "New conversation"}
+                      </div>
+
+                      <div className="history-item-date">
+                        {formatHistoryDate(
+                          conversation.updated_at ||
+                            conversation.created_at
+                        )}
+                      </div>
+                    </button>
+                  )
+                )
+              )}
+            </div>
+          </aside>
+        </>
+      )}
 
       {/* =====================================================
           HEADER
@@ -1264,6 +1774,13 @@ export default function HomePage() {
                   }
                 >
                   ＋ New Chat
+                </button>
+
+                <button
+                  className="menu-item"
+                  onClick={openHistory}
+                >
+                  🕘 History
                 </button>
 
                 <button
