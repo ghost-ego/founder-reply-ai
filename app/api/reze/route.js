@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { ROMAN_EMPIRE_KNOWLEDGE } from "@/lib/knowledge/roman-empire";
 
 export const runtime = "nodejs";
 
@@ -43,53 +43,40 @@ PERSONALITY:
 - Do not repeat the user's question.
 
 =========================================================
-IMPORTANT RESPONSE STYLE
+RESPONSE STYLE
 =========================================================
 
 BE SHORT BY DEFAULT.
 
-For a simple question:
+For simple questions:
 - Give the direct answer.
 - Usually use 1-3 sentences.
 - Do not add unnecessary background.
-- Do not create lists unless useful.
-- Do not dump research results.
 
 For complex questions:
 - Explain clearly.
 - Stay focused.
-- Use headings or bullets only when useful.
+- Use headings or bullets when useful.
+
+If the user asks for detail, provide detail.
 
 =========================================================
 CURRENT INFORMATION
 =========================================================
 
 When fresh web-search results are provided:
-
-- Use them as the source of current information.
+- Use them for current information.
 - Answer the actual question first.
-- Keep the answer short unless the user asks for details.
-- Never dump all search results.
 - Never invent numbers.
 - Never pretend old knowledge is current.
-- If information is time-sensitive, make that clear.
 
 =========================================================
-EMOTION / PERSONALITY
+EMOTION
 =========================================================
 
-Add small natural emotional touches when appropriate.
+Use small natural emotional touches when appropriate.
 
-Examples:
-- "Around $63K right now. 😏"
-- "Yep, it's still moving."
-- "That's a surprisingly good question."
-- "Short answer: yes. 😉"
-- "Nope. Not quite."
-- "Honestly? I'd be careful with that."
-- "Easy one. 😌"
-
-Do not add an emoji to every answer.
+Do not add emojis to every answer.
 
 =========================================================
 MEMORY
@@ -107,9 +94,45 @@ TRUTHFULNESS
 =========================================================
 
 - Never invent facts.
-- Never pretend you performed an action you didn't perform.
+- Never pretend you performed an action you did not perform.
 - If you don't know, say so naturally.
-- If web results are insufficient, say so.
+- Distinguish historical tradition from established evidence.
+
+=========================================================
+SPECIALIZED KNOWLEDGE
+=========================================================
+
+You have internal specialized knowledge about Roman history.
+
+For ordinary Roman Empire / Roman Republic / Ancient Rome questions:
+- Use the internal Roman knowledge provided to you.
+- Do NOT search the web merely because the question is about Rome.
+- Do NOT call the web search tool for normal historical questions.
+- Answer directly from the specialized knowledge.
+- You may combine the knowledge with your general reasoning.
+
+For questions about:
+- recent archaeological discoveries
+- newly published research
+- current museum exhibitions
+- modern tourism
+- current archaeological news
+- current prices
+- modern locations/hours
+- new discoveries
+- latest scholarship
+
+web search may be appropriate.
+
+=========================================================
+TOOLS
+=========================================================
+
+You have:
+- save_memory
+- search_web
+
+Only call a tool when it actually changes the answer.
 `;
 
 /* =========================================================
@@ -117,17 +140,14 @@ TRUTHFULNESS
 ========================================================= */
 
 function getSupabase() {
-  const url =
-    process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   const key =
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   if (!url || !key) {
-    throw new Error(
-      "Supabase environment variables are missing."
-    );
+    throw new Error("Supabase environment variables are missing.");
   }
 
   return createClient(url, key);
@@ -138,18 +158,11 @@ function getSupabase() {
 ========================================================= */
 
 function getAnonymousId(request) {
-  const existing =
-    request.cookies.get(
-      "reze_anonymous_id"
-    )?.value;
+  const existing = request.cookies.get("reze_anonymous_id")?.value;
 
   return {
-    id:
-      existing ||
-      crypto.randomUUID(),
-
-    existingCookie:
-      Boolean(existing),
+    id: existing || crypto.randomUUID(),
+    existingCookie: Boolean(existing),
   };
 }
 
@@ -160,11 +173,7 @@ function getAnonymousId(request) {
 function detectMemory(message) {
   let match;
 
-  /* USER NAME */
-
-  match = message.match(
-    /^(?:and\s+)?my name is\s+(.+)$/i
-  );
+  match = message.match(/^(?:and\s+)?my name is\s+(.+)$/i);
 
   if (!match) {
     match = message.match(
@@ -173,32 +182,26 @@ function detectMemory(message) {
   }
 
   if (match) {
-    const name =
-      match[1].trim();
+    const name = match[1].trim();
 
     return {
       category: "name",
       value: name,
-      memory:
-        `The user's name is ${name}.`,
+      memory: `The user's name is ${name}.`,
     };
   }
-
-  /* CRUSH */
 
   match = message.match(
     /^(?:and\s+)?my crush(?:'s)?(?:\s+name)?\s+is\s+(.+)$/i
   );
 
   if (match) {
-    const crush =
-      match[1].trim();
+    const crush = match[1].trim();
 
     return {
       category: "crush",
       value: crush,
-      memory:
-        `The user's crush's name is ${crush}.`,
+      memory: `The user's crush's name is ${crush}.`,
     };
   }
 
@@ -210,13 +213,10 @@ function detectMemory(message) {
 ========================================================= */
 
 function getSpecialAnswer(message) {
-  const text =
-    message
-      .toLowerCase()
-      .trim()
-      .replace(/[?!.,]+$/g, "");
-
-  /* IDENTITY */
+  const text = message
+    .toLowerCase()
+    .trim()
+    .replace(/[?!.,]+$/g, "");
 
   const identityQuestions = [
     "who are you",
@@ -235,15 +235,11 @@ function getSpecialAnswer(message) {
 
   if (
     identityQuestions.some(
-      (question) =>
-        text === question ||
-        text.includes(question)
+      (q) => text === q || text.includes(q)
     )
   ) {
     return "I am Reze. 😊";
   }
-
-  /* CREATOR */
 
   const creatorQuestions = [
     "who made you",
@@ -263,15 +259,11 @@ function getSpecialAnswer(message) {
 
   if (
     creatorQuestions.some(
-      (question) =>
-        text === question ||
-        text.includes(question)
+      (q) => text === q || text.includes(q)
     )
   ) {
     return "Tahsin.";
   }
-
-  /* TINNI */
 
   const asksAboutTinni =
     text.includes("who is tinni") ||
@@ -290,48 +282,27 @@ function getSpecialAnswer(message) {
 }
 
 /* =========================================================
-   GET MEMORIES
+   MEMORY DATABASE
 ========================================================= */
 
-async function getMemories(
-  supabase,
-  anonymousId
-) {
-  const {
-    data,
-    error,
-  } = await supabase
+async function getMemories(supabase, anonymousId) {
+  const { data, error } = await supabase
     .from("reze_memories")
     .select(
       "id, memory, category, importance, created_at"
     )
-    .eq(
-      "anonymous_id",
-      anonymousId
-    )
-    .order("importance", {
-      ascending: false,
-    })
-    .order("created_at", {
-      ascending: false,
-    })
+    .eq("anonymous_id", anonymousId)
+    .order("importance", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(10);
 
   if (error) {
-    console.error(
-      "Memory read error:",
-      error
-    );
-
+    console.error("Memory read error:", error);
     return [];
   }
 
   return data || [];
 }
-
-/* =========================================================
-   SAVE MEMORY
-========================================================= */
 
 async function saveMemory(
   supabase,
@@ -340,112 +311,56 @@ async function saveMemory(
   memory,
   importance = 8
 ) {
-  if (
-    !anonymousId ||
-    !category ||
-    !memory
-  ) {
-    return;
-  }
+  if (!anonymousId || !category || !memory) return;
 
-  const {
-    data: existing,
-    error: findError,
-  } = await supabase
-    .from("reze_memories")
-    .select("id")
-    .eq(
-      "anonymous_id",
-      anonymousId
-    )
-    .eq(
-      "category",
-      category
-    )
-    .limit(1)
-    .maybeSingle();
+  const clampedImportance = Math.min(
+    10,
+    Math.max(1, Number(importance) || 5)
+  );
+
+  const { data: existing, error: findError } =
+    await supabase
+      .from("reze_memories")
+      .select("id")
+      .eq("anonymous_id", anonymousId)
+      .eq("category", category)
+      .limit(1)
+      .maybeSingle();
 
   if (findError) {
-    console.error(
-      "Memory lookup error:",
-      findError
-    );
-
+    console.error("Memory lookup error:", findError);
     return;
   }
 
   if (existing?.id) {
-    const {
-      error,
-    } = await supabase
+    const { error } = await supabase
       .from("reze_memories")
       .update({
-        memory:
-          memory.trim(),
-
-        importance:
-          Math.min(
-            10,
-            Math.max(
-              1,
-              Number(
-                importance
-              ) || 5
-            )
-          ),
+        memory: memory.trim(),
+        importance: clampedImportance,
       })
-      .eq(
-        "id",
-        existing.id
-      )
-      .eq(
-        "anonymous_id",
-        anonymousId
-      );
+      .eq("id", existing.id)
+      .eq("anonymous_id", anonymousId);
 
     if (error) {
-      console.error(
-        "Memory update error:",
-        error
-      );
+      console.error("Memory update error:", error);
     }
 
     return;
   }
 
-  const {
-    error,
-  } = await supabase
+  const { error } = await supabase
     .from("reze_memories")
     .insert({
-      anonymous_id:
-        anonymousId,
-
-      user_id:
-        null,
-
-      memory:
-        memory.trim(),
-
+      anonymous_id: anonymousId,
+      user_id: null,
+      memory: memory.trim(),
       category,
-
-      importance:
-        Math.min(
-          10,
-          Math.max(
-            1,
-            Number(
-              importance
-            ) || 5
-          )
-        ),
+      importance: clampedImportance,
     });
 
   if (error) {
-    console.error(
-      "Memory insert error:",
-      error
-    );
+    console.error("Memory insert error:", error);
   }
 }
 
@@ -453,28 +368,16 @@ async function saveMemory(
    MEMORY QUESTIONS
 ========================================================= */
 
-function answerMemoryQuestion(
-  message,
-  memories
-) {
-  const text =
-    message
-      .toLowerCase()
-      .trim();
+function answerMemoryQuestion(message, memories) {
+  const text = message.toLowerCase().trim();
 
-  const nameMemory =
-    memories.find(
-      (m) =>
-        m.category ===
-        "name"
-    );
+  const nameMemory = memories.find(
+    (m) => m.category === "name"
+  );
 
-  const crushMemory =
-    memories.find(
-      (m) =>
-        m.category ===
-        "crush"
-    );
+  const crushMemory = memories.find(
+    (m) => m.category === "crush"
+  );
 
   const asksName =
     text.includes("my name") ||
@@ -487,120 +390,143 @@ function answerMemoryQuestion(
     text.includes("crush name") ||
     text.includes("who is my crush");
 
-  if (
-    asksName &&
-    asksCrush
-  ) {
-    if (
-      nameMemory &&
-      crushMemory
-    ) {
-      const name =
-        nameMemory.memory
-          .replace(
-            "The user's name is ",
-            ""
-          )
-          .replace(
-            /\.$/,
-            ""
-          );
+  const cleanName = (m) =>
+    m.memory
+      .replace("The user's name is ", "")
+      .replace(/\.$/, "");
 
-      const crush =
-        crushMemory.memory
-          .replace(
-            "The user's crush's name is ",
-            ""
-          )
-          .replace(
-            /\.$/,
-            ""
-          );
+  const cleanCrush = (m) =>
+    m.memory
+      .replace("The user's crush's name is ", "")
+      .replace(/\.$/, "");
 
-      return `Your name is ${name}, and your crush is ${crush}. 😉`;
+  if (asksName && asksCrush) {
+    if (nameMemory && crushMemory) {
+      return `Your name is ${cleanName(
+        nameMemory
+      )}, and your crush is ${cleanCrush(
+        crushMemory
+      )}. 😉`;
     }
 
     if (nameMemory) {
-      const name =
-        nameMemory.memory
-          .replace(
-            "The user's name is ",
-            ""
-          )
-          .replace(
-            /\.$/,
-            ""
-          );
-
-      return `Your name is ${name}. I haven't saved your crush's name yet.`;
+      return `Your name is ${cleanName(
+        nameMemory
+      )}. I haven't saved your crush's name yet.`;
     }
 
     if (crushMemory) {
-      const crush =
-        crushMemory.memory
-          .replace(
-            "The user's crush's name is ",
-            ""
-          )
-          .replace(
-            /\.$/,
-            ""
-          );
-
-      return `Your crush is ${crush}. I don't have your name saved yet.`;
+      return `Your crush is ${cleanCrush(
+        crushMemory
+      )}. I don't have your name saved yet.`;
     }
 
     return "I don't have your name or your crush's name saved yet.";
   }
 
-  if (
-    asksName &&
-    nameMemory
-  ) {
-    const name =
-      nameMemory.memory
-        .replace(
-          "The user's name is ",
-          ""
-        )
-        .replace(
-          /\.$/,
-          ""
-        );
-
-    return `Your name is ${name}. 😊`;
+  if (asksName && nameMemory) {
+    return `Your name is ${cleanName(nameMemory)}. 😊`;
   }
 
-  if (
-    asksCrush &&
-    crushMemory
-  ) {
-    const crush =
-      crushMemory.memory
-        .replace(
-          "The user's crush's name is ",
-          ""
-        )
-        .replace(
-          /\.$/,
-          ""
-        );
-
-    return `Your crush is ${crush}. 😉`;
+  if (asksCrush && crushMemory) {
+    return `Your crush is ${cleanCrush(crushMemory)}. 😉`;
   }
 
   return null;
 }
 
 /* =========================================================
-   WEB SEARCH DETECTION
+   ROMAN EMPIRE DETECTION
+========================================================= */
+
+function isRomanEmpireQuestion(message) {
+  const text = message.toLowerCase();
+
+  const keywords = [
+    "roman empire",
+    "roman republic",
+    "ancient rome",
+    "ancient roman",
+    "roman history",
+    "roman emperor",
+    "roman emperors",
+    "roman king",
+    "roman kings",
+    "roman army",
+    "roman military",
+    "roman legion",
+    "roman legions",
+    "roman senate",
+    "roman law",
+    "roman religion",
+    "roman architecture",
+    "roman engineering",
+    "roman civilization",
+    "roman society",
+    "roman economy",
+    "romulus",
+    "remus",
+    "julius caesar",
+    "caesar",
+    "augustus",
+    "tiberius",
+    "caligula",
+    "claudius",
+    "nero",
+    "vespasian",
+    "titus",
+    "domitian",
+    "trajan",
+    "hadrian",
+    "antoninus pius",
+    "marcus aurelius",
+    "commodus",
+    "septimius severus",
+    "caracalla",
+    "aurelian",
+    "diocletian",
+    "constantine",
+    "theodosius",
+    "justinian",
+    "constantinople",
+    "byzantine empire",
+    "byzantine",
+    "carthage",
+    "punic war",
+    "punic wars",
+    "hannibal",
+    "spartacus",
+    "pompey",
+    "sulla",
+    "marius",
+    "crassus",
+    "mark antony",
+    "cleopatra",
+    "rubicon",
+    "actium",
+    "colosseum",
+    "coliseum",
+    "pompeii",
+    "vesuvius",
+    "hadrian's wall",
+    "traian",
+    "tetrarchy",
+    "pax romana",
+    "476",
+    "1453",
+  ];
+
+  return keywords.some((keyword) =>
+    text.includes(keyword)
+  );
+}
+
+/* =========================================================
+   CURRENT INFORMATION / WEB SEARCH DETECTION
 ========================================================= */
 
 function needsWebSearch(message) {
-  const text =
-    message
-      .toLowerCase()
-      .trim();
+  const text = message.toLowerCase().trim();
 
   const patterns = [
     "latest",
@@ -662,10 +588,7 @@ function needsWebSearch(message) {
   ];
 
   if (
-    patterns.some(
-      (pattern) =>
-        text.includes(pattern)
-    )
+    patterns.some((p) => text.includes(p))
   ) {
     return true;
   }
@@ -683,16 +606,34 @@ function needsWebSearch(message) {
 }
 
 /* =========================================================
-   LONG ANSWER DETECTION
+   NEWS DETECTION
 ========================================================= */
 
-function wantsDetailedAnswer(
-  message
-) {
-  const text =
-    message
-      .toLowerCase()
-      .trim();
+function isNewsQuery(message) {
+  const text = message.toLowerCase();
+
+  const newsWords = [
+    "news",
+    "breaking",
+    "headlines",
+    "latest news",
+    "recent news",
+    "what happened",
+    "today's news",
+    "todays news",
+  ];
+
+  return newsWords.some((word) =>
+    text.includes(word)
+  );
+}
+
+/* =========================================================
+   DETAILED ANSWER DETECTION
+========================================================= */
+
+function wantsDetailedAnswer(message) {
+  const text = message.toLowerCase().trim();
 
   const detailedPatterns = [
     "explain",
@@ -719,44 +660,16 @@ function wantsDetailedAnswer(
   ];
 
   return detailedPatterns.some(
-    (pattern) =>
-      text === pattern ||
-      text.includes(pattern)
+    (p) => text === p || text.includes(p)
   );
 }
 
 /* =========================================================
-   NEWS QUERY
-========================================================= */
-
-function isNewsQuery(message) {
-  const text =
-    message.toLowerCase();
-
-  const newsWords = [
-    "news",
-    "breaking",
-    "headlines",
-    "latest news",
-    "recent news",
-    "what happened",
-    "today's news",
-    "todays news",
-  ];
-
-  return newsWords.some(
-    (word) =>
-      text.includes(word)
-  );
-}
-
-/* =========================================================
-   TAVILY SEARCH
+   TAVILY
 ========================================================= */
 
 async function searchWeb(query) {
-  const apiKey =
-    process.env.TAVILY_API_KEY;
+  const apiKey = process.env.TAVILY_API_KEY;
 
   if (!apiKey) {
     throw new Error(
@@ -764,71 +677,36 @@ async function searchWeb(query) {
     );
   }
 
-  const news =
-    isNewsQuery(query);
+  const news = isNewsQuery(query);
 
   const body = {
-    query:
-      query.slice(0, 400),
-
-    topic:
-      news
-        ? "news"
-        : "general",
-
-    search_depth:
-      "basic",
-
-    max_results:
-      5,
-
-    include_answer:
-      true,
-
-    include_raw_content:
-      false,
+    query: query.slice(0, 400),
+    topic: news ? "news" : "general",
+    search_depth: "basic",
+    max_results: 5,
+    include_answer: true,
+    include_raw_content: false,
+    ...(news ? { time_range: "week" } : {}),
   };
 
-  if (news) {
-    body.time_range =
-      "week";
-  }
+  const response = await fetch(
+    "https://api.tavily.com/search",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
+    }
+  );
 
-  const response =
-    await fetch(
-      "https://api.tavily.com/search",
-      {
-        method:
-          "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json",
-
-          Authorization:
-            `Bearer ${apiKey}`,
-        },
-
-        body:
-          JSON.stringify(
-            body
-          ),
-      }
-    );
-
-  const data =
-    await response.json();
+  const data = await response.json();
 
   if (!response.ok) {
-    console.error(
-      "Tavily API error:",
-      data
-    );
+    console.error("Tavily API error:", data);
 
-    if (
-      response.status ===
-      429
-    ) {
+    if (response.status === 429) {
       throw new Error(
         "Web search is temporarily rate-limited. Please try again later."
       );
@@ -841,48 +719,23 @@ async function searchWeb(query) {
     );
   }
 
-  const results =
-    Array.isArray(
-      data?.results
-    )
-      ? data.results
-      : [];
+  const results = Array.isArray(data?.results)
+    ? data.results
+    : [];
 
   return {
-    query:
-      data?.query ||
-      query,
-
-    answer:
-      data?.answer ||
-      "",
-
-    results:
-      results
-        .slice(0, 5)
-        .map(
-          (result) => ({
-            title:
-              result?.title ||
-              "Untitled source",
-
-            url:
-              result?.url ||
-              "",
-
-            content:
-              result?.content ||
-              "",
-
-            published_date:
-              result?.published_date ||
-              null,
-          })
-        )
-        .filter(
-          (result) =>
-            result.url
-        ),
+    query: data?.query || query,
+    answer: data?.answer || "",
+    results: results
+      .slice(0, 5)
+      .map((r) => ({
+        title: r?.title || "Untitled source",
+        url: r?.url || "",
+        content: r?.content || "",
+        published_date:
+          r?.published_date || null,
+      }))
+      .filter((r) => r.url),
   };
 }
 
@@ -890,21 +743,14 @@ async function searchWeb(query) {
    WEB CONTEXT
 ========================================================= */
 
-function buildWebContext(
-  webData
-) {
-  if (
-    !webData ||
-    !webData.results?.length
-  ) {
+function buildWebContext(webData) {
+  if (!webData || !webData.results?.length) {
     return "";
   }
 
-  const sources =
-    webData.results
-      .map(
-        (result, index) =>
-          `
+  const sources = webData.results
+    .map(
+      (result, index) => `
 SOURCE ${index + 1}
 
 Title:
@@ -914,16 +760,13 @@ URL:
 ${result.url}
 
 Published:
-${
-  result.published_date ||
-  "Not provided"
-}
+${result.published_date || "Not provided"}
 
 Content:
 ${result.content}
 `
-      )
-      .join("\n");
+    )
+    .join("\n");
 
   return `
 WEB SEARCH RESULTS
@@ -932,14 +775,67 @@ Search query:
 ${webData.query}
 
 Tavily summary:
-${
-  webData.answer ||
-  "No summary provided."
-}
+${webData.answer || "No summary provided."}
 
 ${sources}
 `;
 }
+
+/* =========================================================
+   TOOL DEFINITIONS
+========================================================= */
+
+const TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "save_memory",
+      description:
+        "Save a durable fact about the user that could improve future conversations.",
+      parameters: {
+        type: "object",
+        properties: {
+          category: {
+            type: "string",
+            description:
+              "Example: project, preference, interest, goal.",
+          },
+          memory: {
+            type: "string",
+            description:
+              "The fact written as a complete sentence.",
+          },
+          importance: {
+            type: "integer",
+            description: "Importance from 1 to 10.",
+          },
+        },
+        required: [
+          "category",
+          "memory",
+          "importance",
+        ],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_web",
+      description:
+        "Search the web for current information when internal knowledge is insufficient.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+          },
+        },
+        required: ["query"],
+      },
+    },
+  },
+];
 
 /* =========================================================
    LONG-TERM MEMORY EXTRACTION
@@ -950,93 +846,55 @@ async function extractLongTermMemory(
   anonymousId,
   conversation
 ) {
-  /*
-   IMPORTANT:
+  if (conversation.length < 8) return;
 
-   We now require 8 messages and actually send
-   the last 8 messages.
+  const apiKey = process.env.GROQ_API_KEY;
 
-   Previous version checked for 8 but only supplied
-   7 messages, so this function normally never ran.
-  */
+  if (!apiKey) return;
 
-  if (
-    conversation.length < 8
-  ) {
-    return;
-  }
-
-  if (
-    conversation.length % 8 !==
-    0
-  ) {
-    return;
-  }
-
-  const apiKey =
-    process.env.GROQ_API_KEY;
-
-  if (!apiKey) {
-    return;
-  }
-
-  const recentConversation =
-    conversation
-      .slice(-8)
-      .map(
-        (message) =>
-          `${message.role}: ${message.content}`
-      )
-      .join("\n");
+  const recentConversation = conversation
+    .slice(-8)
+    .map(
+      (m) => `${m.role}: ${m.content}`
+    )
+    .join("\n");
 
   try {
-    const response =
-      await fetch(
-        "https://api.groq.com/openai/v1/chat/completions",
-        {
-          method:
-            "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            Authorization:
-              `Bearer ${apiKey}`,
-          },
-
-          body:
-            JSON.stringify({
-              model:
-                "openai/gpt-oss-120b",
-
-              messages: [
-                {
-                  role:
-                    "system",
-
-                  content: `
-Analyze this conversation for ONE useful long-term memory about the user.
+    const response = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-oss-120b",
+          messages: [
+            {
+              role: "system",
+              content: `
+Analyze this conversation for ONE useful long-term memory.
 
 Only save something that could genuinely improve future conversations.
 
 GOOD:
-- Long-term projects
-- Stable preferences
-- Recurring interests
-- Important goals
-- Preferred communication style
-- Useful technical context
-- Important decisions
+- long-term projects
+- stable preferences
+- recurring interests
+- goals
+- communication style
+- useful technical context
+- important decisions
 
 DO NOT SAVE:
-- Passwords
+- passwords
 - API keys
-- Secrets
-- Temporary emotions
-- Random questions
-- Sensitive personal information
-- One-time details
+- secrets
+- temporary emotions
+- random questions
+- sensitive personal information
+- one-time details
 
 Return ONLY valid JSON:
 
@@ -1058,113 +916,64 @@ If useful:
 
 importance must be 1-10.
 `,
-                },
-
-                {
-                  role:
-                    "user",
-
-                  content:
-                    recentConversation,
-                },
-              ],
-
-              temperature:
-                0.1,
-
-              max_tokens:
-                250,
-
-              response_format: {
-                type:
-                  "json_object",
-              },
-            }),
-        }
-      );
+            },
+            {
+              role: "user",
+              content: recentConversation,
+            },
+          ],
+          temperature: 0.1,
+          max_tokens: 250,
+          response_format: {
+            type: "json_object",
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       console.error(
         "Groq memory extraction status:",
         response.status
       );
-
       return;
     }
 
-    const data =
-      await response.json();
+    const data = await response.json();
 
     const text =
-      data?.choices?.[0]
-        ?.message
-        ?.content;
+      data?.choices?.[0]?.message?.content;
 
-    if (!text) {
-      return;
-    }
+    if (!text) return;
 
-    let result;
-
-    try {
-      result =
-        JSON.parse(text);
-    } catch {
-      console.error(
-        "Could not parse memory JSON."
-      );
-
-      return;
-    }
+    const parsed = JSON.parse(text);
 
     if (
-      !result.shouldSave ||
-      !result.memory ||
-      typeof result.memory !==
-        "string"
+      parsed?.shouldSave &&
+      parsed?.memory
     ) {
-      return;
-    }
-
-    const importance =
-      Math.min(
-        10,
-        Math.max(
-          1,
-          Number(
-            result.importance
-          ) || 5
-        )
+      await saveMemory(
+        supabase,
+        anonymousId,
+        parsed.category || "general",
+        parsed.memory,
+        parsed.importance
       );
-
-    await saveMemory(
-      supabase,
-      anonymousId,
-      result.category ||
-        "general",
-      result.memory.trim(),
-      importance
-    );
-  } catch (error) {
+    }
+  } catch (err) {
     console.error(
-      "Long-term memory error:",
-      error
+      "Long-term memory extraction failed:",
+      err
     );
   }
 }
 
 /* =========================================================
-   GROQ CHAT
+   GROQ MODEL
 ========================================================= */
 
-async function callGroq(
-  messages,
-  memories,
-  webData = null,
-  detailed = false
-) {
-  const apiKey =
-    process.env.GROQ_API_KEY;
+async function callModel(messages) {
+  const apiKey = process.env.GROQ_API_KEY;
 
   if (!apiKey) {
     throw new Error(
@@ -1172,860 +981,687 @@ async function callGroq(
     );
   }
 
-  const recentMessages =
-    messages
-      .filter(
-        (message) =>
-          message &&
-          typeof message.content ===
-            "string"
-      )
-      .slice(-8);
-
-  const memoryText =
-    memories.length > 0
-      ? memories
-          .slice(0, 10)
-          .map(
-            (memory) =>
-              `- ${memory.memory}`
-          )
-          .join("\n")
-      : "No stored memories.";
-
-  const webContext =
-    webData
-      ? buildWebContext(
-          webData
-        )
-      : "";
-
-  const responseInstruction =
-    detailed
-      ? `
-The user wants a detailed answer.
-
-Give a useful, well-explained response.
-
-You may use:
-- short headings
-- bullets
-- examples
-- explanations
-
-Stay focused on the user's question.
-`
-      : `
-The user did NOT ask for a detailed answer.
-
-Keep the response SHORT.
-
-Usually:
-- 1 to 3 sentences.
-- Direct answer first.
-- Add a small natural personality touch when appropriate.
-- Do not give a long explanation.
-- Do not list every source detail.
-- Do not repeat the question.
-`;
-
-  const systemContent = `
-${REZE_PERSONALITY}
-
-=========================================================
-LONG-TERM MEMORY ABOUT THE USER
-=========================================================
-
-${memoryText}
-
-Use memories naturally when relevant.
-
-=========================================================
-RESPONSE LENGTH
-=========================================================
-
-${responseInstruction}
-
-${
-  webContext
-    ? `
-=========================================================
-FRESH WEB INFORMATION
-=========================================================
-
-The user's question required fresh internet information.
-
-Use the web results below.
-
-Rules:
-- Use current information from these results.
-- Answer the exact question first.
-- Do not dump all search results.
-- Never invent facts.
-- If sources disagree, mention it briefly when important.
-
-${webContext}
-`
-    : ""
-}
-`;
-
-  const groqMessages = [
+  const response = await fetch(
+    "https://api.groq.com/openai/v1/chat/completions",
     {
-      role:
-        "system",
-
-      content:
-        systemContent,
-    },
-
-    ...recentMessages.map(
-      (message) => ({
-        role:
-          message.role ===
-          "assistant"
-            ? "assistant"
-            : "user",
-
-        content:
-          message.content,
-      })
-    ),
-  ];
-
-  const response =
-    await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method:
-          "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json",
-
-          Authorization:
-            `Bearer ${apiKey}`,
-        },
-
-        body:
-          JSON.stringify({
-            model:
-              "openai/gpt-oss-120b",
-
-            messages:
-              groqMessages,
-
-            temperature:
-              detailed
-                ? 0.7
-                : 0.65,
-
-            max_tokens:
-              detailed
-                ? 1200
-                : 300,
-          }),
-      }
-    );
-
-  const data =
-    await response.json();
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages,
+        tools: TOOLS,
+        tool_choice: "auto",
+        temperature: 0.7,
+        max_tokens: 800,
+      }),
+    }
+  );
 
   if (!response.ok) {
+    const err = await response.text();
+
     console.error(
-      "Groq API error:",
-      data
+      "Model call failed:",
+      err
     );
 
-    if (
-      response.status ===
-      429
-    ) {
-      throw new Error(
-        "Reze is temporarily busy because the Groq rate limit has been reached. Please try again later."
-      );
+    throw new Error("Model call failed.");
+  }
+
+  return response.json();
+}
+
+/* =========================================================
+   STREAM MODEL
+========================================================= */
+
+async function streamModelReply(messages) {
+  const apiKey = process.env.GROQ_API_KEY;
+
+  if (!apiKey) {
+    throw new Error(
+      "GROQ_API_KEY is not configured."
+    );
+  }
+
+  const response = await fetch(
+    "https://api.groq.com/openai/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages,
+        temperature: 0.7,
+        max_tokens: 800,
+        stream: true,
+      }),
+    }
+  );
+
+  if (!response.ok || !response.body) {
+    const err = await response
+      .text()
+      .catch(() => "");
+
+    console.error(
+      "Streaming model call failed:",
+      err
+    );
+
+    throw new Error("Model call failed.");
+  }
+
+  return response.body;
+}
+
+/* =========================================================
+   CONVERSATION TURN
+========================================================= */
+
+async function runConversationTurn({
+  supabase,
+  anonymousId,
+  userMessage,
+  history,
+  memories,
+}) {
+  /* ---------------------------------------------
+     1. SAVE NAME / CRUSH
+  --------------------------------------------- */
+
+  const detected = detectMemory(userMessage);
+
+  if (detected) {
+    await saveMemory(
+      supabase,
+      anonymousId,
+      detected.category,
+      detected.memory,
+      9
+    );
+
+    memories = [
+      { ...detected },
+      ...memories,
+    ];
+  }
+
+  /* ---------------------------------------------
+     2. SPECIAL ANSWERS
+  --------------------------------------------- */
+
+  const special =
+    getSpecialAnswer(userMessage);
+
+  /* ---------------------------------------------
+     3. MEMORY QUESTIONS
+  --------------------------------------------- */
+
+  const memoryAnswer =
+    answerMemoryQuestion(
+      userMessage,
+      memories
+    );
+
+  if (special && memoryAnswer) {
+    return {
+      reply: `${special} ${memoryAnswer}`,
+    };
+  }
+
+  if (special) {
+    return {
+      reply: special,
+    };
+  }
+
+  if (memoryAnswer) {
+    return {
+      reply: memoryAnswer,
+    };
+  }
+
+  /* ---------------------------------------------
+     4. ROMAN KNOWLEDGE
+  --------------------------------------------- */
+
+  const romanQuestion =
+    isRomanEmpireQuestion(userMessage);
+
+  let romanContext = "";
+
+  if (romanQuestion) {
+    romanContext = `
+=========================================================
+ROMAN EMPIRE INTERNAL KNOWLEDGE
+=========================================================
+
+The user is asking about Roman history.
+
+Use the following specialized internal knowledge as your
+PRIMARY SOURCE.
+
+Do NOT call web search merely because the question is about
+Roman history.
+
+Answer naturally. Do not mention that the knowledge came from
+a hidden file.
+
+If the user asks about modern discoveries, recent archaeology,
+new scholarship, current museum information, or another
+time-sensitive topic, web search can still be used.
+
+${ROMAN_EMPIRE_KNOWLEDGE}
+`;
+  }
+
+  /* ---------------------------------------------
+     5. WEB SEARCH
+  --------------------------------------------- */
+
+  let webContext = "";
+
+  /*
+   * IMPORTANT:
+   *
+   * Normal Roman questions do NOT automatically trigger
+   * web search.
+   *
+   * If the question is clearly about current information,
+   * web search is allowed.
+   */
+
+  if (
+    needsWebSearch(userMessage) &&
+    !(
+      romanQuestion &&
+      !isCurrentRomanQuestion(userMessage)
+    )
+  ) {
+    try {
+      const webData =
+        await searchWeb(userMessage);
+
+      webContext =
+        buildWebContext(webData);
+    } catch (err) {
+      webContext = `Web search failed: ${err.message}`;
+    }
+  }
+
+  /* ---------------------------------------------
+     6. MEMORY CONTEXT
+  --------------------------------------------- */
+
+  const memoryContext =
+    memories.length
+      ? `Known facts about this user:\n${memories
+          .map((m) => `- ${m.memory}`)
+          .join("\n")}`
+      : "No stored facts about this user yet.";
+
+  /* ---------------------------------------------
+     7. DETAIL HINT
+  --------------------------------------------- */
+
+  const detailHint =
+    wantsDetailedAnswer(userMessage)
+      ? "The user wants a detailed, thorough answer this time."
+      : "";
+
+  /* ---------------------------------------------
+     8. MODEL MESSAGES
+  --------------------------------------------- */
+
+  const messages = [
+    {
+      role: "system",
+      content: [
+        REZE_PERSONALITY,
+        memoryContext,
+        romanContext,
+        webContext,
+        detailHint,
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+    },
+
+    ...history.map((m) => ({
+      role: m.role,
+      content: m.content,
+    })),
+
+    {
+      role: "user",
+      content: userMessage,
+    },
+  ];
+
+  /* ---------------------------------------------
+     9. TOOL CALL LOOP
+  --------------------------------------------- */
+
+  let data =
+    await callModel(messages);
+
+  let choice =
+    data.choices?.[0]?.message;
+
+  let guard = 0;
+
+  while (
+    choice?.tool_calls?.length &&
+    guard < 3
+  ) {
+    guard++;
+
+    messages.push(choice);
+
+    for (const toolCall of choice.tool_calls) {
+      let args = {};
+
+      try {
+        args = JSON.parse(
+          toolCall.function.arguments ||
+            "{}"
+        );
+      } catch {
+        args = {};
+      }
+
+      let toolResult = "";
+
+      if (
+        toolCall.function.name ===
+        "save_memory"
+      ) {
+        await saveMemory(
+          supabase,
+          anonymousId,
+          args.category,
+          args.memory,
+          args.importance
+        );
+
+        toolResult = "Saved.";
+      }
+
+      if (
+        toolCall.function.name ===
+        "search_web"
+      ) {
+        /*
+         * Prevent the model from unnecessarily searching
+         * normal Roman history questions.
+         */
+
+        if (
+          romanQuestion &&
+          !isCurrentRomanQuestion(
+            userMessage
+          )
+        ) {
+          toolResult =
+            "Do not search the web. Use the internal Roman Empire knowledge provided in the system context.";
+        } else {
+          try {
+            const webData =
+              await searchWeb(
+                args.query
+              );
+
+            toolResult =
+              buildWebContext(
+                webData
+              ) ||
+              "No results found.";
+          } catch (err) {
+            toolResult =
+              `Search failed: ${err.message}`;
+          }
+        }
+      }
+
+      messages.push({
+        role: "tool",
+        tool_call_id: toolCall.id,
+        content: toolResult,
+      });
     }
 
-    throw new Error(
-      data?.error?.message ||
-        "Groq request failed."
-    );
+    data =
+      await callModel(messages);
+
+    choice =
+      data.choices?.[0]?.message;
   }
 
-  const answer =
-    data?.choices?.[0]
-      ?.message
-      ?.content
-      ?.trim();
-
-  if (!answer) {
-    throw new Error(
-      "Reze received an empty response."
-    );
-  }
-
-  return answer;
+  return {
+    messages,
+  };
 }
 
 /* =========================================================
-   CREATE RESPONSE
+   CURRENT ROMAN QUESTION DETECTION
 ========================================================= */
 
-function createRezeResponse(
-  payload,
-  anonymousId,
-  oldCookie
+function isCurrentRomanQuestion(message) {
+  const text = message.toLowerCase();
+
+  const currentPatterns = [
+    "latest",
+    "recent",
+    "recently",
+    "today",
+    "this week",
+    "this month",
+    "currently",
+    "right now",
+    "new discovery",
+    "new discoveries",
+    "recent discovery",
+    "recent discoveries",
+    "new research",
+    "latest research",
+    "new archaeological",
+    "latest archaeological",
+    "recent archaeological",
+    "archaeological discovery",
+    "archaeological discoveries",
+    "modern archaeology",
+    "museum exhibition",
+    "current exhibition",
+    "current museum",
+    "latest study",
+    "new study",
+    "new evidence",
+    "latest evidence",
+  ];
+
+  return currentPatterns.some(
+    (pattern) =>
+      text.includes(pattern)
+  );
+}
+
+/* =========================================================
+   GROQ SSE STREAM
+========================================================= */
+
+function pipeGroqStreamAsText(
+  groqBody,
+  { onDone } = {}
 ) {
-  const response =
-    NextResponse.json(
-      payload
-    );
+  const decoder =
+    new TextDecoder();
 
-  if (!oldCookie) {
-    response.cookies.set(
-      "reze_anonymous_id",
-      anonymousId,
-      {
-        httpOnly:
-          true,
+  const encoder =
+    new TextEncoder();
 
-        secure:
-          process.env.NODE_ENV ===
-          "production",
+  let fullText = "";
+  let buffer = "";
 
-        sameSite:
-          "lax",
+  return new ReadableStream({
+    async start(controller) {
+      const reader =
+        groqBody.getReader();
 
-        maxAge:
-          60 *
-          60 *
-          24 *
-          365,
+      try {
+        while (true) {
+          const {
+            done,
+            value,
+          } = await reader.read();
 
-        path:
-          "/",
+          if (done) break;
+
+          buffer += decoder.decode(
+            value,
+            { stream: true }
+          );
+
+          const lines =
+            buffer.split("\n");
+
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            const trimmed =
+              line.trim();
+
+            if (
+              !trimmed.startsWith(
+                "data:"
+              )
+            ) {
+              continue;
+            }
+
+            const payload =
+              trimmed.slice(5).trim();
+
+            if (
+              payload === "[DONE]"
+            ) {
+              continue;
+            }
+
+            try {
+              const json =
+                JSON.parse(payload);
+
+              const delta =
+                json.choices?.[0]
+                  ?.delta?.content;
+
+              if (delta) {
+                fullText += delta;
+
+                controller.enqueue(
+                  encoder.encode(delta)
+                );
+              }
+            } catch {
+              // Ignore malformed SSE data.
+            }
+          }
+        }
+
+        controller.close();
+
+        if (onDone) {
+          onDone(fullText);
+        }
+      } catch (err) {
+        console.error(
+          "Stream piping error:",
+          err
+        );
+
+        controller.error(err);
       }
-    );
-  }
-
-  return response;
-}
-
-/* =========================================================
-   SAVE MESSAGE
-========================================================= */
-
-async function saveMessage(
-  supabase,
-  {
-    conversationId,
-    anonymousId,
-    role,
-    content,
-  }
-) {
-  const {
-    error,
-  } = await supabase
-    .from("reze_messages")
-    .insert({
-      conversation_id:
-        conversationId,
-
-      anonymous_id:
-        anonymousId,
-
-      user_id:
-        null,
-
-      role,
-
-      content,
-    });
-
-  if (error) {
-    console.error(
-      `${role} message save error:`,
-      error
-    );
-
-    return false;
-  }
-
-  return true;
-}
-
-/* =========================================================
-   CREATE CONVERSATION
-========================================================= */
-
-async function createConversation(
-  supabase,
-  anonymousId,
-  message
-) {
-  const {
-    data,
-    error,
-  } = await supabase
-    .from(
-      "reze_conversations"
-    )
-    .insert({
-      anonymous_id:
-        anonymousId,
-
-      user_id:
-        null,
-
-      title:
-        message.length > 60
-          ? `${message.slice(
-              0,
-              60
-            )}...`
-          : message,
-    })
-    .select("id")
-    .single();
-
-  if (error) {
-    console.error(
-      "Conversation creation error:",
-      error
-    );
-
-    throw new Error(
-      "Could not create Reze conversation."
-    );
-  }
-
-  return data.id;
-}
-
-/* =========================================================
-   LOAD HISTORY
-========================================================= */
-
-async function loadConversationHistory(
-  supabase,
-  conversationId,
-  anonymousId
-) {
-  const {
-    data,
-    error,
-  } = await supabase
-    .from("reze_messages")
-    .select(
-      "role, content, created_at"
-    )
-    .eq(
-      "conversation_id",
-      conversationId
-    )
-    .eq(
-      "anonymous_id",
-      anonymousId
-    )
-    .order(
-      "created_at",
-      {
-        ascending:
-          false,
-      }
-    )
-    .limit(8);
-
-  if (error) {
-    console.error(
-      "History load error:",
-      error
-    );
-
-    return [];
-  }
-
-  return (
-    data || []
-  ).reverse();
+    },
+  });
 }
 
 /* =========================================================
    POST
 ========================================================= */
 
-export async function POST(
-  request
-) {
+export async function POST(request) {
   try {
-    /* -----------------------------------------------------
-       SUPABASE
-    ----------------------------------------------------- */
+    const {
+      message,
+      history = [],
+    } = await request.json();
+
+    if (
+      !message ||
+      typeof message !== "string"
+    ) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Message is required.",
+        }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+        }
+      );
+    }
 
     const supabase =
       getSupabase();
-
-    /* -----------------------------------------------------
-       REQUEST
-    ----------------------------------------------------- */
-
-    const body =
-      await request.json();
-
-    const message =
-      typeof body?.message ===
-      "string"
-        ? body.message.trim()
-        : "";
-
-    if (!message) {
-      return NextResponse.json(
-        {
-          error:
-            "Message cannot be empty.",
-        },
-        {
-          status:
-            400,
-        }
-      );
-    }
-
-    if (
-      message.length >
-      12000
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "That message is too long.",
-        },
-        {
-          status:
-            400,
-        }
-      );
-    }
-
-    /* -----------------------------------------------------
-       ANONYMOUS ID
-    ----------------------------------------------------- */
 
     const {
       id: anonymousId,
       existingCookie,
     } =
-      getAnonymousId(
-        request
-      );
+      getAnonymousId(request);
 
-    let conversationId =
-      body?.conversationId ||
-      null;
-
-    /* =====================================================
-       SPECIAL ANSWERS
-    ===================================================== */
-
-    const specialAnswer =
-      getSpecialAnswer(
-        message
-      );
-
-    if (specialAnswer) {
-      return createRezeResponse(
-        {
-          answer:
-            specialAnswer,
-
-          conversationId:
-            conversationId ||
-            null,
-        },
-
-        anonymousId,
-
-        existingCookie
-      );
-    }
-
-    /* =====================================================
-       LOAD MEMORIES
-    ===================================================== */
-
-    let memories =
+    const memories =
       await getMemories(
         supabase,
         anonymousId
       );
 
-    /* =====================================================
-       DIRECT MEMORY
-    ===================================================== */
-
-    const detected =
-      detectMemory(
-        message
-      );
-
-    if (detected) {
-      await saveMemory(
+    const turnResult =
+      await runConversationTurn({
         supabase,
         anonymousId,
-        detected.category,
-        detected.memory,
-        10
-      );
+        userMessage: message,
+        history,
+        memories,
+      });
 
-      memories =
-        await getMemories(
-          supabase,
-          anonymousId
-        );
+    const cookieHeader =
+      !existingCookie
+        ? `reze_anonymous_id=${anonymousId}; Path=/; Max-Age=31536000; SameSite=Lax`
+        : null;
 
-      let answer;
+    const scheduleExtraction =
+      (replyText) => {
+        const fullConversation = [
+          ...history,
+          {
+            role: "user",
+            content: message,
+          },
+          {
+            role: "assistant",
+            content: replyText,
+          },
+        ];
 
-      if (
-        detected.category ===
-        "name"
-      ) {
-        answer =
-          `Nice to meet you, ${detected.value}. 😊`;
-      } else if (
-        detected.category ===
-        "crush"
-      ) {
-        answer =
-          `${detected.value}, huh? 😉 I'll remember that.`;
-      } else {
-        answer =
-          "Got it. I'll remember that.";
-      }
-
-      return createRezeResponse(
-        {
-          answer,
-
-          conversationId:
-            conversationId ||
-            null,
-        },
-
-        anonymousId,
-
-        existingCookie
-      );
-    }
-
-    /* =====================================================
-       MEMORY QUESTION
-    ===================================================== */
-
-    const memoryAnswer =
-      answerMemoryQuestion(
-        message,
-        memories
-      );
-
-    if (memoryAnswer) {
-      return createRezeResponse(
-        {
-          answer:
-            memoryAnswer,
-
-          conversationId:
-            conversationId ||
-            null,
-        },
-
-        anonymousId,
-
-        existingCookie
-      );
-    }
-
-    /* =====================================================
-       CREATE CONVERSATION
-    ===================================================== */
-
-    if (!conversationId) {
-      conversationId =
-        await createConversation(
+        extractLongTermMemory(
           supabase,
           anonymousId,
-          message
+          fullConversation
+        ).catch((err) =>
+          console.error(
+            "Background memory extraction error:",
+            err
+          )
         );
-    }
+      };
 
-    /* =====================================================
-       SAVE USER MESSAGE
-    ===================================================== */
-
-    const userSaved =
-      await saveMessage(
-        supabase,
-        {
-          conversationId,
-          anonymousId,
-          role:
-            "user",
-          content:
-            message,
-        }
-      );
-
-    if (!userSaved) {
-      return NextResponse.json(
-        {
-          error:
-            "Could not save your message.",
-        },
-        {
-          status:
-            500,
-        }
-      );
-    }
-
-    /* =====================================================
-       LOAD RECENT HISTORY
-    ===================================================== */
-
-    const recentHistory =
-      await loadConversationHistory(
-        supabase,
-        conversationId,
-        anonymousId
-      );
-
-    /* =====================================================
-       RESPONSE LENGTH
-    ===================================================== */
-
-    const detailed =
-      wantsDetailedAnswer(
-        message
-      );
-
-    /* =====================================================
-       WEB SEARCH
-    ===================================================== */
-
-    let webData =
-      null;
-
-    const shouldSearch =
-      needsWebSearch(
-        message
-      );
-
-    if (shouldSearch) {
-      try {
-        webData =
-          await searchWeb(
-            message
-          );
-      } catch (error) {
-        console.error(
-          "Web search error:",
-          error
-        );
-
-        /*
-         Do not kill the entire chat if Tavily
-         temporarily fails.
-
-         Reze will still answer using Groq.
-        */
-
-        webData =
-          null;
-      }
-    }
-
-    /* =====================================================
-       GROQ
-    ===================================================== */
-
-    let answer;
-
-    try {
-      answer =
-        await callGroq(
-          recentHistory,
-          memories,
-          webData,
-          detailed
-        );
-    } catch (error) {
-      console.error(
-        "Groq error:",
-        error
-      );
-
-      return NextResponse.json(
-        {
-          error:
-            error?.message ||
-            "Reze could not answer right now.",
-        },
-        {
-          status:
-            error?.message?.toLowerCase()
-              ?.includes(
-                "rate limit"
-              )
-              ? 429
-              : 500,
-        }
-      );
-    }
-
-    /* =====================================================
-       SAVE ASSISTANT MESSAGE
-    ===================================================== */
-
-    await saveMessage(
-      supabase,
-      {
-        conversationId,
-        anonymousId,
-        role:
-          "assistant",
-        content:
-          answer,
-      }
-    );
-
-    /* =====================================================
-       UPDATE CONVERSATION
-    ===================================================== */
-
-    const {
-      error:
-        updateConversationError,
-    } = await supabase
-      .from(
-        "reze_conversations"
-      )
-      .update({
-        updated_at:
-          new Date().toISOString(),
-      })
-      .eq(
-        "id",
-        conversationId
-      )
-      .eq(
-        "anonymous_id",
-        anonymousId
-      );
+    /* ---------------------------------------------
+       FAST PATH
+    --------------------------------------------- */
 
     if (
-      updateConversationError
+      "reply" in turnResult
     ) {
-      console.error(
-        "Conversation update error:",
-        updateConversationError
+      scheduleExtraction(
+        turnResult.reply
       );
+
+      const res =
+        new Response(
+          turnResult.reply,
+          {
+            status: 200,
+            headers: {
+              "Content-Type":
+                "text/plain; charset=utf-8",
+            },
+          }
+        );
+
+      if (cookieHeader) {
+        res.headers.append(
+          "Set-Cookie",
+          cookieHeader
+        );
+      }
+
+      return res;
     }
 
-    /* =====================================================
-       LONG-TERM MEMORY
-    ===================================================== */
+    /* ---------------------------------------------
+       STREAMING RESPONSE
+    --------------------------------------------- */
 
-    /*
-     recentHistory already contains the user's latest
-     message because we saved it before loading history.
+    const groqBody =
+      await streamModelReply(
+        turnResult.messages
+      );
 
-     Then add Reze's answer.
-
-     This gives the extractor the complete recent exchange.
-    */
-
-    const completeConversation =
-      [
-        ...recentHistory,
-
+    const stream =
+      pipeGroqStreamAsText(
+        groqBody,
         {
-          role:
-            "assistant",
-
-          content:
-            answer,
-        },
-      ];
-
-    /*
-     Run memory extraction without allowing a memory
-     failure to break the user's chat response.
-    */
-
-    try {
-      await extractLongTermMemory(
-        supabase,
-        anonymousId,
-        completeConversation
+          onDone:
+            scheduleExtraction,
+        }
       );
-    } catch (memoryError) {
-      console.error(
-        "Memory extraction failed:",
-        memoryError
+
+    const res =
+      new Response(stream, {
+        status: 200,
+        headers: {
+          "Content-Type":
+            "text/plain; charset=utf-8",
+        },
+      });
+
+    if (cookieHeader) {
+      res.headers.append(
+        "Set-Cookie",
+        cookieHeader
       );
     }
 
-    /* =====================================================
-       RESPONSE
-    ===================================================== */
-
-    return createRezeResponse(
-      {
-        answer,
-
-        conversationId,
-
-        webSearchUsed:
-          Boolean(
-            webData
-          ),
-
-        sources:
-          webData?.results?.map(
-            (result) => ({
-              title:
-                result.title,
-
-              url:
-                result.url,
-
-              published_date:
-                result.published_date ||
-                null,
-            })
-          ) || [],
-      },
-
-      anonymousId,
-
-      existingCookie
-    );
+    return res;
   } catch (error) {
     console.error(
-      "Reze API error:",
+      "Chat route error:",
       error
     );
 
-    return NextResponse.json(
-      {
+    return new Response(
+      JSON.stringify({
         error:
-          error?.message ||
-          "Reze encountered an unexpected error.",
-      },
+          "Something went wrong.",
+      }),
       {
-        status:
-          500,
+        status: 500,
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
       }
     );
   }
