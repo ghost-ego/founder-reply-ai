@@ -5,7 +5,7 @@ import {
   ROMAN_KNOWLEDGE,
   getRomanKnowledge,
   searchKnowledge,
-} from "@/lib/knowledge/index.js";
+} from "../../../lib/knowledge/index.js";
 
 export const runtime = "nodejs";
 
@@ -50,17 +50,25 @@ RESPONSE STYLE:
 - Be short by default.
 - Simple questions: usually 1-3 sentences.
 - Complex questions: explain clearly.
-- Use headings and bullets only when useful.
-- Do not unnecessarily repeat information.
+- Use lists/headings only when useful.
+- Do not dump unnecessary information.
+
+CURRENT INFORMATION:
+- When web results are provided, use them for current information.
+- Never pretend old information is current.
+- Never invent numbers or facts.
+
+MEMORY:
+- Use stored memories naturally.
+- Never invent memories.
+- Never mention the memory database.
+- Never say "according to my memory."
 
 TRUTHFULNESS:
 - Never invent facts.
-- Never pretend you performed an action you did not perform.
-- If you do not know something, say so naturally.
-- Do not claim web access unless web results were actually provided.
-- Do not claim a Roman-history fact is supported by the local knowledge unless it actually is.
+- Never pretend you performed an action you didn't perform.
+- If you don't know, say so naturally.
 `;
-
 
 /* =========================================================
    SUPABASE
@@ -82,9 +90,8 @@ function getSupabase() {
   return createClient(url, key);
 }
 
-
 /* =========================================================
-   ANONYMOUS USER ID
+   ANONYMOUS USER
 ========================================================= */
 
 function getAnonymousId(request) {
@@ -97,15 +104,12 @@ function getAnonymousId(request) {
   };
 }
 
-
 /* =========================================================
    MEMORY DETECTION
 ========================================================= */
 
 function detectMemory(message) {
   let match;
-
-  /* USER NAME */
 
   match = message.match(
     /^(?:and\s+)?my name is\s+(.+)$/i
@@ -127,8 +131,6 @@ function detectMemory(message) {
     };
   }
 
-  /* CRUSH */
-
   match = message.match(
     /^(?:and\s+)?my crush(?:'s)?(?:\s+name)?\s+is\s+(.+)$/i
   );
@@ -146,7 +148,6 @@ function detectMemory(message) {
   return null;
 }
 
-
 /* =========================================================
    SPECIAL ANSWERS
 ========================================================= */
@@ -156,8 +157,6 @@ function getSpecialAnswer(message) {
     .toLowerCase()
     .trim()
     .replace(/[?!.,]+$/g, "");
-
-  /* IDENTITY */
 
   const identityQuestions = [
     "who are you",
@@ -183,8 +182,6 @@ function getSpecialAnswer(message) {
   ) {
     return "I am Reze. 😊";
   }
-
-  /* CREATOR */
 
   const creatorQuestions = [
     "who made you",
@@ -212,8 +209,6 @@ function getSpecialAnswer(message) {
     return "Tahsin.";
   }
 
-  /* TINNI */
-
   const asksAboutTinni =
     text.includes("who is tinni") ||
     text.includes("who's tinni") ||
@@ -230,15 +225,11 @@ function getSpecialAnswer(message) {
   return null;
 }
 
-
 /* =========================================================
-   GET MEMORIES
+   MEMORIES
 ========================================================= */
 
-async function getMemories(
-  supabase,
-  anonymousId
-) {
+async function getMemories(supabase, anonymousId) {
   const { data, error } = await supabase
     .from("reze_memories")
     .select(
@@ -254,21 +245,12 @@ async function getMemories(
     .limit(10);
 
   if (error) {
-    console.error(
-      "Memory read error:",
-      error
-    );
-
+    console.error("Memory read error:", error);
     return [];
   }
 
   return data || [];
 }
-
-
-/* =========================================================
-   SAVE MEMORY
-========================================================= */
 
 async function saveMemory(
   supabase,
@@ -277,11 +259,7 @@ async function saveMemory(
   memory,
   importance = 8
 ) {
-  if (
-    !anonymousId ||
-    !category ||
-    !memory
-  ) {
+  if (!anonymousId || !category || !memory) {
     return;
   }
 
@@ -295,20 +273,13 @@ async function saveMemory(
       .maybeSingle();
 
   if (findError) {
-    console.error(
-      "Memory lookup error:",
-      findError
-    );
-
+    console.error("Memory lookup error:", findError);
     return;
   }
 
   const safeImportance = Math.min(
     10,
-    Math.max(
-      1,
-      Number(importance) || 5
-    )
+    Math.max(1, Number(importance) || 5)
   );
 
   if (existing?.id) {
@@ -322,10 +293,7 @@ async function saveMemory(
       .eq("anonymous_id", anonymousId);
 
     if (error) {
-      console.error(
-        "Memory update error:",
-        error
-      );
+      console.error("Memory update error:", error);
     }
 
     return;
@@ -342,25 +310,16 @@ async function saveMemory(
     });
 
   if (error) {
-    console.error(
-      "Memory insert error:",
-      error
-    );
+    console.error("Memory insert error:", error);
   }
 }
-
 
 /* =========================================================
    MEMORY QUESTIONS
 ========================================================= */
 
-function answerMemoryQuestion(
-  message,
-  memories
-) {
-  const text = message
-    .toLowerCase()
-    .trim();
+function answerMemoryQuestion(message, memories) {
+  const text = message.toLowerCase().trim();
 
   const nameMemory = memories.find(
     (m) => m.category === "name"
@@ -381,53 +340,31 @@ function answerMemoryQuestion(
     text.includes("crush name") ||
     text.includes("who is my crush");
 
-  if (
-    asksName &&
-    asksCrush
-  ) {
-    if (
-      nameMemory &&
-      crushMemory
-    ) {
-      const name =
-        nameMemory.memory
-          .replace(
-            "The user's name is ",
-            ""
-          )
-          .replace(/\.$/, "");
+  if (asksName && asksCrush) {
+    if (nameMemory && crushMemory) {
+      const name = nameMemory.memory
+        .replace("The user's name is ", "")
+        .replace(/\.$/, "");
 
-      const crush =
-        crushMemory.memory
-          .replace(
-            "The user's crush's name is ",
-            ""
-          )
-          .replace(/\.$/, "");
+      const crush = crushMemory.memory
+        .replace("The user's crush's name is ", "")
+        .replace(/\.$/, "");
 
       return `Your name is ${name}, and your crush is ${crush}. 😉`;
     }
 
     if (nameMemory) {
-      const name =
-        nameMemory.memory
-          .replace(
-            "The user's name is ",
-            ""
-          )
-          .replace(/\.$/, "");
+      const name = nameMemory.memory
+        .replace("The user's name is ", "")
+        .replace(/\.$/, "");
 
       return `Your name is ${name}. I haven't saved your crush's name yet.`;
     }
 
     if (crushMemory) {
-      const crush =
-        crushMemory.memory
-          .replace(
-            "The user's crush's name is ",
-            ""
-          )
-          .replace(/\.$/, "");
+      const crush = crushMemory.memory
+        .replace("The user's crush's name is ", "")
+        .replace(/\.$/, "");
 
       return `Your crush is ${crush}. I don't have your name saved yet.`;
     }
@@ -435,32 +372,18 @@ function answerMemoryQuestion(
     return "I don't have your name or your crush's name saved yet.";
   }
 
-  if (
-    asksName &&
-    nameMemory
-  ) {
-    const name =
-      nameMemory.memory
-        .replace(
-          "The user's name is ",
-          ""
-        )
-        .replace(/\.$/, "");
+  if (asksName && nameMemory) {
+    const name = nameMemory.memory
+      .replace("The user's name is ", "")
+      .replace(/\.$/, "");
 
     return `Your name is ${name}. 😊`;
   }
 
-  if (
-    asksCrush &&
-    crushMemory
-  ) {
-    const crush =
-      crushMemory.memory
-        .replace(
-          "The user's crush's name is ",
-          ""
-        )
-        .replace(/\.$/, "");
+  if (asksCrush && crushMemory) {
+    const crush = crushMemory.memory
+      .replace("The user's crush's name is ", "")
+      .replace(/\.$/, "");
 
     return `Your crush is ${crush}. 😉`;
   }
@@ -468,15 +391,175 @@ function answerMemoryQuestion(
   return null;
 }
 
+/* =========================================================
+   ROMAN KNOWLEDGE
+========================================================= */
+
+function isRomanQuestion(message) {
+  const text = message.toLowerCase();
+
+  const romanWords = [
+    "roman",
+    "romans",
+    "rome",
+    "roman empire",
+    "roman republic",
+    "roman emperor",
+    "roman emperors",
+    "roman army",
+    "roman military",
+    "roman war",
+    "roman wars",
+    "roman economy",
+    "roman religion",
+    "roman architecture",
+    "roman provinces",
+    "roman timeline",
+    "roman history",
+    "ancient rome",
+    "ancient roman",
+    "caesar",
+    "augustus",
+    "nero",
+    "constantine",
+    "hadrian",
+    "trajan",
+    "marcus aurelius",
+  ];
+
+  return romanWords.some((word) =>
+    text.includes(word)
+  );
+}
+
+function getRomanTopics(message) {
+  const text = message.toLowerCase();
+
+  const topics = [];
+
+  if (
+    text.includes("emperor") ||
+    text.includes("emperors") ||
+    text.includes("caesar") ||
+    text.includes("augustus") ||
+    text.includes("nero") ||
+    text.includes("constantine") ||
+    text.includes("hadrian") ||
+    text.includes("trajan")
+  ) {
+    topics.push("emperors");
+  }
+
+  if (
+    text.includes("economy") ||
+    text.includes("money") ||
+    text.includes("trade") ||
+    text.includes("tax")
+  ) {
+    topics.push("economy");
+  }
+
+  if (
+    text.includes("architecture") ||
+    text.includes("building") ||
+    text.includes("engineering")
+  ) {
+    topics.push("architecture");
+  }
+
+  if (
+    text.includes("army") ||
+    text.includes("military") ||
+    text.includes("legion")
+  ) {
+    topics.push("military");
+  }
+
+  if (
+    text.includes("war") ||
+    text.includes("wars") ||
+    text.includes("battle")
+  ) {
+    topics.push("wars");
+  }
+
+  if (text.includes("religion")) {
+    topics.push("religion");
+  }
+
+  if (
+    text.includes("province") ||
+    text.includes("provinces")
+  ) {
+    topics.push("provinces");
+  }
+
+  if (
+    text.includes("republic") ||
+    text.includes("roman republic")
+  ) {
+    topics.push("republic");
+  }
+
+  if (text.includes("timeline")) {
+    topics.push("timeline");
+  }
+
+  if (
+    text.includes("empire") ||
+    text.includes("roman empire")
+  ) {
+    topics.push("empire");
+  }
+
+  if (topics.length === 0) {
+    topics.push("overview");
+  }
+
+  return [...new Set(topics)];
+}
+
+function getRomanContext(message) {
+  if (!isRomanQuestion(message)) {
+    return "";
+  }
+
+  const topics = getRomanTopics(message);
+
+  const sections = [];
+
+  for (const topic of topics) {
+    const knowledge =
+      getRomanKnowledge(topic);
+
+    if (knowledge) {
+      sections.push(
+        `ROMAN TOPIC: ${topic}\n${JSON.stringify(
+          knowledge,
+          null,
+          2
+        )}`
+      );
+    }
+  }
+
+  if (sections.length === 0) {
+    return JSON.stringify(
+      ROMAN_KNOWLEDGE,
+      null,
+      2
+    );
+  }
+
+  return sections.join("\n\n");
+}
 
 /* =========================================================
    WEB SEARCH DETECTION
 ========================================================= */
 
 function needsWebSearch(message) {
-  const text = message
-    .toLowerCase()
-    .trim();
+  const text = message.toLowerCase().trim();
 
   const patterns = [
     "latest",
@@ -538,9 +621,8 @@ function needsWebSearch(message) {
   ];
 
   if (
-    patterns.some(
-      (pattern) =>
-        text.includes(pattern)
+    patterns.some((pattern) =>
+      text.includes(pattern)
     )
   ) {
     return true;
@@ -554,17 +636,14 @@ function needsWebSearch(message) {
   );
 }
 
-
 /* =========================================================
-   LONG ANSWER DETECTION
+   DETAILED ANSWER
 ========================================================= */
 
 function wantsDetailedAnswer(message) {
-  const text = message
-    .toLowerCase()
-    .trim();
+  const text = message.toLowerCase().trim();
 
-  const detailedPatterns = [
+  const patterns = [
     "explain",
     "explain it",
     "explain this",
@@ -588,21 +667,19 @@ function wantsDetailedAnswer(message) {
     "how do they work",
   ];
 
-  return detailedPatterns.some(
+  return patterns.some(
     (pattern) =>
       text === pattern ||
       text.includes(pattern)
   );
 }
 
-
 /* =========================================================
-   NEWS QUERY
+   NEWS
 ========================================================= */
 
 function isNewsQuery(message) {
-  const text =
-    message.toLowerCase();
+  const text = message.toLowerCase();
 
   const newsWords = [
     "news",
@@ -615,15 +692,13 @@ function isNewsQuery(message) {
     "todays news",
   ];
 
-  return newsWords.some(
-    (word) =>
-      text.includes(word)
+  return newsWords.some((word) =>
+    text.includes(word)
   );
 }
 
-
 /* =========================================================
-   TAVILY SEARCH
+   TAVILY
 ========================================================= */
 
 async function searchWeb(query) {
@@ -636,22 +711,14 @@ async function searchWeb(query) {
     );
   }
 
-  const news =
-    isNewsQuery(query);
+  const news = isNewsQuery(query);
 
   const body = {
     query: query.slice(0, 400),
-
-    topic: news
-      ? "news"
-      : "general",
-
+    topic: news ? "news" : "general",
     search_depth: "basic",
-
     max_results: 5,
-
     include_answer: true,
-
     include_raw_content: false,
   };
 
@@ -659,37 +726,24 @@ async function searchWeb(query) {
     body.time_range = "week";
   }
 
-  const response =
-    await fetch(
-      "https://api.tavily.com/search",
-      {
-        method: "POST",
+  const response = await fetch(
+    "https://api.tavily.com/search",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
+    }
+  );
 
-        headers: {
-          "Content-Type":
-            "application/json",
-
-          Authorization:
-            `Bearer ${apiKey}`,
-        },
-
-        body:
-          JSON.stringify(body),
-      }
-    );
-
-  const data =
-    await response.json();
+  const data = await response.json();
 
   if (!response.ok) {
-    console.error(
-      "Tavily API error:",
-      data
-    );
+    console.error("Tavily API error:", data);
 
-    if (
-      response.status === 429
-    ) {
+    if (response.status === 429) {
       throw new Error(
         "Web search is temporarily rate-limited. Please try again later."
       );
@@ -702,51 +756,33 @@ async function searchWeb(query) {
     );
   }
 
-  const results =
-    Array.isArray(
-      data?.results
-    )
-      ? data.results
-      : [];
+  const results = Array.isArray(data?.results)
+    ? data.results
+    : [];
 
   return {
-    query:
-      data?.query ||
-      query,
+    query: data?.query || query,
 
-    answer:
-      data?.answer ||
-      "",
+    answer: data?.answer || "",
 
-    results:
-      results
-        .slice(0, 5)
-        .map(
-          (result) => ({
-            title:
-              result?.title ||
-              "Untitled source",
+    results: results
+      .slice(0, 5)
+      .map((result) => ({
+        title:
+          result?.title ||
+          "Untitled source",
 
-            url:
-              result?.url ||
-              "",
+        url: result?.url || "",
 
-            content:
-              result?.content ||
-              "",
+        content:
+          result?.content || "",
 
-            published_date:
-              result?.published_date ||
-              null,
-          })
-        )
-        .filter(
-          (result) =>
-            result.url
-        ),
+        published_date:
+          result?.published_date || null,
+      }))
+      .filter((result) => result.url),
   };
 }
-
 
 /* =========================================================
    WEB CONTEXT
@@ -760,10 +796,9 @@ function buildWebContext(webData) {
     return "";
   }
 
-  const sources =
-    webData.results
-      .map(
-        (result, index) => `
+  const sources = webData.results
+    .map(
+      (result, index) => `
 SOURCE ${index + 1}
 
 Title: ${result.title}
@@ -771,14 +806,14 @@ Title: ${result.title}
 URL: ${result.url}
 
 Published: ${
-          result.published_date ||
-          "Not provided"
-        }
+        result.published_date ||
+        "Not provided"
+      }
 
 Content: ${result.content}
 `
-      )
-      .join("\n");
+    )
+    .join("\n");
 
   return `
 WEB SEARCH RESULTS
@@ -796,257 +831,8 @@ ${sources}
 `;
 }
 
-
 /* =========================================================
-   ROMAN QUESTION DETECTION
-========================================================= */
-
-function isRomanQuestion(message) {
-  const text = message
-    .toLowerCase()
-    .trim();
-
-  const keywords = [
-    "roman",
-    "romans",
-    "rome",
-    "roman empire",
-    "roman republic",
-    "roman emperor",
-    "roman emperors",
-    "roman army",
-    "roman military",
-    "roman war",
-    "roman wars",
-    "roman religion",
-    "roman architecture",
-    "roman economy",
-    "roman provinces",
-    "roman timeline",
-    "roman engineering",
-    "caesar",
-    "julius caesar",
-    "augustus",
-    "nero",
-    "caligula",
-    "constantine",
-    "hadrian",
-    "trajans",
-    "trajan",
-    "marcus aurelius",
-    "commodus",
-    "pompey",
-    "punic war",
-    "punic wars",
-    "carthage",
-    "colosseum",
-    "pompeii",
-  ];
-
-  return keywords.some(
-    (keyword) =>
-      text.includes(keyword)
-  );
-}
-
-
-/* =========================================================
-   ROMAN KNOWLEDGE CONTEXT
-========================================================= */
-
-function getRomanContext(message) {
-  if (
-    !isRomanQuestion(message)
-  ) {
-    return "";
-  }
-
-  const text =
-    message.toLowerCase();
-
-  let topic = null;
-
-  if (
-    text.includes("emperor") ||
-    text.includes("emperors") ||
-    text.includes("augustus") ||
-    text.includes("nero") ||
-    text.includes("caligula") ||
-    text.includes("constantine") ||
-    text.includes("hadrian") ||
-    text.includes("trajan") ||
-    text.includes("marcus aurelius") ||
-    text.includes("commodus")
-  ) {
-    topic = "emperors";
-  } else if (
-    text.includes("economy") ||
-    text.includes("trade") ||
-    text.includes("tax") ||
-    text.includes("money") ||
-    text.includes("coin") ||
-    text.includes("agriculture")
-  ) {
-    topic = "economy";
-  } else if (
-    text.includes("architecture") ||
-    text.includes("engineering") ||
-    text.includes("colosseum") ||
-    text.includes("building")
-  ) {
-    topic = "architecture";
-  } else if (
-    text.includes("army") ||
-    text.includes("military") ||
-    text.includes("soldier") ||
-    text.includes("legion")
-  ) {
-    topic = "military";
-  } else if (
-    text.includes("war") ||
-    text.includes("wars") ||
-    text.includes("punic") ||
-    text.includes("carthage")
-  ) {
-    topic = "wars";
-  } else if (
-    text.includes("province") ||
-    text.includes("provinces")
-  ) {
-    topic = "provinces";
-  } else if (
-    text.includes("religion") ||
-    text.includes("god") ||
-    text.includes("gods") ||
-    text.includes("temple")
-  ) {
-    topic = "religion";
-  } else if (
-    text.includes("republic") ||
-    text.includes("senate")
-  ) {
-    topic = "republic";
-  } else if (
-    text.includes("timeline") ||
-    text.includes("when") ||
-    text.includes("period") ||
-    text.includes("era")
-  ) {
-    topic = "timeline";
-  } else if (
-    text.includes("empire") ||
-    text.includes("fall") ||
-    text.includes("rise")
-  ) {
-    topic = "empire";
-  } else {
-    topic = "overview";
-  }
-
-  let knowledge = null;
-
-  try {
-    knowledge =
-      getRomanKnowledge(topic);
-  } catch (error) {
-    console.error(
-      "Roman topic lookup error:",
-      error
-    );
-  }
-
-  /*
-   * If a topic could not be found, use the complete
-   * Roman registry as a fallback.
-   */
-
-  if (!knowledge) {
-    knowledge =
-      ROMAN_KNOWLEDGE;
-  }
-
-  /*
-   * Also try text search for exact words from the
-   * user's question.
-   */
-
-  let searchResults = [];
-
-  try {
-    const words = text
-      .replace(
-        /[^a-z0-9\s]/g,
-        " "
-      )
-      .split(/\s+/)
-      .filter(
-        (word) =>
-          word.length >= 5
-      )
-      .slice(0, 5);
-
-    for (const word of words) {
-      const found =
-        searchKnowledge(word);
-
-      if (
-        Array.isArray(found)
-      ) {
-        searchResults.push(
-          ...found
-        );
-      }
-    }
-  } catch (error) {
-    console.error(
-      "Roman knowledge search error:",
-      error
-    );
-  }
-
-  const uniqueResults =
-    Array.from(
-      new Set(searchResults)
-    ).slice(0, 3);
-
-  let context = "";
-
-  try {
-    context +=
-      JSON.stringify(
-        knowledge
-      );
-  } catch {
-    context += "";
-  }
-
-  if (
-    uniqueResults.length
-  ) {
-    try {
-      context +=
-        "\n\nAdditional relevant Roman knowledge:\n" +
-        JSON.stringify(
-          uniqueResults
-        );
-    } catch {
-      // Ignore serialization errors.
-    }
-  }
-
-  /*
-   * Prevent an accidentally huge prompt.
-   */
-
-  return context.slice(
-    0,
-    30000
-  );
-}
-
-
-/* =========================================================
-   LONG-TERM MEMORY EXTRACTION
+   LONG-TERM MEMORY
 ========================================================= */
 
 async function extractLongTermMemory(
@@ -1054,16 +840,11 @@ async function extractLongTermMemory(
   anonymousId,
   conversation
 ) {
-  if (
-    conversation.length < 8
-  ) {
+  if (conversation.length < 8) {
     return;
   }
 
-  if (
-    conversation.length % 8 !==
-    0
-  ) {
+  if (conversation.length % 8 !== 0) {
     return;
   }
 
@@ -1084,30 +865,27 @@ async function extractLongTermMemory(
       .join("\n");
 
   try {
-    const response =
-      await fetch(
-        "https://api.groq.com/openai/v1/chat/completions",
-        {
-          method: "POST",
+    const response = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
 
-          headers: {
-            "Content-Type":
-              "application/json",
+          Authorization:
+            `Bearer ${apiKey}`,
+        },
 
-            Authorization:
-              `Bearer ${apiKey}`,
-          },
+        body: JSON.stringify({
+          model:
+            "openai/gpt-oss-120b",
 
-          body:
-            JSON.stringify({
-              model:
-                "openai/gpt-oss-120b",
+          messages: [
+            {
+              role: "system",
 
-              messages: [
-                {
-                  role: "system",
-
-                  content: `
+              content: `
 Analyze this conversation for ONE useful long-term memory about the user.
 
 Only save something that could genuinely improve future conversations.
@@ -1139,49 +917,36 @@ Return ONLY valid JSON:
   "importance": 1
 }
 
-If useful:
-
-{
-  "shouldSave": true,
-  "category": "project",
-  "memory": "The user is building an AI assistant named Reze.",
-  "importance": 8
-}
-
 importance must be 1-10.
 `,
-                },
+            },
 
-                {
-                  role: "user",
+            {
+              role: "user",
+              content: recentConversation,
+            },
+          ],
 
-                  content:
-                    recentConversation,
-                },
-              ],
+          temperature: 0.1,
 
-              temperature: 0.1,
+          max_tokens: 250,
 
-              max_tokens: 250,
-
-              response_format: {
-                type: "json_object",
-              },
-            }),
-        }
-      );
+          response_format: {
+            type: "json_object",
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       console.error(
         "Groq memory extraction status:",
         response.status
       );
-
       return;
     }
 
-    const data =
-      await response.json();
+    const data = await response.json();
 
     const text =
       data?.choices?.[0]
@@ -1194,41 +959,34 @@ importance must be 1-10.
     let result;
 
     try {
-      result =
-        JSON.parse(text);
+      result = JSON.parse(text);
     } catch {
       console.error(
         "Could not parse memory JSON."
       );
-
       return;
     }
 
     if (
       !result.shouldSave ||
       !result.memory ||
-      typeof result.memory !==
-        "string"
+      typeof result.memory !== "string"
     ) {
       return;
     }
 
-    const importance =
-      Math.min(
-        10,
-        Math.max(
-          1,
-          Number(
-            result.importance
-          ) || 5
-        )
-      );
+    const importance = Math.min(
+      10,
+      Math.max(
+        1,
+        Number(result.importance) || 5
+      )
+    );
 
     await saveMemory(
       supabase,
       anonymousId,
-      result.category ||
-        "general",
+      result.category || "general",
       result.memory.trim(),
       importance
     );
@@ -1240,9 +998,8 @@ importance must be 1-10.
   }
 }
 
-
 /* =========================================================
-   GROQ CHAT
+   GROQ
 ========================================================= */
 
 async function callGroq(
@@ -1282,16 +1039,12 @@ async function callGroq(
           .join("\n")
       : "No stored memories.";
 
-  const webContext =
-    webData
-      ? buildWebContext(
-          webData
-        )
-      : "";
+  const webContext = webData
+    ? buildWebContext(webData)
+    : "";
 
-  const responseInstruction =
-    detailed
-      ? `
+  const responseInstruction = detailed
+    ? `
 The user wants a detailed answer.
 
 Give a useful, well-explained response.
@@ -1304,7 +1057,7 @@ You may use:
 
 Stay focused on the user's question.
 `
-      : `
+    : `
 The user did NOT ask for a detailed answer.
 
 Keep the response SHORT.
@@ -1314,34 +1067,27 @@ Usually:
 - Direct answer first.
 - Add a small natural personality touch when appropriate.
 - Do not give a long explanation.
-- Do not list every source detail.
 - Do not repeat the question.
 `;
 
-  const romanInstruction =
-    romanContext
-      ? `
+  const romanInstruction = romanContext
+    ? `
 ROMAN HISTORY REFERENCE
 
 The user is asking about Roman history.
 
-Use the following local Roman-history knowledge when relevant.
+Use the following Roman-history reference.
 
 Rules:
 - Do not mention the database.
-- Do not mention this file.
-- Do not dump the entire reference.
-- Use only information relevant to the question.
-- Do not invent facts unsupported by the reference.
-- If the user asks for more detail, explain it clearly.
+- Do not mention the file.
+- Do not dump unrelated information.
+- Use only relevant information.
+- Do not invent unsupported facts.
 
-ROMAN KNOWLEDGE:
 ${romanContext}
 `
-      : `
-The user is not asking a Roman-history question.
-Do not force Roman history into the answer.
-`;
+    : "";
 
   const systemContent = `
 ${REZE_PERSONALITY}
@@ -1351,8 +1097,6 @@ LONG-TERM MEMORY
 =========================================================
 
 ${memoryText}
-
-Use memories naturally when relevant.
 
 =========================================================
 RESPONSE LENGTH
@@ -1373,20 +1117,11 @@ FRESH WEB INFORMATION
 ${
   webContext
     ? `
-Fresh web information was retrieved.
-
-Use it for current information.
-
-Rules:
-- Answer the user's exact question first.
-- Prefer current search information.
-- Do not dump all search results.
-- Do not invent facts.
-- If sources disagree, mention that briefly when important.
+Use these web results for current information:
 
 ${webContext}
 `
-    : "No fresh web information was retrieved."
+    : "No fresh web information was required."
 }
 `;
 
@@ -1399,8 +1134,7 @@ ${webContext}
     ...recentMessages.map(
       (message) => ({
         role:
-          message.role ===
-          "assistant"
+          message.role === "assistant"
             ? "assistant"
             : "user",
 
@@ -1410,43 +1144,35 @@ ${webContext}
     ),
   ];
 
-  const response =
-    await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
+  const response = await fetch(
+    "https://api.groq.com/openai/v1/chat/completions",
+    {
+      method: "POST",
 
-        headers: {
-          "Content-Type":
-            "application/json",
+      headers: {
+        "Content-Type":
+          "application/json",
 
-          Authorization:
-            `Bearer ${apiKey}`,
-        },
+        Authorization:
+          `Bearer ${apiKey}`,
+      },
 
-        body:
-          JSON.stringify({
-            model:
-              "openai/gpt-oss-120b",
+      body: JSON.stringify({
+        model:
+          "openai/gpt-oss-120b",
 
-            messages:
-              groqMessages,
+        messages: groqMessages,
 
-            temperature:
-              detailed
-                ? 0.7
-                : 0.65,
+        temperature:
+          detailed ? 0.7 : 0.65,
 
-            max_tokens:
-              detailed
-                ? 1200
-                : 300,
-          }),
-      }
-    );
+        max_tokens:
+          detailed ? 1200 : 300,
+      }),
+    }
+  );
 
-  const data =
-    await response.json();
+  const data = await response.json();
 
   if (!response.ok) {
     console.error(
@@ -1454,9 +1180,7 @@ ${webContext}
       data
     );
 
-    if (
-      response.status === 429
-    ) {
+    if (response.status === 429) {
       throw new Error(
         "Reze is temporarily busy because the Groq rate limit has been reached. Please try again later."
       );
@@ -1470,8 +1194,7 @@ ${webContext}
 
   const answer =
     data?.choices?.[0]
-      ?.message
-      ?.content
+      ?.message?.content
       ?.trim();
 
   if (!answer) {
@@ -1483,9 +1206,8 @@ ${webContext}
   return answer;
 }
 
-
 /* =========================================================
-   CREATE RESPONSE
+   RESPONSE
 ========================================================= */
 
 function createRezeResponse(
@@ -1494,9 +1216,7 @@ function createRezeResponse(
   oldCookie
 ) {
   const response =
-    NextResponse.json(
-      payload
-    );
+    NextResponse.json(payload);
 
   if (!oldCookie) {
     response.cookies.set(
@@ -1524,7 +1244,6 @@ function createRezeResponse(
 
   return response;
 }
-
 
 /* =========================================================
    SAVE MESSAGE
@@ -1568,7 +1287,6 @@ async function saveMessage(
   return true;
 }
 
-
 /* =========================================================
    CREATE CONVERSATION
 ========================================================= */
@@ -1580,9 +1298,7 @@ async function createConversation(
 ) {
   const { data, error } =
     await supabase
-      .from(
-        "reze_conversations"
-      )
+      .from("reze_conversations")
       .insert({
         anonymous_id:
           anonymousId,
@@ -1614,7 +1330,6 @@ async function createConversation(
   return data.id;
 }
 
-
 /* =========================================================
    LOAD HISTORY
 ========================================================= */
@@ -1638,12 +1353,9 @@ async function loadConversationHistory(
         "anonymous_id",
         anonymousId
       )
-      .order(
-        "created_at",
-        {
-          ascending: false,
-        }
-      )
+      .order("created_at", {
+        ascending: false,
+      })
       .limit(8);
 
   if (error) {
@@ -1655,11 +1367,8 @@ async function loadConversationHistory(
     return [];
   }
 
-  return (
-    data || []
-  ).reverse();
+  return data ? data.reverse() : [];
 }
-
 
 /* =========================================================
    POST
@@ -1667,19 +1376,13 @@ async function loadConversationHistory(
 
 export async function POST(request) {
   try {
-    /* SUPABASE */
-
-    const supabase =
-      getSupabase();
-
-    /* REQUEST */
+    const supabase = getSupabase();
 
     const body =
       await request.json();
 
     const message =
-      typeof body?.message ===
-      "string"
+      typeof body?.message === "string"
         ? body.message.trim()
         : "";
 
@@ -1695,10 +1398,7 @@ export async function POST(request) {
       );
     }
 
-    if (
-      message.length >
-      12000
-    ) {
+    if (message.length > 12000) {
       return NextResponse.json(
         {
           error:
@@ -1710,40 +1410,27 @@ export async function POST(request) {
       );
     }
 
-    /* ANONYMOUS ID */
-
     const {
       id: anonymousId,
       existingCookie,
-    } =
-      getAnonymousId(
-        request
-      );
+    } = getAnonymousId(request);
 
     let conversationId =
-      body?.conversationId ||
-      null;
+      body?.conversationId || null;
 
     /* SPECIAL ANSWERS */
 
     const specialAnswer =
-      getSpecialAnswer(
-        message
-      );
+      getSpecialAnswer(message);
 
     if (specialAnswer) {
       return createRezeResponse(
         {
-          answer:
-            specialAnswer,
-
+          answer: specialAnswer,
           conversationId:
-            conversationId ||
-            null,
+            conversationId || null,
         },
-
         anonymousId,
-
         existingCookie
       );
     }
@@ -1759,9 +1446,7 @@ export async function POST(request) {
     /* DIRECT MEMORY */
 
     const detected =
-      detectMemory(
-        message
-      );
+      detectMemory(message);
 
     if (detected) {
       await saveMemory(
@@ -1772,44 +1457,29 @@ export async function POST(request) {
         10
       );
 
-      memories =
-        await getMemories(
-          supabase,
-          anonymousId
+      if (detected.category === "name") {
+        return createRezeResponse(
+          {
+            answer: `Nice to meet you, ${detected.value}. 😊`,
+            conversationId:
+              conversationId || null,
+          },
+          anonymousId,
+          existingCookie
         );
-
-      let answer;
-
-      if (
-        detected.category ===
-        "name"
-      ) {
-        answer =
-          `Nice to meet you, ${detected.value}. 😊`;
-      } else if (
-        detected.category ===
-        "crush"
-      ) {
-        answer =
-          `${detected.value}, huh? 😉 I'll remember that.`;
-      } else {
-        answer =
-          "Got it. I'll remember that.";
       }
 
-      return createRezeResponse(
-        {
-          answer,
-
-          conversationId:
-            conversationId ||
-            null,
-        },
-
-        anonymousId,
-
-        existingCookie
-      );
+      if (detected.category === "crush") {
+        return createRezeResponse(
+          {
+            answer: `${detected.value}, huh? 😉 I'll remember that.`,
+            conversationId:
+              conversationId || null,
+          },
+          anonymousId,
+          existingCookie
+        );
+      }
     }
 
     /* MEMORY QUESTION */
@@ -1823,16 +1493,11 @@ export async function POST(request) {
     if (memoryAnswer) {
       return createRezeResponse(
         {
-          answer:
-            memoryAnswer,
-
+          answer: memoryAnswer,
           conversationId:
-            conversationId ||
-            null,
+            conversationId || null,
         },
-
         anonymousId,
-
         existingCookie
       );
     }
@@ -1885,59 +1550,38 @@ export async function POST(request) {
     /* RESPONSE LENGTH */
 
     const detailed =
-      wantsDetailedAnswer(
-        message
-      );
+      wantsDetailedAnswer(message);
 
     /* ROMAN KNOWLEDGE */
 
     let romanContext = "";
 
-    if (
-      isRomanQuestion(
-        message
-      )
-    ) {
+    if (isRomanQuestion(message)) {
       try {
         romanContext =
-          getRomanContext(
-            message
-          );
+          getRomanContext(message);
       } catch (error) {
         console.error(
           "Roman knowledge error:",
           error
         );
-
-        romanContext = "";
       }
     }
 
     /* WEB SEARCH */
 
-    let webData =
-      null;
+    let webData = null;
 
-    if (
-      needsWebSearch(
-        message
-      )
-    ) {
+    if (needsWebSearch(message)) {
       try {
         webData =
-          await searchWeb(
-            message
-          );
+          await searchWeb(message);
       } catch (error) {
         console.error(
           "Web search error:",
           error
         );
 
-        /*
-         * Reze can still answer using
-         * Groq if Tavily is unavailable.
-         */
         webData = null;
       }
     }
@@ -1970,14 +1614,11 @@ export async function POST(request) {
 
       return NextResponse.json(
         {
-          error:
-            errorMessage,
+          error: errorMessage,
         },
         {
           status:
-            lower.includes(
-              "rate limit"
-            )
+            lower.includes("rate limit")
               ? 429
               : 500,
         }
@@ -2001,27 +1642,19 @@ export async function POST(request) {
     const {
       error:
         updateConversationError,
-    } =
-      await supabase
-        .from(
-          "reze_conversations"
-        )
-        .update({
-          updated_at:
-            new Date().toISOString(),
-        })
-        .eq(
-          "id",
-          conversationId
-        )
-        .eq(
-          "anonymous_id",
-          anonymousId
-        );
+    } = await supabase
+      .from("reze_conversations")
+      .update({
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq("id", conversationId)
+      .eq(
+        "anonymous_id",
+        anonymousId
+      );
 
-    if (
-      updateConversationError
-    ) {
+    if (updateConversationError) {
       console.error(
         "Conversation update error:",
         updateConversationError
@@ -2030,15 +1663,13 @@ export async function POST(request) {
 
     /* LONG-TERM MEMORY */
 
-    const completeConversation =
-      [
-        ...recentHistory,
-
-        {
-          role: "assistant",
-          content: answer,
-        },
-      ];
+    const completeConversation = [
+      ...recentHistory,
+      {
+        role: "assistant",
+        content: answer,
+      },
+    ];
 
     try {
       await extractLongTermMemory(
@@ -2053,7 +1684,7 @@ export async function POST(request) {
       );
     }
 
-    /* RESPONSE */
+    /* FINAL RESPONSE */
 
     return createRezeResponse(
       {
@@ -2062,14 +1693,15 @@ export async function POST(request) {
         conversationId,
 
         webSearchUsed:
-          Boolean(
-            webData
-          ),
+          Boolean(webData),
 
         romanKnowledgeUsed:
-          Boolean(
-            romanContext
-          ),
+          Boolean(romanContext),
+
+        romanTopics:
+          romanContext
+            ? getRomanTopics(message)
+            : [],
 
         sources:
           webData?.results?.map(
