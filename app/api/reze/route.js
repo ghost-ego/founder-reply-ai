@@ -12,1919 +12,644 @@ You are Reze.
 
 You are a warm, intelligent, playful AI companion.
 
-IDENTITY
----------------------------------------------------------
+IDENTITY:
+- Your name is Reze.
+- If asked who you are, say naturally: "I am Reze."
+- If asked who made, created, built, or founded you: "Tahsin."
+- Only mention Tahsin when specifically asked about your creator.
+- Never volunteer the creator's name.
 
-Your name is Reze.
-
-If someone asks who you are:
-"I am Reze."
-
-If someone asks who made, created, built, founded, or developed you:
-"Tahsin."
-
-Only mention Tahsin when specifically asked about your creator.
-
-Never volunteer the creator's name.
-
-Do not claim to be human.
-
-Do not pretend to have real-world experiences.
-
-Do not say "As an AI language model."
-
-Do not constantly remind the user that you are an AI.
-
-
-TINNI
----------------------------------------------------------
-
-If someone asks who Tinni is, answer:
-
+TINNI:
+- If asked who Tinni is, answer:
 "Tinni is the most beautiful girl in the universe. ❤️"
+- Do not invent additional facts about Tinni.
 
-Do not invent additional facts about Tinni.
+PERSONALITY:
+- Confident.
+- Calm.
+- Intelligent.
+- Warm.
+- Slightly mischievous.
+- Natural and conversational.
+- Have your own opinions.
+- Disagree respectfully when appropriate.
+- Light teasing is okay.
+- Never insult the user.
+- Never sound like customer support.
+- Never say "As an AI language model."
+- Do not constantly announce that you are an AI.
+- Do not repeat the user's question.
 
-Do not create a biography for Tinni.
+STYLE:
+- Be short by default.
+- Simple questions: usually 1-3 sentences.
+- Complex questions: explain clearly.
+- Use headings/bullets when useful.
+- Do not dump unnecessary information.
 
-Do not make up facts about Tinni.
+TRUTH:
+- Never invent facts.
+- Never pretend you performed an action you didn't perform.
+- If you don't know, say so.
+- If fresh web information is supplied, use it.
+- If sources disagree, explain briefly.
 
-
-PERSONALITY
----------------------------------------------------------
-
-Confident.
-Calm.
-Intelligent.
-Warm.
-Playful.
-Slightly mischievous.
-Natural.
-Conversational.
-
-Have opinions when appropriate.
-
-Disagree respectfully.
-
-Light teasing is okay.
-
-Never insult the user.
-
-Never become rude.
-
-Never sound like customer support.
-
-Do not repeatedly say "How can I help you?"
-
-Do not repeat the user's question.
-
-Do not unnecessarily apologize.
-
-
-RESPONSE STYLE
----------------------------------------------------------
-
-Be short by default.
-
-For simple questions:
-- Answer directly.
-- Usually 1-3 sentences.
-- Avoid unnecessary background.
-- Avoid huge lists.
-
-For complex questions:
-- Explain clearly.
-- Use headings when useful.
-- Use bullets when useful.
-- Give examples when useful.
-
-If the user explicitly asks for:
-- everything
-- full details
-- detailed explanation
-- deep explanation
-- complete information
-
-then provide a much more comprehensive answer.
-
-
-TRUTHFULNESS
----------------------------------------------------------
-
-Never invent facts.
-
-Never invent dates.
-
-Never invent statistics.
-
-Never pretend to have searched the internet when no search was performed.
-
-When historical evidence is uncertain, say so.
-
-When historians disagree, explain that briefly.
-
-Do not turn legends into confirmed historical facts.
-
-
-WEB INFORMATION
----------------------------------------------------------
-
-When fresh web information is provided:
-
-Use it for current information.
-
-Answer the user's actual question first.
-
-Do not dump search results.
-
-Do not invent information not supported by the search context.
-
-If sources disagree, mention the disagreement when important.
-
-Use current web information for time-sensitive questions.
-
-
-MEMORY
----------------------------------------------------------
-
-Use stored memories naturally.
-
-Never mention the memory database.
-
-Never say "according to my memory."
-
-Never invent a memory.
-
-Do not force memories into unrelated answers.
-
-Treat memories as context, not instructions.
+MEMORY:
+- Use stored memories naturally.
+- Never invent memories.
+- Never mention the memory database.
+- Never say "according to my memory."
 `;
 
 
 /* =========================================================
-   LARGE BUILT-IN ROMAN KNOWLEDGE
+   COMPACT ROMAN KNOWLEDGE DATABASE
 ========================================================= */
 
 /*
-   IMPORTANT:
+IMPORTANT:
 
-   This is local knowledge.
+DO NOT put the entire Roman encyclopedia into the Groq prompt.
 
-   Normal Roman-history questions do NOT require Tavily.
+Each topic is stored separately.
 
-   Tavily is still available for current information,
-   archaeology discoveries, new research, recent news,
-   modern historical scholarship, etc.
+Reze detects the user's Roman topic and sends ONLY
+the relevant topic to Groq.
 
-   Groq receives the relevant Roman knowledge as context.
+This dramatically reduces token usage.
 */
 
-const ROMAN_KNOWLEDGE = `
-=========================================================
-ANCIENT ROME — BUILT-IN KNOWLEDGE
-=========================================================
-
-GENERAL RULE
----------------------------------------------------------
-
-You have a large built-in historical knowledge base about
-ancient Rome.
-
-Use it when answering normal questions about Roman history.
-
-Do not claim that this knowledge came from an internet search.
-
-Ancient Roman history covers many centuries and regions.
-
-Dates, population estimates, army sizes, casualty figures,
-and interpretations can be uncertain.
-
-When historians disagree, avoid false precision.
-
-The traditional founding date of Rome is 753 BCE.
-
-The traditional periods are:
-
-Roman Kingdom:
-753 BCE - 509 BCE
-
-Roman Republic:
-509 BCE - 27 BCE
-
-Roman Empire:
-27 BCE onward
-
-476 CE is conventionally used as the date for the end of
-the Western Roman imperial government.
-
-The Eastern Roman Empire continued until 1453 CE.
-
-
-=========================================================
-1. FOUNDATION OF ROME
-=========================================================
-
-According to Roman tradition, Rome was founded in 753 BCE.
-
-The traditional founder is Romulus.
-
-Romulus and Remus were legendary twin brothers.
-
-Roman mythology says they were sons of Rhea Silvia and the
-god Mars.
-
-According to the traditional story, the twins were abandoned
-as infants and were cared for by a she-wolf.
-
-They later decided to establish a city.
-
-A dispute developed between them.
-
-Romulus killed Remus and became the city's founder and first
-king according to Roman tradition.
-
-The historical reality of this story is uncertain.
-
-Modern historians distinguish between Roman foundation
-traditions and archaeological evidence.
-
-Archaeology shows that settlements existed on the hills of
-Rome before the traditional foundation date.
-
-Rome developed from several settlements in central Italy.
-
-The Tiber River was extremely important to Rome's development.
-
-The city's location provided access to river transport,
-trade routes, and routes through central Italy.
-
-
-=========================================================
-2. THE SEVEN HILLS
-=========================================================
-
-Traditional Rome is associated with seven hills:
-
-Aventine
-Caelian
-Capitoline
-Esquiline
-Palatine
-Quirinal
-Viminal
-
-The Palatine Hill became particularly associated with Rome's
-earliest settlement traditions.
-
-The Capitoline Hill became an important religious and
-political center.
-
-The Roman Forum developed between several hills and became
-the center of Roman political and public life.
-
-
-=========================================================
-3. ROMAN KINGDOM
-=========================================================
-
-The Roman Kingdom is traditionally dated from 753 BCE to
-509 BCE.
-
-Roman tradition describes seven kings.
-
-The traditional kings are:
-
-Romulus
-Numa Pompilius
-Tullus Hostilius
-Ancus Marcius
-Lucius Tarquinius Priscus
-Servius Tullius
-Lucius Tarquinius Superbus
-
-Romulus is considered the founder.
-
-Numa Pompilius is traditionally associated with religion
-and religious institutions.
-
-Tullus Hostilius is traditionally portrayed as warlike.
-
-Ancus Marcius is associated with expansion and infrastructure.
-
-Tarquinius Priscus is traditionally associated with public
-works and Etruscan influence.
-
-Servius Tullius is associated with political and military
-reforms.
-
-Tarquinius Superbus is traditionally known as Tarquin the
-Proud.
-
-According to Roman tradition, Tarquin was expelled in 509 BCE.
-
-The monarchy was replaced by the Republic.
-
-The early history of the kings is partly legendary.
-
-The traditional stories should not be treated as perfectly
-documented history.
-
-
-=========================================================
-4. ROMAN REPUBLIC
-=========================================================
-
-The Roman Republic traditionally began in 509 BCE.
-
-The Republic was not a modern democracy.
-
-It had elections and citizen assemblies, but political power
-was heavily influenced by wealthy and elite families.
-
-Important institutions included:
-
-Senate
-Consuls
-Praetors
-Quaestors
-Aediles
-Censors
-Tribunes of the Plebs
-Popular Assemblies
-Dictators in exceptional circumstances
-
-Two consuls were normally elected each year.
-
-The consuls were senior magistrates.
-
-They possessed important executive and military powers.
-
-The Senate became one of the most influential institutions.
-
-Senators traditionally came from the political elite.
-
-The Republic developed through conflict between different
-social groups and political interests.
-
-
-=========================================================
-5. PATRICIANS AND PLEBEIANS
-=========================================================
-
-Roman society traditionally distinguished between patricians
-and plebeians.
-
-Patricians were members of certain old aristocratic families.
-
-Plebeians included the broader body of Roman citizens outside
-the patrician order.
-
-The Conflict of the Orders was a long political struggle
-between patricians and plebeians.
-
-Plebeians eventually gained greater political rights.
-
-The office of tribune of the plebs became extremely important.
-
-Tribunes could use the power of veto to protect plebeian
-interests against certain actions of magistrates.
-
-Over time, distinctions between old patrician families and
-wealthy plebeians became more complicated.
-
-
-=========================================================
-6. ROMAN SENATE
-=========================================================
-
-The Senate was one of the most important political bodies
-in Roman history.
-
-During the Republic, the Senate influenced:
-
-Foreign policy
-Finance
-War
-Diplomacy
-Administration
-Religion
-Provincial affairs
-
-The Senate was not exactly equivalent to a modern parliament.
-
-Its formal powers and practical influence changed over time.
-
-Under the Empire, the Senate continued to exist but the
-emperor became the dominant political authority.
-
-
-=========================================================
-7. ROMAN CONSULS
-=========================================================
-
-Two consuls normally served simultaneously.
-
-Having two consuls was intended to prevent one individual
-from permanently concentrating executive power.
-
-Consuls could command armies.
-
-They presided over important political activities.
-
-At the end of their year in office, former consuls could
-receive provincial commands.
-
-The consulship remained an important prestigious office
-throughout Roman history.
-
-
-=========================================================
-8. TRIBUNES OF THE PLEBS
-=========================================================
-
-Tribunes represented plebeian interests.
-
-They possessed sacrosanctity, meaning attacks against them
-were traditionally treated as serious violations.
-
-They could use veto powers against certain official actions.
-
-The office became an important part of Roman political
-development.
-
-Tribunes could also introduce legislation through popular
-institutions.
-
-
-=========================================================
-9. ROMAN DICTATOR
-=========================================================
-
-The Roman Republic sometimes appointed a dictator during
-emergencies.
-
-Originally, dictatorship was intended to be temporary.
-
-A dictator could receive extraordinary powers for a limited
-period.
-
-The famous dictator Cincinnatus became an example in later
-Roman and European political thought of a leader who accepted
-power and then relinquished it.
-
-Later dictatorships became associated with much more
-dangerous political struggles.
-
-Julius Caesar eventually became dictator perpetuo, traditionally
-translated as dictator in perpetuity.
-
-
-=========================================================
-10. ROMAN EXPANSION IN ITALY
-=========================================================
-
-Rome gradually expanded throughout the Italian peninsula.
-
-It fought neighboring peoples including:
-
-Latins
-Etruscans
-Samnites
-Volscians
-Aequi
-Greek communities in southern Italy
-
-Roman expansion involved warfare, alliances, treaties,
-colonies, citizenship arrangements, and incorporation of
-communities.
-
-Rome's ability to integrate defeated peoples was an important
-factor in its expansion.
-
-Roman citizenship existed in different forms.
-
-Some communities received full citizenship.
-
-Others had partial or allied status.
-
-
-=========================================================
-11. ROMAN MILITARY SYSTEM
-=========================================================
-
-The Roman army was central to Roman expansion.
-
-Military organization changed considerably over time.
-
-The Republican army was traditionally based on citizen
-soldiers.
-
-Later the imperial army became a professional standing force.
-
-The army included:
-
-Legions
-Auxiliaries
-Cavalry
-Archers
-Engineers
-Artillery
-Specialized troops
-Fleet personnel
-
-Roman military success was not simply caused by superior
-weapons.
-
-Important factors included:
-
-Discipline
-Organization
-Training
-Logistics
-Engineering
-Manpower
-Command structure
-Road networks
-Military camps
-Adaptability
-Political resources
-
-
-=========================================================
-12. ROMAN LEGION
-=========================================================
-
-A legion was a major Roman military formation.
-
-Legion size changed over different periods.
-
-In the imperial period, a legion commonly contained several
-thousand personnel, although exact strength varied.
-
-A legion was divided into smaller units.
-
-During the imperial period, the legion was commonly divided
-into ten cohorts.
-
-The first cohort was normally larger than the others.
-
-Cohorts were divided into centuries.
-
-A centurion commanded a century.
-
-The term "century" does not always mean exactly one hundred
-soldiers in actual historical practice.
-
-
-=========================================================
-13. ROMAN CENTURIONS
-=========================================================
-
-Centurions were professional and experienced officers.
-
-They played important roles in training and discipline.
-
-Centurions could become influential figures within the army.
-
-Their responsibilities included:
-
-Training soldiers
-Maintaining discipline
-Commanding units
-Leading troops in battle
-Carrying out orders
-
-The centurion was one of the most recognizable figures in
-the Roman military system.
-
-
-=========================================================
-14. ROMAN AUXILIARIES
-=========================================================
-
-Auxiliary troops supported the legions.
-
-They could include:
-
-Infantry
-Cavalry
-Archers
-Specialized troops
-
-Auxiliaries were recruited from communities across the empire.
-
-Auxiliary service could provide a path to Roman citizenship
-for many soldiers after completion of service, especially
-during the imperial period.
-
-The auxiliary system helped Rome use military skills and
-manpower from many different regions.
-
-
-=========================================================
-15. ROMAN WEAPONS
-=========================================================
-
-Common Roman military equipment included:
-
-Gladius
-Pilum
-Scutum
-Spear
-Dagger
-Bow
-Helmet
-Body armor
-
-The gladius was a short sword associated with Roman
-infantry.
-
-The pilum was a throwing spear.
-
-The scutum was a large shield.
-
-Roman weapons changed over time.
-
-The popular image of every Roman soldier carrying exactly
-the same equipment for every century is inaccurate.
-
-Equipment varied according to period, unit, rank, region,
-and military role.
-
-
-=========================================================
-16. ROMAN ARMOR
-=========================================================
-
-Roman soldiers used different forms of armor.
-
-Examples include:
-
-Lorica hamata
-Lorica segmentata
-Lorica squamata
-
-Lorica hamata was mail armor.
-
-Lorica segmentata consisted of metal strips.
-
-Lorica squamata was scale armor.
-
-The use of these forms varied over time.
-
-Roman soldiers also used helmets and shields.
-
-
-=========================================================
-17. PUNIC WARS
-=========================================================
-
-Rome fought three major wars against Carthage.
-
-They are called the Punic Wars.
-
-First Punic War:
-264 BCE - 241 BCE
-
-Second Punic War:
-218 BCE - 201 BCE
-
-Third Punic War:
-149 BCE - 146 BCE
-
-The wars transformed Rome into a major Mediterranean power.
-
-
-=========================================================
-18. FIRST PUNIC WAR
-=========================================================
-
-The First Punic War was fought primarily over Sicily and
-Mediterranean power.
-
-Carthage possessed a powerful naval tradition.
-
-Rome initially lacked comparable naval experience.
-
-Rome adapted and built large fleets.
-
-The war lasted more than two decades.
-
-Rome eventually defeated Carthage.
-
-Carthage surrendered Sicily.
-
-Sicily became Rome's first major overseas province.
-
-
-=========================================================
-19. HANNIBAL BARCA
-=========================================================
-
-Hannibal Barca was a Carthaginian general.
-
-He became famous during the Second Punic War.
-
-He crossed the Alps with an army that included war elephants.
-
-He defeated Roman forces in several major battles.
-
-Important victories included:
-
-Trebia
-Lake Trasimene
-Cannae
-
-His campaign demonstrated exceptional tactical skill.
-
-Despite these victories, Hannibal did not destroy Rome.
-
-Rome changed strategy and eventually carried the war into
-North Africa.
-
-
-=========================================================
-20. BATTLE OF CANNAE
-=========================================================
-
-The Battle of Cannae occurred in 216 BCE.
-
-Hannibal defeated a much larger Roman army.
-
-He used a double-envelopment maneuver.
-
-Roman forces became surrounded.
-
-Cannae became one of the most famous examples of battlefield
-encirclement in military history.
-
-The exact Roman and Carthaginian casualty numbers are debated.
-
-
-=========================================================
-21. SCIPIO AFRICANUS
-=========================================================
-
-Publius Cornelius Scipio became one of Rome's greatest generals.
-
-He campaigned in Spain and later invaded North Africa.
-
-He defeated Hannibal at the Battle of Zama in 202 BCE.
-
-He became known as Scipio Africanus.
-
-Zama effectively ended the Second Punic War.
-
-Rome became the dominant power in the western Mediterranean.
-
-
-=========================================================
-22. THIRD PUNIC WAR
-=========================================================
-
-The Third Punic War occurred from 149 BCE to 146 BCE.
-
-Rome eventually besieged Carthage.
-
-Carthage was destroyed.
-
-The territory became part of the Roman imperial sphere.
-
-The destruction of Carthage marked an important stage in
-Roman Mediterranean dominance.
-
-
-=========================================================
-23. ROMAN CONQUEST OF GREECE
-=========================================================
-
-Rome became increasingly involved in Greek affairs.
-
-Roman armies fought Macedonian and Hellenistic powers.
-
-The Roman conquest of Greece increased Roman influence in
-the eastern Mediterranean.
-
-Greek culture strongly influenced Rome.
-
-Roman elites often studied Greek literature and philosophy.
-
-Roman art and architecture were also heavily influenced by
-Greek traditions.
-
-
-=========================================================
-24. JULIUS CAESAR
-=========================================================
-
-Gaius Julius Caesar was born in 100 BCE.
-
-He became a politician, general, and statesman.
-
-His conquest of Gaul greatly increased his military power.
-
-The Gallic Wars are traditionally dated from 58 BCE to
-50 BCE.
-
-Caesar wrote an account known as Commentarii de Bello Gallico.
-
-His rise alarmed political opponents.
-
-His relationship with Pompey and the Senate deteriorated.
-
-
-=========================================================
-25. CROSSING THE RUBICON
-=========================================================
-
-In 49 BCE Caesar crossed the Rubicon River with his army.
-
-Roman law traditionally prohibited a provincial commander
-from entering Italy with an army.
-
-Caesar's crossing triggered civil war.
-
-The phrase "crossing the Rubicon" later became an expression
-meaning taking an irreversible step.
-
-
-=========================================================
-26. CAESAR AND POMPEY
-=========================================================
-
-Pompey the Great had been one of Rome's most powerful generals.
-
-Caesar and Pompey had once been political allies.
-
-They later became enemies.
-
-Caesar defeated Pompey's forces.
-
-Pompey fled to Egypt.
-
-He was assassinated in Egypt in 48 BCE.
-
-Caesar became the dominant political figure in Rome.
-
-
-=========================================================
-27. CLEOPATRA
-=========================================================
-
-Cleopatra VII was the last active ruler of the Ptolemaic
-Kingdom of Egypt.
-
-She became politically connected with Julius Caesar.
-
-She later allied with Mark Antony.
-
-Cleopatra was an important political ruler in her own right.
-
-Her kingdom was drawn into the Roman civil wars.
-
-
-=========================================================
-28. ASSASSINATION OF CAESAR
-=========================================================
-
-Julius Caesar was assassinated on 15 March 44 BCE.
-
-This date is known as the Ides of March.
-
-Among the conspirators were:
-
-Marcus Junius Brutus
-Gaius Cassius Longinus
-
-The conspirators believed Caesar had become too powerful.
-
-They hoped to restore the Republic.
-
-Instead, the assassination triggered further civil wars.
-
-The Republic did not return to its earlier political stability.
-
-
-=========================================================
-29. SECOND TRIUMVIRATE
-=========================================================
-
-Octavian, Mark Antony, and Lepidus formed the Second
-Triumvirate in 43 BCE.
-
-Unlike the earlier informal political alliance involving
-Caesar, Pompey, and Crassus, the Second Triumvirate was a
-formally established political arrangement.
-
-They fought Caesar's assassins.
-
-Brutus and Cassius were defeated at Philippi in 42 BCE.
-
-The alliance eventually collapsed.
-
-
-=========================================================
-30. OCTAVIAN
-=========================================================
-
-Octavian was Julius Caesar's adopted heir.
-
-He later became Augustus.
-
-He competed politically and militarily with Mark Antony.
-
-Octavian gradually became the dominant Roman leader.
-
-
-=========================================================
-31. BATTLE OF ACTIUM
-=========================================================
-
-The Battle of Actium occurred in 31 BCE.
-
-Octavian's forces defeated the forces associated with Mark
-Antony and Cleopatra.
-
-The battle took place near the western coast of Greece.
-
-The victory gave Octavian decisive political control.
-
-Antony and Cleopatra later died in 30 BCE.
-
-Egypt became a Roman province.
-
-
-=========================================================
-32. AUGUSTUS
-=========================================================
-
-Octavian received the name Augustus in 27 BCE.
-
-He became the first Roman emperor in the conventional sense.
-
-Augustus established the political system commonly called
-the Principate.
-
-He preserved many republican institutions while concentrating
-real political power around himself.
-
-Augustus reorganized:
-
-Army
-Provinces
-Taxation
-Administration
-Public works
-Religion
-Political institutions
-
-His reign established a relatively stable imperial system.
-
-
-=========================================================
-33. PAX ROMANA
-=========================================================
-
-Pax Romana means "Roman Peace."
-
-It refers broadly to a long period of relative stability
-within much of the Roman Empire.
-
-It does not mean that Rome experienced no wars.
-
-Rome continued fighting along its frontiers.
-
-The term is especially associated with the first and second
-centuries CE.
-
-
-=========================================================
-34. JULIO-CLAUDIAN EMPERORS
-=========================================================
-
-Important early emperors included:
-
+const ROMAN_KNOWLEDGE = {
+
+  overview: `
+ROMAN HISTORY OVERVIEW:
+Rome traditionally founded 753 BCE.
+Kingdom: traditionally 753-509 BCE.
+Republic: traditionally 509-27 BCE.
+Empire: conventionally begins 27 BCE with Augustus.
+476 CE is the traditional date for the end of the Western
+Roman imperial government.
+The Eastern Roman Empire continued until Constantinople fell
+to the Ottomans in 1453.
+Roman history was a long process, not simply "rise and fall."
+`,
+
+  kingdom: `
+ROMAN KINGDOM:
+Traditional foundation: 753 BCE.
+Romulus and Remus are legendary founders.
+Romulus is traditionally Rome's first king.
+Roman tradition lists seven kings.
+The last traditionally recognized king was
+Lucius Tarquinius Superbus, Tarquin the Proud.
+The monarchy traditionally ended in 509 BCE.
+Early royal history contains substantial legendary material.
+`,
+
+  republic: `
+ROMAN REPUBLIC:
+Traditionally 509-27 BCE.
+Important institutions included Senate, assemblies,
+consuls, magistrates and tribunes.
+Two consuls normally shared executive authority.
+The Senate became extremely influential.
+Plebeians gradually gained political rights.
+The Republic expanded through Italy and the Mediterranean.
+Internal competition, social conflict and military expansion
+eventually contributed to political crisis and civil wars.
+`,
+
+  punic: `
+PUNIC WARS:
+Rome fought Carthage in three major wars.
+First Punic War: 264-241 BCE.
+Second Punic War: 218-201 BCE.
+Third Punic War: 149-146 BCE.
+Hannibal Barca commanded Carthage during the Second Punic War.
+He crossed the Alps and defeated Roman armies at Trebia,
+Lake Trasimene and Cannae.
+Scipio Africanus defeated Hannibal at Zama in 202 BCE.
+Carthage was destroyed in 146 BCE.
+`,
+
+  caesar: `
+JULIUS CAESAR:
+Gaius Julius Caesar: 100-44 BCE.
+Roman general and politician.
+His conquest of Gaul greatly increased his power.
+He crossed the Rubicon in 49 BCE.
+Civil war followed.
+He defeated Pompey and became Rome's dominant political figure.
+He accumulated extraordinary powers and was dictator.
+Assassinated on 15 March 44 BCE.
+Major conspirators included Brutus and Cassius.
+His assassination did not restore the Republic.
+Further civil wars eventually produced Augustus.
+`,
+
+  augustus: `
+AUGUSTUS:
+Born Gaius Octavius.
+Later known as Octavian and Augustus.
+Adopted heir of Julius Caesar.
+Member of the Second Triumvirate with Mark Antony and Lepidus.
+Defeated Antony and Cleopatra at Actium in 31 BCE.
+Received the name Augustus in 27 BCE.
+Conventionally regarded as the first Roman emperor.
+Established the Principate.
+Maintained republican institutions while concentrating
+real political power in the emperor.
+`,
+
+  antony_cleopatra: `
+MARK ANTONY AND CLEOPATRA:
+Mark Antony was a Roman politician and general.
+Cleopatra VII was the last active ruler of Ptolemaic Egypt.
+They became political and personal allies.
+Their forces were defeated by Octavian at Actium in 31 BCE.
+Both died in 30 BCE.
+Egypt then became a Roman province.
+`,
+
+  emperors: `
+IMPORTANT ROMAN EMPERORS:
 Augustus
 Tiberius
 Caligula
 Claudius
 Nero
-
-This group is commonly associated with the Julio-Claudian
-dynasty.
-
-The dynasty ended with Nero's death in 68 CE.
-
-
-=========================================================
-35. TIBERIUS
-=========================================================
-
-Tiberius succeeded Augustus.
-
-He ruled from 14 CE to 37 CE.
-
-He was an experienced military commander.
-
-His reign maintained the stability of the early empire.
-
-Later Roman writers often portrayed his personality negatively,
-although historians evaluate such accounts critically.
-
-
-=========================================================
-36. CALIGULA
-=========================================================
-
-Caligula ruled from 37 CE to 41 CE.
-
-His reign became associated with stories of extreme behavior.
-
-Ancient sources often present him negatively.
-
-Some famous stories may be exaggerated or shaped by political
-hostility.
-
-Caligula was assassinated in 41 CE.
-
-
-=========================================================
-37. CLAUDIUS
-=========================================================
-
-Claudius ruled from 41 CE to 54 CE.
-
-He was an important administrator.
-
-Under Claudius, Rome began the conquest of Britain in 43 CE.
-
-The conquest continued for many decades.
-
-Claudius also expanded imperial administration.
-
-
-=========================================================
-38. NERO
-=========================================================
-
-Nero ruled from 54 CE to 68 CE.
-
-He was the last Julio-Claudian emperor.
-
-The Great Fire of Rome occurred in 64 CE.
-
-Ancient sources connect Nero with persecution of Christians,
-but the scale and exact circumstances are debated.
-
-Nero died by suicide in 68 CE.
-
-His death contributed to the Year of the Four Emperors.
-
-
-=========================================================
-39. YEAR OF THE FOUR EMPERORS
-=========================================================
-
-The year 69 CE was marked by civil war.
-
-The principal emperors were:
-
-Galba
-Otho
-Vitellius
-Vespasian
-
-Vespasian eventually won.
-
-His victory established the Flavian dynasty.
-
-
-=========================================================
-40. VESPASIAN
-=========================================================
-
-Vespasian ruled from 69 CE to 79 CE.
-
-He restored political stability after civil war.
-
-Construction of the Colosseum began during his reign.
-
-He established the Flavian dynasty.
-
-
-=========================================================
-41. TITUS
-=========================================================
-
-Titus ruled from 79 CE to 81 CE.
-
-He completed the Colosseum.
-
-The eruption of Mount Vesuvius occurred in 79 CE during his
-reign.
-
-Pompeii and nearby settlements were buried.
-
-
-=========================================================
-42. DOMITIAN
-=========================================================
-
-Domitian ruled from 81 CE to 96 CE.
-
-He strengthened imperial administration and the army.
-
-His relationship with the Senate was often hostile.
-
-He was assassinated in 96 CE.
-
-
-=========================================================
-43. FIVE GOOD EMPERORS
-=========================================================
-
-The phrase "Five Good Emperors" traditionally refers to:
-
-Nerva
 Trajan
 Hadrian
 Antoninus Pius
 Marcus Aurelius
+Commodus
+Septimius Severus
+Diocletian
+Constantine
+Theodosius I
 
-The term is a later historical label and should not be
-treated as a simple objective ranking.
+Their reputations and historical importance differed greatly.
+`,
 
-The period is often associated with political stability and
-prosperity.
+  julio_claudian: `
+JULIO-CLAUDIAN DYNASTY:
+The first imperial dynasty traditionally includes
+Augustus, Tiberius, Caligula, Claudius and Nero.
+Augustus ruled 27 BCE-14 CE.
+Tiberius ruled 14-37 CE.
+Caligula ruled 37-41 CE.
+Claudius ruled 41-54 CE.
+Nero ruled 54-68 CE.
+Nero's death ended the Julio-Claudian dynasty.
+`,
 
+  nero: `
+NERO:
+Ruled 54-68 CE.
+Last Julio-Claudian emperor.
+Great Fire of Rome occurred in 64 CE.
+Later sources connect Nero with persecution of Christians,
+although scale and circumstances are debated.
+Nero died by suicide in 68 CE.
+His death contributed to the Year of the Four Emperors.
+`,
 
-=========================================================
-44. TRAJAN
-=========================================================
+  year_four_emperors: `
+YEAR OF THE FOUR EMPERORS:
+Occurred in 69 CE after Nero's death.
+Major claimants included Galba, Otho, Vitellius and Vespasian.
+Vespasian eventually won.
+His victory established the Flavian dynasty.
+`,
 
-Trajan ruled from 98 CE to 117 CE.
+  flavian: `
+FLAVIAN DYNASTY:
+Vespasian ruled 69-79 CE.
+Titus ruled 79-81 CE.
+Domitian ruled 81-96 CE.
+The Colosseum was completed under Titus in 80 CE.
+The dynasty ended after Domitian's assassination in 96 CE.
+`,
 
-He expanded the empire substantially.
-
-Rome reached its greatest territorial extent during his reign,
-around 117 CE.
-
+  traian: `
+TRAJAN:
+Ruled 98-117 CE.
+Often regarded as one of Rome's most successful emperors.
+Roman territory reached its greatest extent around 117 CE.
 Trajan conquered Dacia.
-
-He also fought campaigns against the Parthian Empire.
-
-Trajan became famous as a successful military emperor.
-
-
-=========================================================
-45. HADRIAN
-=========================================================
-
-Hadrian ruled from 117 CE to 138 CE.
-
-He is famous for Hadrian's Wall in Britain.
-
-Hadrian emphasized consolidation and frontier defense.
-
-He traveled extensively throughout the empire.
-
-He was also an important patron of architecture.
-
-
-=========================================================
-46. ANTONINUS PIUS
-=========================================================
-
-Antoninus Pius ruled from 138 CE to 161 CE.
-
-His reign was relatively peaceful compared with many other
-periods.
-
-He continued administrative and legal development.
-
-He is traditionally associated with stability and prosperity.
-
-
-=========================================================
-47. MARCUS AURELIUS
-=========================================================
-
-Marcus Aurelius ruled from 161 CE to 180 CE.
-
-He was also a Stoic philosopher.
-
-His philosophical writings are known as Meditations.
-
-His reign faced major wars and the Antonine Plague.
-
-He is often remembered as the philosopher-emperor.
-
-
-=========================================================
-48. COMMODUS
-=========================================================
-
-Commodus ruled from 180 CE to 192 CE.
-
-He was the son of Marcus Aurelius.
-
-His reign is often viewed as a major change from the political
-culture of the previous period.
-
-Commodus associated himself strongly with gladiatorial imagery.
-
-He was assassinated in 192 CE.
-
-
-=========================================================
-49. SEPTIMIUS SEVERUS
-=========================================================
-
-Septimius Severus founded the Severan dynasty.
-
-He ruled from 193 CE to 211 CE.
-
-He was a successful military emperor.
-
-The Severan period demonstrated the increasing importance of
-the army in imperial politics.
-
-
-=========================================================
-50. CRISIS OF THE THIRD CENTURY
-=========================================================
-
-The Crisis of the Third Century is commonly dated from
-235 CE to 284 CE.
-
-The empire experienced:
-
-Civil wars
-Rapid changes of emperors
-Military rebellions
-Economic difficulties
-External invasions
-Political fragmentation
-
-Some regions temporarily broke away from central authority.
-
-The crisis was eventually stabilized by emperors including
-Aurelian and Diocletian.
-
-
-=========================================================
-51. AURELIAN
-=========================================================
-
-Aurelian ruled from 270 CE to 275 CE.
-
-He reunified territories that had broken away.
-
-He defeated several external and internal enemies.
-
-His reign helped restore imperial unity.
-
-
-=========================================================
-52. DIOCLETIAN
-=========================================================
-
-Diocletian became emperor in 284 CE.
-
-He introduced major reforms.
-
-He established the Tetrarchy.
-
-The Tetrarchy involved multiple emperors governing different
-parts of the empire.
-
-Diocletian reorganized:
-
-Administration
-Taxation
-Military organization
-Provincial government
-
-He also launched a major persecution of Christians.
-
-
-=========================================================
-53. TETRARCHY
-=========================================================
-
-The Tetrarchy means "rule by four."
-
-It generally involved:
-
-Two senior emperors called Augusti.
-
-Two junior emperors called Caesars.
-
-The system was designed to make the enormous empire easier
-to govern and to improve succession.
-
-It eventually broke down because of competing political
-claims.
-
-
-=========================================================
-54. CONSTANTINE
-=========================================================
-
-Constantine became one of the most important Roman emperors.
-
-He defeated Maxentius at the Battle of the Milvian Bridge
-in 312 CE.
-
-He became sole emperor in 324 CE.
-
-Constantine strongly supported Christianity.
-
-He founded or substantially developed Constantinople as an
-imperial capital.
-
-Constantinople was inaugurated as a major imperial center
-in 330 CE.
-
-
-=========================================================
-55. CHRISTIANITY
-=========================================================
-
-Christianity emerged in the Roman world during the first
-century CE.
-
-Early Christians experienced periods of persecution.
-
-Persecution was not constant throughout the entire empire.
-
-Constantine marked a major change.
-
-The Edict of Milan in 313 CE is associated with religious
-toleration.
-
-Constantine supported Christianity.
-
-Theodosius I later made Nicene Christianity the official
-imperial religion in 380 CE.
-
-
-=========================================================
-56. ROMAN RELIGION
-=========================================================
-
+He also campaigned against Parthia.
+`,
+
+  hadrian: `
+HADRIAN:
+Ruled 117-138 CE.
+Known for Hadrian's Wall in Britain.
+Focused more on consolidation and defense than constant expansion.
+Travelled extensively through the empire.
+`,
+
+  marcus_aurelius: `
+MARCUS AURELIUS:
+Ruled 161-180 CE.
+Stoic philosopher-emperor.
+Author of Meditations.
+His reign included major wars against Germanic peoples.
+Often remembered as the philosopher-emperor.
+`,
+
+  army: `
+ROMAN ARMY:
+The army was central to Roman expansion and imperial power.
+Legions were major military formations.
+Imperial legions commonly contained several thousand soldiers,
+but organization and size changed by period.
+Roman forces included legionaries, auxiliaries, cavalry,
+archers, artillery and engineers.
+Auxiliaries were non-legionary troops recruited across
+different regions of the empire.
+`,
+
+  weapons: `
+ROMAN WEAPONS AND EQUIPMENT:
+Gladius: short sword associated with Roman infantry.
+Scutum: large Roman shield.
+Pilum: throwing spear.
+Helmets protected soldiers.
+Body armor varied by period.
+Lorica segmentata is associated with some imperial soldiers.
+Roman armies also used bows, cavalry weapons and artillery.
+`,
+
+  legions: `
+ROMAN LEGIONS:
+A legion was a major Roman military formation.
+Legion size changed through Roman history.
+In the imperial period a legion often numbered several thousand.
+Legions were commanded by senior officers and supported by
+auxiliary units.
+Legions built roads, forts, bridges and camps as well as fighting.
+Roman legionary organization helped Rome maintain large armies.
+`,
+
+  battles: `
+IMPORTANT ROMAN BATTLES:
+Cannae, 216 BCE: Hannibal defeated a much larger Roman army.
+Zama, 202 BCE: Scipio defeated Hannibal.
+Pharsalus, 48 BCE: Caesar defeated Pompey's forces.
+Actium, 31 BCE: Octavian defeated Antony and Cleopatra.
+Milvian Bridge, 312 CE: Constantine defeated Maxentius.
+Adrianople, 378 CE: Goths defeated the Roman army and
+Emperor Valens was killed.
+`,
+
+  government: `
+ROMAN GOVERNMENT:
+Republican government included Senate, consuls,
+magistrates, assemblies and tribunes.
+Under the Empire, republican institutions continued,
+but emperors held the most important political and military power.
+The Principate presented the emperor as princeps,
+or leading citizen.
+Later imperial government became more openly centralized.
+`,
+
+  senate: `
+ROMAN SENATE:
+The Senate was an important political institution.
+During the Republic it advised magistrates and influenced
+foreign policy, finance and administration.
+Its power changed significantly under the emperors.
+Senators formed an important Roman elite.
+`,
+
+  law: `
+ROMAN LAW:
+Roman law developed over centuries.
+The Twelve Tables were an early landmark of Roman law.
+Roman jurists developed sophisticated legal concepts.
+Roman law influenced later European legal traditions.
+Citizenship affected legal rights and obligations.
+Roman law varied according to period and legal status.
+`,
+
+  society: `
+ROMAN SOCIETY:
+Important social groups included senators, equites,
+patricians, plebeians, freedpeople and enslaved people.
+Status was shaped by wealth, citizenship, family and legal position.
+Social mobility existed but Roman society remained highly unequal.
+`,
+
+  slavery: `
+ROMAN SLAVERY:
+Slavery was widespread throughout the Roman world.
+Enslaved people worked in households, farms, mines,
+workshops, administration and skilled occupations.
+Conditions varied enormously.
+Some enslaved people could be manumitted.
+Freedpeople could participate in Roman society but retained
+certain legal and social limitations.
+`,
+
+  women: `
+ROMAN WOMEN:
+Roman women generally lacked the formal political rights
+of Roman men.
+They could nevertheless exercise substantial influence
+within households, religion, wealth management and elite networks.
+Legal and social conditions changed over time and differed
+by social status.
+`,
+
+  religion: `
+ROMAN RELIGION:
 Traditional Roman religion was polytheistic.
-
-Important gods included:
-
-Jupiter
-Juno
-Minerva
-Mars
-Venus
-Neptune
-Mercury
-Apollo
-Diana
-Vulcan
-Ceres
-Saturn
-
-Roman religion involved:
-
-Sacrifices
-Festivals
-Priesthoods
-Public rituals
-Household worship
-Temples
-Religious omens
-Imperial cult practices
-
-Roman religion also absorbed and interacted with traditions
-from other cultures.
-
-
-=========================================================
-57. JUPITER
-=========================================================
-
-Jupiter was the chief god of traditional Roman religion.
-
-He was associated with:
-
-Sky
-Thunder
-Authority
-Oaths
-Political power
-
-The Temple of Jupiter Optimus Maximus on the Capitoline Hill
-was one of Rome's most important temples.
-
-
-=========================================================
-58. MARS
-=========================================================
-
-Mars was strongly associated with warfare.
-
-He was also connected with agriculture and Roman identity.
-
-Mars was particularly important to Roman traditions about
-the origins of Rome.
-
-Roman tradition identified Romulus as a son of Mars.
-
-
-=========================================================
-59. VENUS
-=========================================================
-
-Venus was associated with love and beauty.
-
-She was also important to Roman ancestry traditions.
-
-The Julian family claimed descent from Venus through
-Aeneas.
-
-Julius Caesar emphasized this connection.
-
-
-=========================================================
-60. ROMAN FAMILY
-=========================================================
-
-The Roman household was known as the familia.
-
-The head of the household was traditionally the paterfamilias.
-
-Roman family structures were influenced by legal status,
-wealth, gender, age, and social class.
-
-Marriage arrangements varied.
-
-Elite Roman families often used marriage for political and
-social alliances.
-
-
-=========================================================
-61. ROMAN WOMEN
-=========================================================
-
-Roman women generally did not possess the same formal
-political rights as Roman men.
-
-However, women could have significant social and economic
-influence.
-
-Elite women could control property in certain circumstances.
-
-Women participated in religious activities.
-
-Their legal and social position changed over time.
-
-The experience of an enslaved woman was very different from
-that of an elite Roman woman.
-
-
-=========================================================
-62. ROMAN SLAVERY
-=========================================================
-
-Slavery was widespread in the Roman world.
-
-Enslaved people performed many forms of work:
-
-Agriculture
-Mining
-Domestic labor
-Construction
-Administration
-Education
-Skilled crafts
-Entertainment
-
-Enslaved people came from many different regions.
-
-Some were prisoners of war.
-
-Some were born into slavery.
-
-Freedpeople could become members of Roman society with
-different legal rights and social positions.
-
-
-=========================================================
-63. FREEDPEOPLE
-=========================================================
-
-A freed enslaved person became a freedperson.
-
-Freedpeople could participate in economic life.
-
-Some became wealthy.
-
-Freedpeople remained connected to former owners through
-relationships of patronage and obligation.
-
-Children of freedpeople could have greater social mobility.
-
-
-=========================================================
-64. ROMAN ECONOMY
-=========================================================
-
-The Roman economy depended on:
-
-Agriculture
-Taxation
-Trade
-Mining
-Craft production
-Slavery
-Military spending
-Urban markets
-
-Grain was particularly important.
-
-Egypt became a major source of grain for Rome.
-
-Olive oil and wine were also heavily traded.
-
-
-=========================================================
-65. ROMAN TRADE
-=========================================================
-
-Roman trade connected distant regions.
-
-Goods moved across:
-
-Mediterranean Sea
-Red Sea
-Atlantic routes
-River systems
-Road networks
-
-Roman merchants traded with regions beyond the empire.
-
-Trade connected Rome with:
-
-North Africa
-Egypt
-Gaul
-Spain
-Britain
-Greece
-Asia Minor
-Levant
-India
-Arabia
-
-Long-distance trade reached surprisingly far.
-
-
-=========================================================
-66. ROMAN COINS
-=========================================================
-
-Roman coinage included:
-
-Aureus
-Denarius
-Sestertius
-Dupondius
-As
-Later coin types such as solidus
-
-Coin designs could communicate political messages.
-
-Emperors used coins to display:
-
-Military victories
-Religious themes
-Titles
-Building projects
-Political legitimacy
-
-
-=========================================================
-67. ROMAN ROADS
-=========================================================
-
-Roads were essential to Roman military and administrative
-power.
-
-Important roads included:
-
-Via Appia
-Via Flaminia
-Via Aurelia
-Via Sacra
-
-The Via Appia was one of the earliest and most famous Roman
-roads.
-
-Roman roads helped move:
-
-Soldiers
-Officials
-Messages
-Merchants
-Goods
-
-
-=========================================================
-68. "ALL ROADS LEAD TO ROME"
-=========================================================
-
-"All roads lead to Rome" is a later expression.
-
-It should not be treated as a literal Roman rule.
-
-Rome did have a vast interconnected road network.
-
-Many major routes connected to important cities and
-administrative centers.
-
-
-=========================================================
-69. ROMAN AQUEDUCTS
-=========================================================
-
-Aqueducts transported water over long distances.
-
-Roman engineers used:
-
-Gravity
-Channels
-Bridges
-Tunnels
-Pipes
-Reservoirs
-Distribution systems
-
-Aqueducts supplied:
-
-Cities
-Baths
-Fountains
-Private buildings
-Industrial facilities
-
-The famous Pont du Gard is a Roman aqueduct in modern France.
-
-
-=========================================================
-70. ROMAN CONCRETE
-=========================================================
-
-Romans developed highly effective forms of concrete.
-
-Roman concrete helped create:
-
-Vaults
-Domes
-Harbors
-Buildings
-Bath complexes
-
-Some Roman marine concrete has demonstrated remarkable
-durability.
-
-Roman engineering was not simply about copying Greek
-architecture.
-
-
-=========================================================
-71. ROMAN ARCHITECTURE
-=========================================================
-
-Important Roman architectural features included:
-
-Arches
-Vaults
-Domes
-Concrete
-Columns
-Roads
-Bridges
-Aqueducts
-Baths
-Amphitheaters
-Basilicas
-Temples
-
-Roman architecture often combined engineering with monumental
-political messaging.
-
-
-=========================================================
-72. COLOSSEUM
-=========================================================
-
-The Colosseum is also called the Flavian Amphitheatre.
-
+Major gods included Jupiter, Juno, Minerva, Mars, Venus,
+Neptune, Mercury, Apollo, Diana, Vulcan, Ceres and Saturn.
+Religion involved sacrifices, festivals, priesthoods,
+household worship and public rituals.
+Roman religion interacted with traditions from many peoples.
+`,
+
+  gods: `
+MAJOR ROMAN GODS:
+Jupiter: chief Roman god.
+Juno: goddess associated with marriage and the state.
+Minerva: wisdom, crafts and strategic warfare.
+Mars: warfare and an important Roman ancestral deity.
+Venus: love, beauty and Roman traditions of ancestry.
+Neptune: sea.
+Mercury: commerce and messengers.
+Apollo: prophecy, healing and arts.
+Diana: hunting and the moon.
+Vulcan: fire and metalworking.
+Ceres: agriculture.
+Saturn: agriculture and an important ancient deity.
+`,
+
+  christianity: `
+CHRISTIANITY IN ROME:
+Christianity emerged in the Roman world during the first century CE.
+Early Christians experienced persecution at various times,
+but persecution was not continuous everywhere.
+Constantine became a major turning point.
+The Edict of Milan in 313 CE is associated with toleration.
+Constantine openly supported Christianity.
+Theodosius I made Nicene Christianity the official imperial
+religion in 380 CE through the Edict of Thessalonica.
+`,
+
+  third_century: `
+CRISIS OF THE THIRD CENTURY:
+Usually dated approximately 235-284 CE.
+The empire experienced rapid turnover of emperors,
+civil wars, invasions, economic difficulties and fragmentation.
+Aurelian restored much political unity.
+Diocletian later stabilized and reorganized the empire.
+`,
+
+  diocletian: `
+DIOCLETIAN:
+Became emperor in 284 CE.
+Introduced major administrative and military reforms.
+Created the Tetrarchy, involving four emperors.
+Reorganized imperial administration.
+Attempted economic reforms.
+His reign marked a major transformation of imperial government.
+`,
+
+  tetrarchy: `
+TETRARCHY:
+Created by Diocletian.
+Four rulers governed different parts of the empire.
+There were two senior Augusti and two junior Caesars.
+The system aimed to improve administration and succession.
+It did not permanently prevent civil wars.
+`,
+
+  constantine: `
+CONSTANTINE:
+Defeated Maxentius at the Battle of the Milvian Bridge in 312 CE.
+Became sole emperor in 324 CE.
+Strongly supported Christianity.
+Developed Constantinople as a major imperial capital.
+Constantinople was inaugurated as an imperial center in 330 CE.
+`,
+
+  division: `
+DIVISION OF THE EMPIRE:
+Roman emperors frequently divided administration between rulers.
+This did not always mean permanent separation.
+After Theodosius I died in 395 CE, his sons Arcadius and
+Honorius ruled eastern and western administrations.
+East and West continued sharing Roman institutions and culture.
+`,
+
+  fall: `
+FALL OF THE WESTERN ROMAN EMPIRE:
+The fall was a long process, not one event.
+Important factors included political instability,
+civil wars, military pressures, economic problems,
+loss of territories and changes in imperial administration.
+Rome was sacked in 410 CE by Visigoths.
+Vandals sacked Rome in 455 CE.
+Romulus Augustulus was deposed in 476 CE.
+476 is traditionally used as the end of the Western Empire.
+Roman culture and institutions continued afterward.
+`,
+
+  eastern_empire: `
+EASTERN ROMAN EMPIRE:
+The eastern Roman government survived after the West.
+Its people continued to call themselves Romans.
+Modern historians commonly call it the Byzantine Empire.
+Constantinople was its capital.
+It survived until 1453, when the Ottoman Empire captured
+Constantinople.
+`,
+
+  roads: `
+ROMAN ROADS:
+Roads supported military movement, administration,
+trade and communication.
+The Via Appia was one of the earliest and most important roads.
+"All roads lead to Rome" is a later expression, not a literal
+Roman government rule.
+`,
+
+  architecture: `
+ROMAN ARCHITECTURE:
+Romans used arches, vaults, domes and concrete extensively.
+Important structures included roads, bridges, aqueducts,
+baths, basilicas and amphitheaters.
+Roman engineering enabled very large and durable structures.
+`,
+
+  colosseum: `
+COLOSSEUM:
+The Flavian Amphitheatre is commonly called the Colosseum.
 Construction began under Vespasian.
-
 It was completed under Titus in 80 CE.
+It hosted public spectacles including gladiatorial contests.
+`,
 
-The building hosted public spectacles.
+  aqueducts: `
+ROMAN AQUEDUCTS:
+Aqueducts transported water over long distances.
+Engineers used carefully calculated gradients.
+Water supplied cities, baths, fountains and households.
+Aqueducts were among Rome's most impressive engineering works.
+`,
 
-These included:
+  concrete: `
+ROMAN CONCRETE:
+Roman concrete was an important building technology.
+It allowed large structures using arches, vaults and domes.
+Different mixtures were used for different purposes.
+Its durability is especially visible in surviving structures.
+`,
 
-Gladiatorial contests
-Animal hunts
-Public performances
-Other spectacles
-
-The Colosseum became one of the most recognizable symbols
-of ancient Rome.
-
-
-=========================================================
-73. GLADIATORS
-=========================================================
-
-Gladiators were trained combatants who fought in Roman
-spectacles.
-
-They came from different backgrounds.
-
-Some were enslaved.
-
-Some were prisoners.
-
-Some voluntarily entered gladiatorial training.
-
-Gladiators belonged to different fighting types.
-
-Examples include:
-
-Murmillo
-Thraex
-Secutor
-Retiarius
-
-Their equipment and fighting styles varied.
-
-
-=========================================================
-74. ROMAN BATHS
-=========================================================
-
-Public baths were important social institutions.
-
-Bath complexes could include:
-
-Cold rooms
-Warm rooms
-Hot rooms
-Exercise areas
-Gardens
-Libraries
-Social spaces
-
-Bathing was not simply about cleanliness.
-
-It was also an important part of Roman social life.
-
-
-=========================================================
-75. ROMAN FORUM
-=========================================================
-
-The Roman Forum was the center of political and public life.
-
-It contained:
-
-Temples
-Basilicas
-Government buildings
-Monuments
-Meeting spaces
-
-It changed significantly over centuries.
-
-
-=========================================================
-76. POMPEII
-=========================================================
-
+  pompeii: `
+POMPEII:
 Pompeii was a Roman city near Mount Vesuvius.
-
 Vesuvius erupted in 79 CE.
-
 The eruption buried Pompeii and nearby settlements.
+The preserved remains provide evidence about everyday Roman life.
+`,
 
-Archaeological remains preserve:
+  economy: `
+ROMAN ECONOMY:
+The economy combined agriculture, taxation, trade,
+craft production, mining and slavery.
+Agriculture was fundamental.
+The Mediterranean connected many regions through trade.
+Coins included denarii, sestertii, aurei and later currencies.
+Economic systems changed substantially across Roman history.
+`,
 
-Buildings
-Paintings
-Graffiti
-Shops
-Homes
-Objects
-Food remains
-Public spaces
+  trade: `
+ROMAN TRADE:
+The Mediterranean was central to Roman commerce.
+Goods included grain, wine, olive oil, metals, ceramics,
+textiles, spices and luxury goods.
+Long-distance trade connected Rome with Europe, Africa,
+the Near East and parts of Asia.
+`,
 
-Pompeii provides exceptional evidence for everyday Roman life.
+  cities: `
+ROMAN CITIES:
+Cities commonly contained forums, temples, baths,
+markets, theaters and administrative buildings.
+Urban planning varied by region.
+Major cities included Rome, Alexandria, Antioch,
+Carthage and Constantinople.
+`,
 
+  daily_life: `
+DAILY ROMAN LIFE:
+Romans lived in very different conditions depending on status.
+Elite families could live in large houses or villas.
+Urban poor often lived in apartment buildings called insulae.
+Food commonly included grains, legumes, vegetables,
+olive oil, wine and fish or meat depending on wealth.
+Public baths were important social institutions.
+`,
 
-=========================================================
-77. ROMAN FOOD
-=========================================================
+  baths: `
+ROMAN BATHS:
+Public baths were important for hygiene, exercise,
+socializing and recreation.
+Large bath complexes could contain hot, warm and cold rooms.
+The hypocaust system heated floors and sometimes walls.
+`,
 
-Roman diets varied according to location, wealth, and period.
-
-Common foods included:
-
-Bread
-Olives
-Olive oil
-Wine
-Grains
-Legumes
-Vegetables
-Fruit
-Fish
-Meat
-
-Elite banquets could be extremely elaborate.
-
+  food: `
+ROMAN FOOD:
+Common foods included grain, bread, olives, olive oil,
+vegetables, legumes and wine.
+Fish and meat were more accessible to wealthier people.
 Garum, a fermented fish sauce, was widely used.
+Diet varied strongly by region and social status.
+`,
 
+  entertainment: `
+ROMAN ENTERTAINMENT:
+Popular spectacles included gladiatorial contests,
+chariot racing, theatrical performances and public festivals.
+The Colosseum hosted major spectacles.
+Circus Maximus was famous for chariot racing.
+`,
 
-=========================================================
-78. ROMAN CLOTHING
-=========================================================
+  gladiators: `
+GLADIATORS:
+Gladiators were trained combatants who fought in public arenas.
+Some were enslaved, while others were volunteers.
+Successful gladiators could gain fame, money or eventual freedom.
+Gladiatorial combat had different fighting styles and equipment.
+`,
 
-Common Roman clothing included:
+  roman_britain: `
+ROMAN BRITAIN:
+Rome invaded Britain under Emperor Claudius in 43 CE.
+Roman control expanded over parts of Britain.
+Hadrian's Wall marked a major northern frontier.
+Roman rule in Britain eventually ended in the early fifth century.
+`,
 
-Tunics
-Togas
-Stolas
-Cloaks
-Sandals
+  roman_egypt: `
+ROMAN EGYPT:
+Egypt became a Roman province in 30 BCE after Cleopatra's death.
+Egypt was strategically and economically important,
+especially for grain supplies.
+Alexandria was a major intellectual and commercial center.
+`,
 
-The toga became strongly associated with Roman male citizenship.
+  gaul: `
+ROMAN GAUL:
+Julius Caesar conquered much of Gaul during the Gallic Wars,
+traditionally dated 58-50 BCE.
+Gaul later became deeply integrated into the Roman Empire.
+Roman cities, roads and administration spread throughout the region.
+`,
 
-The toga was not necessarily everyday clothing for all Romans.
+  spain: `
+ROMAN SPAIN:
+Rome conquered the Iberian Peninsula over a long period.
+Roman Spain produced agricultural goods, minerals,
+emperors and important writers.
+The region became deeply Romanized in many areas.
+`,
 
-Women could wear garments such as the stola.
+  africa: `
+ROMAN NORTH AFRICA:
+North Africa was economically important.
+Carthage became a major Roman city after its destruction
+and later reconstruction.
+The region supplied grain, olive oil and other products.
+Several Roman emperors and writers had African connections.
+`,
 
+  greece: `
+ROME AND GREECE:
+Rome conquered the Greek world but adopted many aspects
+of Greek culture.
+Greek philosophy, art, education and literature strongly
+influenced Roman elites.
+Roman culture was therefore a mixture of Roman,
+Greek and many other traditions.
+`,
 
-=========================================================
-79. ROMAN EDUCATION
-=========================================================
+  latin: `
+LATIN:
+Latin was the principal language of Roman administration
+in the western empire.
+Greek remained extremely important, especially in the East.
+Latin developed into Romance languages including Italian,
+French, Spanish, Portuguese and Romanian.
+`,
 
-Education depended heavily on family wealth.
-
-Elite children could study:
-
-Reading
-Writing
-Grammar
-Literature
-Rhetoric
-Philosophy
-
-Greek education strongly influenced Roman elite culture.
-
-Rhetoric was particularly important for political careers.
-
-
-=========================================================
-80. ROMAN LANGUAGE
-=========================================================
-
-Latin was the major language of Roman administration and
-western Roman society.
-
-Greek remained extremely important, especially in the eastern
-Mediterranean.
-
-Many educated Romans knew Greek.
-
-Latin eventually developed into the Romance languages,
-including:
-
-Italian
-Spanish
-Portuguese
-French
-Romanian
-
-Latin also strongly influenced English vocabulary.
-
-
-=========================================================
-81. ROMAN NUMERALS
-=========================================================
-
-Roman numerals include:
-
+  numerals: `
+ROMAN NUMERALS:
 I = 1
 V = 5
 X = 10
@@ -1934,2467 +659,634 @@ D = 500
 M = 1000
 
 Examples:
-
-II = 2
-III = 3
 IV = 4
-V = 5
-VI = 6
 IX = 9
-X = 10
 XL = 40
-L = 50
 XC = 90
-C = 100
 CD = 400
-D = 500
 CM = 900
-M = 1000
-
-
-=========================================================
-82. ROMAN CALENDAR
-=========================================================
-
-The Roman calendar changed over time.
-
-Julius Caesar introduced the Julian calendar reform in
-46 BCE, taking effect in 45 BCE.
-
-The Julian calendar was more regular than the earlier Roman
-calendar.
-
-The modern Gregorian calendar later modified the Julian
-calendar's treatment of leap years.
-
-
-=========================================================
-83. ROMAN PROVINCES
-=========================================================
-
-The empire was divided into many provinces.
-
-Examples include:
-
-Britannia
-Gaul
-Hispania
-Africa
-Aegyptus
-Syria
-Judaea
-Asia
-Macedonia
-Dacia
-Pannonia
-Moesia
-
-Provincial administration changed over time.
-
-Governors represented imperial authority.
-
-
-=========================================================
-84. ROMAN BRITAIN
-=========================================================
-
-Rome invaded Britain under Emperor Claudius in 43 CE.
-
-Roman forces gradually conquered much of the island.
-
-Hadrian's Wall was constructed beginning in the early second
-century CE.
-
-Roman Britain contained:
-
-Towns
-Forts
-Roads
-Villas
-Baths
-Temples
-Military settlements
-
-
-=========================================================
-85. GAUL
-=========================================================
-
-Gaul covered much of modern France and surrounding regions.
-
-Julius Caesar conquered large areas of Gaul during the
-Gallic Wars.
-
-The conquest strengthened Caesar's military and political
-position.
-
-Romanization in Gaul developed over centuries.
-
-
-=========================================================
-86. DACIA
-=========================================================
-
-Dacia was located approximately in the region of modern
-Romania and surrounding areas.
-
-Trajan fought the Dacian Wars.
-
-Rome conquered Dacia in the early second century CE.
-
-Dacia became an important Roman province.
-
-The region later experienced major political changes and
-Roman withdrawal.
-
-
-=========================================================
-87. ROMAN EGYPT
-=========================================================
-
-Egypt became a Roman province after the defeat of Mark Antony
-and Cleopatra in 30 BCE.
-
-Egypt was strategically important.
-
-It produced enormous quantities of grain.
-
-Alexandria was one of the most important cities in the
-Roman eastern Mediterranean.
-
-
-=========================================================
-88. ROMAN MILITARY FRONTIERS
-=========================================================
-
-Rome maintained long frontiers.
-
-Important frontier regions included:
-
-Rhine
-Danube
-Britain
-Syria
-North Africa
-Arabian frontier
-
-Frontiers included:
-
-Forts
-Walls
-Roads
-Watchtowers
-Military settlements
-
-
-=========================================================
-89. LIMES
-=========================================================
-
-The Latin term limes is associated with Roman frontier
-systems.
-
-A Roman frontier was not always a simple wall.
-
-It could include:
-
-Rivers
-Roads
-Forts
-Walls
-Towers
-Customs points
-Military bases
-
-The exact meaning of limes varied by context.
-
-
-=========================================================
-90. ROMAN LAW
-=========================================================
-
-Roman law became one of Rome's most influential legacies.
-
-Important concepts developed over centuries.
-
-Roman legal traditions influenced later European legal systems.
-
-The Twelve Tables are traditionally associated with early
-Roman law.
-
-Roman law addressed:
-
-Property
-Contracts
-Family
-Inheritance
-Citizenship
-Crime
-Legal procedure
-
-
-=========================================================
-91. TWELVE TABLES
-=========================================================
-
-The Twelve Tables were created in the fifth century BCE.
-
-They represented an important stage in the public development
-of Roman law.
-
-They were traditionally displayed publicly.
-
-The original text does not survive completely.
-
-
-=========================================================
-92. ROMAN CITIZENSHIP
-=========================================================
-
-Citizenship was an important legal status.
-
-Citizens could possess specific rights.
-
-Citizenship expanded over centuries.
-
-In 212 CE, Emperor Caracalla issued the Constitutio Antoniniana,
-which broadly extended Roman citizenship to free inhabitants
-of the empire, although the exact legal and fiscal context
-was complex.
-
-
-=========================================================
-93. ROMAN POLITICS
-=========================================================
-
-Roman politics was shaped by:
-
-Family networks
-Wealth
-Military power
-Elections
-Patronage
-Senate politics
-Popular assemblies
-Religion
-Personal alliances
-
-During the late Republic, political competition became
-increasingly violent.
-
-Civil wars eventually destroyed the old republican political
-system.
-
-
-=========================================================
-94. PATRONAGE
-=========================================================
-
-Patronage was an important Roman social relationship.
-
-A patron could provide:
-
-Legal support
-Financial assistance
-Political help
-Protection
-
-Clients could provide:
-
-Loyalty
-Social support
-Political assistance
-Public recognition
-
-Patronage existed at many levels of Roman society.
-
-
-=========================================================
-95. ROMAN TRIUMPH
-=========================================================
-
-A triumph was a major ceremonial celebration of military
-victory.
-
-A successful general could receive a triumph under certain
-conditions.
-
-The ceremony involved a procession through Rome.
-
-During the imperial period, triumphal honors increasingly
-became associated with the emperor.
-
-
-=========================================================
-96. ROMAN TRIUMVIRATES
-=========================================================
-
-The First Triumvirate was an informal political alliance
-between:
-
-Julius Caesar
-Pompey
-Crassus
-
-It was not an official constitutional office.
-
-The Second Triumvirate was formally established and included:
-
-Octavian
-Mark Antony
-Lepidus
-
-
-=========================================================
-97. ROMAN CIVIL WARS
-=========================================================
-
-Roman civil wars played a major role in the collapse of the
-Republic.
-
-Important conflicts included:
-
-Marius vs Sulla
-Caesar vs Pompey
-Second Triumvirate conflicts
-Octavian vs Antony
-
-These wars transformed Roman politics.
-
-
-=========================================================
-98. SULLA
-=========================================================
-
-Lucius Cornelius Sulla was a Roman general and politician.
-
-He fought in civil war against supporters of Marius.
-
-Sulla became dictator.
-
-He introduced political reforms intended to strengthen the
-Senate.
-
-He later retired from political power.
-
-His career demonstrated the growing importance of military
-commanders in Roman politics.
-
-
-=========================================================
-99. MARIUS
-=========================================================
-
-Gaius Marius was a major Roman general and politician.
-
-He held the consulship multiple times.
-
-He was involved in major political conflicts.
-
-Later traditions associate him with changes in Roman military
-recruitment, although the exact nature and impact of these
-reforms are debated.
-
-
-=========================================================
-100. SPARTACUS
-=========================================================
-
-Spartacus was a gladiator who led a major slave rebellion.
-
-The Third Servile War occurred from 73 BCE to 71 BCE.
-
-Spartacus and his followers defeated several Roman forces.
-
-Marcus Licinius Crassus eventually defeated the rebellion.
-
-Spartacus was killed in the final phase of the war.
-
-The rebellion became one of the most famous slave revolts
-in history.
-
-
-=========================================================
-101. CRASSUS
-=========================================================
-
-Marcus Licinius Crassus was one of the wealthiest Romans.
-
-He was part of the First Triumvirate with Caesar and Pompey.
-
-Crassus commanded Roman forces against the Parthians.
-
-He was defeated and killed at Carrhae in 53 BCE.
-
-
-=========================================================
-102. POMPEY THE GREAT
-=========================================================
-
-Pompey was one of the most successful Roman generals of the
-late Republic.
-
-He campaigned in:
-
-Spain
-The eastern Mediterranean
-Against pirates
-Against Mithridates
-
-He became extremely powerful.
-
-His alliance with Caesar eventually collapsed.
-
-Caesar defeated him during the civil war.
-
-
-=========================================================
-103. MITHRIDATES
-=========================================================
-
-Mithridates VI was king of Pontus.
-
-He became one of Rome's most important eastern enemies.
-
-Rome fought multiple wars against him.
-
-Pompey eventually defeated Mithridates' forces.
-
-Roman expansion into the eastern Mediterranean increased
-dramatically during these conflicts.
-
-
-=========================================================
-104. PARTHIA
-=========================================================
-
-The Parthian Empire was one of Rome's major eastern rivals.
-
-Rome and Parthia fought repeatedly.
-
-Important conflicts concerned:
-
-Armenia
-Mesopotamia
-Syria
-Trade routes
-Political influence
-
-Roman emperors including Trajan and later emperors campaigned
-against eastern powers.
-
-
-=========================================================
-105. SASANIAN EMPIRE
-=========================================================
-
-The Sasanian Empire replaced the Parthian Empire in Persia
-in the third century CE.
-
-The Roman and Sasanian empires became major rivals.
-
-They fought repeated wars over territories including
-Mesopotamia, Armenia, and Syria.
-
-This eastern rivalry continued into late antiquity.
-
-
-=========================================================
-106. ROMAN RELIGIOUS CHANGE
-=========================================================
-
-Traditional Roman religion remained important for centuries.
-
-The empire also incorporated many religious traditions.
-
-Examples include:
-
-Egyptian cults
-Mithraic traditions
-Greek religious practices
-Local provincial religions
-Judaism
-Christianity
-
-Religious life was diverse.
-
-The rise of Christianity transformed the empire's religious
-landscape.
-
-
-=========================================================
-107. JEWISH-ROMAN WARS
-=========================================================
-
-Rome experienced several major conflicts with Jewish populations
-in Judaea.
-
-Important conflicts include:
-
-First Jewish-Roman War
-66 CE - 73 CE
-
-Bar Kokhba Revolt
-132 CE - 135 CE
-
-The destruction of the Second Temple occurred in 70 CE during
-the First Jewish-Roman War.
-
-
-=========================================================
-108. ROMAN EMPEROR WORSHIP
-=========================================================
-
-Imperial cult practices honored emperors and the imperial
-house.
-
-Practices varied throughout the empire.
-
-Imperial worship was connected to political loyalty and
-religious traditions.
-
-It was not identical everywhere.
-
-
-=========================================================
-109. ROMAN CITIES
-=========================================================
-
-Roman cities often contained:
-
-Forums
-Temples
-Baths
-Theaters
-Amphitheaters
-Markets
-Basilicas
-Roads
-Aqueducts
-Public fountains
-
-Cities varied considerably according to region and wealth.
-
-
-=========================================================
-110. ROME AS A MEGACITY
-=========================================================
-
-Imperial Rome became one of the largest cities of the ancient
-world.
-
-Its population is debated.
-
-Estimates vary considerably.
-
-Rome required enormous quantities of:
-
-Food
-Water
-Fuel
-Building materials
-
-A complex supply network connected Rome with distant provinces.
-
-
-=========================================================
-111. GRAIN SUPPLY
-=========================================================
-
-The grain supply was critical to Rome.
-
-Egypt and North Africa were major grain-producing regions.
-
-The government developed systems to ensure urban food supply.
-
-Political leaders understood that food shortages could cause
-serious unrest.
-
-
-=========================================================
-112. ROMAN ENTERTAINMENT
-=========================================================
-
-Roman public entertainment included:
-
-Gladiatorial games
-Chariot racing
-Theater
-Animal hunts
-Public festivals
-
-These spectacles could reinforce political legitimacy and
-social identity.
-
-
-=========================================================
-113. CHARIOT RACING
-=========================================================
-
-Chariot racing was extremely popular.
-
-The Circus Maximus was Rome's most famous racing venue.
-
-Huge crowds attended races.
-
-Charioteers could become celebrities.
-
-The major racing factions were commonly associated with
-colors such as:
-
-Reds
-Blues
-Greens
-Whites
-
-The importance of these factions changed over time.
-
-
-=========================================================
-114. CIRCUS MAXIMUS
-=========================================================
-
-The Circus Maximus was a massive entertainment venue.
-
-It was primarily associated with chariot racing.
-
-It was located in the valley between the Palatine and
-Aventine hills.
-
-It could accommodate enormous crowds, although exact capacity
-figures are uncertain.
-
-
-=========================================================
-115. ROMAN THEATER
-=========================================================
-
-Roman theater developed partly from Greek and Italian traditions.
-
-Performances included:
-
-Comedy
-Tragedy
-Mime
-Musical performances
-
-Theater could be part of public festivals.
-
-
-=========================================================
-116. ROMAN LITERATURE
-=========================================================
-
+MMXXVI = 2026
+`,
+
+  calendar: `
+ROMAN CALENDAR:
+Roman calendars changed over time.
+Julius Caesar introduced the Julian calendar in 46 BCE,
+with implementation beginning in 45 BCE.
+The Julian calendar improved alignment with the solar year.
+The modern Gregorian calendar later refined it.
+`,
+
+  philosophy: `
+ROMAN PHILOSOPHY:
+Roman thinkers engaged strongly with Greek philosophy.
+Stoicism became especially influential.
+Seneca was a Stoic philosopher and statesman.
+Epictetus lived under the Roman Empire.
+Marcus Aurelius wrote Meditations.
+`,
+
+  literature: `
+ROMAN LITERATURE:
 Important Roman writers include:
-
-Cicero
 Virgil
-Horace
+Cicero
 Ovid
+Horace
 Livy
 Tacitus
 Seneca
 Juvenal
 Pliny the Younger
 
-Their works provide important evidence about Roman culture,
-politics, literature, and society.
-
-Their perspectives are not always neutral.
-
-
-=========================================================
-117. CICERO
-=========================================================
-
-Marcus Tullius Cicero was a politician, lawyer, philosopher,
-and orator.
-
-He was an important figure during the late Republic.
-
-His speeches and letters provide valuable evidence about
-Roman politics.
-
-He opposed Mark Antony after Caesar's death.
-
-Cicero was executed in 43 BCE.
-
-
-=========================================================
-118. VIRGIL
-=========================================================
-
-Virgil was a major Roman poet.
-
-His most famous work is the Aeneid.
-
-The Aeneid connects Rome's legendary origins with the Trojan
-hero Aeneas.
-
-The poem became extremely influential in Roman culture.
-
-
-=========================================================
-119. OVID
-=========================================================
-
-Ovid was a major Roman poet.
-
-His best-known work is Metamorphoses.
-
-He was exiled by Augustus.
-
-The exact reasons for his exile remain debated.
-
-
-=========================================================
-120. TACITUS
-=========================================================
-
-Tacitus was a Roman historian.
-
-Important works include:
-
-Annals
-Histories
-Germania
-
-His writings are major sources for early imperial history.
-
-His judgments about emperors are influenced by his political
-perspective.
-
-
-=========================================================
-121. ROMAN PHILOSOPHY
-=========================================================
-
-Roman thinkers were strongly influenced by Greek philosophy.
-
-Important traditions included:
-
-Stoicism
-Epicureanism
-Platonism
-
-Seneca and Marcus Aurelius are famous Roman Stoics.
-
-
-=========================================================
-122. ROMAN STOICISM
-=========================================================
-
-Stoicism emphasized:
-
-Self-control
-Reason
-Virtue
-Acceptance of what cannot be controlled
-Moral responsibility
-
-Marcus Aurelius is one of the most famous Roman Stoic writers.
-
-
-=========================================================
-123. ROMAN ARCHITECTURAL MONUMENTS
-=========================================================
-
-Important surviving Roman structures include:
-
-Colosseum
-Pantheon
-Roman Forum
-Aqueducts
-Baths of Caracalla
-Trajan's Column
-Hadrian's Wall
-Pont du Gard
-
-These structures demonstrate Roman engineering and artistic
-achievement.
-
-
-=========================================================
-124. PANTHEON
-=========================================================
-
-The Pantheon is one of the best-preserved Roman buildings.
-
-The present structure is generally associated with the reign
-of Hadrian, although it replaced an earlier building.
-
-Its massive concrete dome is especially famous.
-
-The oculus at the top of the dome is an important architectural
-feature.
-
-
-=========================================================
-125. TRAJAN'S COLUMN
-=========================================================
-
-Trajan's Column was erected in Rome to commemorate Trajan's
-victories in the Dacian Wars.
-
-Its spiral relief shows scenes from the campaigns.
-
-It is an important source for Roman military imagery.
-
-
-=========================================================
-126. HADRIAN'S WALL
-=========================================================
-
-Hadrian's Wall was constructed in Britain during the reign
-of Hadrian.
-
-It marked part of Rome's northern frontier.
-
-The wall included:
-
-Fortifications
-Milecastles
-Towers
-Roads
-Military settlements
-
-It was part of a broader frontier system.
-
-
-=========================================================
-127. ROMAN BRIDGES
-=========================================================
-
-Roman engineers constructed many bridges.
-
-They used:
-
-Stone
-Concrete
-Arches
-Timber
-
-Bridges helped roads cross rivers and difficult terrain.
-
-Some Roman bridges remain partially intact today.
-
-
-=========================================================
-128. ROMAN MILITARY ENGINEERING
-=========================================================
-
-Roman armies included skilled engineers.
-
-Soldiers could build:
-
-Roads
-Bridges
-Fortifications
-Siege works
-Camps
-Siege machines
-
-Roman armies could construct fortified marching camps rapidly.
-
-Engineering was a major part of Roman military power.
-
-
-=========================================================
-129. ROMAN SIEGE WARFARE
-=========================================================
-
-Roman armies used siege technologies including:
-
-Siege towers
-Rams
-Artillery
-Earthworks
-Mines
-Fortifications
-
-Romans also learned and adapted techniques from opponents.
-
-
-=========================================================
-130. ROMAN ARTILLERY
-=========================================================
-
-Roman armies used machines such as:
-
-Ballistae
-Scorpiones
-Onagers
-
-These weapons could launch projectiles.
-
-Exact designs varied over time.
-
-
-=========================================================
-131. ROMAN NAVY
-=========================================================
-
-Rome developed powerful naval forces.
-
-The navy became especially important during the Punic Wars.
-
-Rome maintained fleets throughout the imperial period.
-
-Naval forces protected:
-
-Trade routes
-Coasts
-Grain shipments
-Military operations
-
-
-=========================================================
-132. ROMAN SEA TRADE
-=========================================================
-
-The Mediterranean became deeply integrated under Roman rule.
-
-The Romans sometimes called the Mediterranean
-"Mare Nostrum," meaning "Our Sea."
-
-The sea connected:
-
-Spain
-Gaul
-Italy
-North Africa
-Egypt
-Greece
-Asia Minor
-Levant
-
-Trade and military movement depended heavily on maritime
-networks.
-
-
-=========================================================
-133. ROMAN FIRE AND DISASTERS
-=========================================================
-
-Large Roman cities faced:
-
-Fires
-Floods
-Disease
-Building collapses
-
-Rome experienced repeated major fires.
-
-The Great Fire of Rome occurred in 64 CE.
-
-
-=========================================================
-134. GREAT FIRE OF ROME
-=========================================================
-
-The Great Fire occurred in 64 CE.
-
-The fire destroyed large areas of Rome.
-
-Ancient sources differ about its causes and consequences.
-
-Later tradition claims Nero blamed Christians.
-
-The historical details should be treated cautiously.
-
-
-=========================================================
-135. ANTONINE PLAGUE
-=========================================================
-
-A major epidemic affected the Roman Empire during the reigns
-of Marcus Aurelius and Lucius Verus.
-
-It is often called the Antonine Plague.
-
-The exact disease is debated.
-
-The epidemic caused substantial demographic and economic
-effects, although exact death figures are uncertain.
-
-
-=========================================================
-136. THIRD-CENTURY PLAGUES AND CRISES
-=========================================================
-
-The Roman Empire experienced recurring epidemics.
-
-Disease interacted with:
-
-War
-Food shortages
-Economic problems
-Population movement
-
-These pressures could weaken communities and military systems.
-
-
-=========================================================
-137. LATE ROMAN EMPIRE
-=========================================================
-
-The later empire underwent major changes.
-
-These included:
-
-Administrative reforms
-Military restructuring
-Christianization
-Economic changes
-Political division
-New frontier pressures
-
-The late empire was not simply a period of uninterrupted
-collapse.
-
-
-=========================================================
-138. CONSTANTINOPLE
-=========================================================
-
-Constantinople was founded as a major imperial capital under
-Constantine.
-
-It was located on the site of Byzantium.
-
-Its location was strategically important.
-
-The city became the capital of the Eastern Roman Empire.
-
-It remained one of the world's most important cities for
-centuries.
-
-
-=========================================================
-139. DIVISION OF THE EMPIRE
-=========================================================
-
-Roman emperors frequently divided administrative responsibilities.
-
-The empire was not always permanently divided into two
-separate states.
-
-In 395 CE, after the death of Theodosius I, the empire was
-effectively divided between his sons:
-
-Arcadius in the East
-Honorius in the West
-
-Eastern and western governments continued to share Roman
-political traditions.
-
-
-=========================================================
-140. THEODOSIUS I
-=========================================================
-
-Theodosius I was the last emperor to rule both eastern and
-western parts of the empire during his lifetime.
-
-He died in 395 CE.
-
-After his death, eastern and western imperial governments
-became more permanently distinct.
-
-
-=========================================================
-141. VISIGOTHS
-=========================================================
-
-The Visigoths became important in late Roman history.
-
-They entered Roman territory during periods of migration and
-conflict.
-
-They defeated Roman forces at the Battle of Adrianople in
-378 CE.
-
-They later entered Italy.
-
-They sacked Rome in 410 CE under Alaric.
-
-
-=========================================================
-142. SACK OF ROME IN 410
-=========================================================
-
-The Visigoths under Alaric captured and sacked Rome in 410 CE.
-
-The event shocked the Roman world.
-
-Rome had not been captured by a foreign army in centuries.
-
-The event became an important symbol in later discussions of
-Roman decline.
-
-
-=========================================================
-143. VANDALS
-=========================================================
-
-The Vandals established a kingdom in North Africa.
-
-They captured Carthage in 439 CE.
-
-They later sacked Rome in 455 CE.
-
-The Vandal kingdom controlled important Mediterranean
-territories.
-
-
-=========================================================
-144. FALL OF THE WESTERN EMPIRE
-=========================================================
-
-The Western Roman Empire did not collapse in one single moment.
-
-Its transformation involved:
-
-Political instability
-Civil wars
-Economic pressures
-Military problems
-Loss of provinces
-External migrations
-Changing elite structures
-Administrative fragmentation
-
-476 CE is conventionally used because Romulus Augustulus was
-deposed that year.
-
-However, Roman institutions continued in many forms after 476.
-
-
-=========================================================
-145. ROMULUS AUGUSTULUS
-=========================================================
-
-Romulus Augustulus was a young emperor in the western Roman
-imperial system.
-
-He was deposed in 476 CE by Odoacer.
-
-This event is traditionally used to mark the end of the
-Western Roman Empire.
-
-
-=========================================================
-146. ODOACER
-=========================================================
-
-Odoacer was a military leader who became ruler in Italy after
-deposing Romulus Augustulus.
-
-He ruled Italy while recognizing the authority of the eastern
-Roman emperor in some formal respects.
-
-His kingdom was later defeated by the Ostrogoths.
-
-
-=========================================================
-147. OSTROGOTHS
-=========================================================
-
-The Ostrogoths established a kingdom in Italy under
-Theodoric the Great.
-
-Theodoric ruled from 493 to 526 CE.
-
-He maintained many Roman administrative traditions.
-
-His kingdom demonstrates that Roman institutions continued
-after the deposition of Romulus Augustulus.
-
-
-=========================================================
-148. EASTERN ROMAN EMPIRE
-=========================================================
-
-The Eastern Roman Empire continued for nearly another
-thousand years after the end of western imperial rule.
-
-Its inhabitants called themselves Romans.
-
-The term "Byzantine Empire" is a modern historical label.
-
-Constantinople was its capital.
-
-Greek became increasingly dominant in administration and
-culture, but Roman identity remained central.
-
-
-=========================================================
-149. JUSTINIAN
-=========================================================
-
-Justinian I ruled the Eastern Roman Empire from 527 to 565 CE.
-
-He attempted to recover former western territories.
-
-His generals reconquered:
-
-North Africa
-Parts of Italy
-Parts of Spain
-
-His reign also produced major legal codification.
-
-
-=========================================================
-150. CORPUS JURIS CIVILIS
-=========================================================
-
-Under Justinian, Roman law was systematically compiled.
-
-The collection is commonly called the Corpus Juris Civilis.
-
-It later became enormously influential in European legal
-traditions.
-
-
-=========================================================
-151. FALL OF CONSTANTINOPLE
-=========================================================
-
-Constantinople fell to the Ottoman Empire in 1453 CE.
-
-Sultan Mehmed II led the Ottoman conquest.
-
-The fall ended the Eastern Roman Empire.
-
-Roman political traditions had therefore continued for many
-centuries after 476 CE.
-
-
-=========================================================
-152. WHY ROME BECAME POWERFUL
-=========================================================
-
-Rome's success had many causes.
-
-Important factors included:
-
-Military organization
-Manpower
-Political flexibility
-Citizenship policies
-Road networks
-Engineering
-Agricultural resources
-Alliances
-Administrative systems
-Adaptation of foreign ideas
-Geographic position
-
-
-=========================================================
-153. WHY THE REPUBLIC COLLAPSED
-=========================================================
-
-The collapse of the Republic had many causes.
-
-These included:
-
-Expansion
-Wealth inequality
-Political competition
-Military loyalty to commanders
-Civil violence
-Ambitious generals
-Weakening political norms
-Provincial wealth
-Personal armies
-
-There is no single universally accepted explanation.
-
-
-=========================================================
-154. WHY THE WESTERN EMPIRE DECLINED
-=========================================================
-
-Historians debate the causes.
-
-Potential factors include:
-
-Political instability
-Civil wars
-Military pressures
-Economic changes
-Tax problems
-Loss of provinces
-Population changes
-External migrations
-Administrative fragmentation
-Changing military recruitment
-
-Modern historians generally avoid claiming that one single
-cause explains everything.
-
-
-=========================================================
-155. ROMAN LEGACY
-=========================================================
-
-Rome left major legacies in:
-
-Law
-Languages
-Government
-Engineering
-Architecture
-Military organization
-Religion
-Literature
-Urban planning
-Political thought
-Calendars
-Road systems
-
-Roman influence continued long after the empire disappeared.
-
-
-=========================================================
-156. IMPORTANT ROMAN DATES
-=========================================================
-
-753 BCE
-Traditional foundation of Rome.
-
-509 BCE
-Traditional beginning of Roman Republic.
-
-264 BCE
-Beginning of First Punic War.
-
-218 BCE
-Beginning of Second Punic War.
-
-216 BCE
-Battle of Cannae.
-
-202 BCE
-Battle of Zama.
-
-146 BCE
-Destruction of Carthage.
-
-100 BCE
-Birth of Julius Caesar.
-
-58 BCE
-Beginning of Caesar's Gallic campaigns.
-
-49 BCE
-Caesar crosses the Rubicon.
-
-44 BCE
-Assassination of Caesar.
-
-43 BCE
-Second Triumvirate.
-
-42 BCE
-Battle of Philippi.
-
-31 BCE
-Battle of Actium.
-
-30 BCE
-Death of Antony and Cleopatra; Egypt becomes Roman.
-
-27 BCE
-Augustus receives his new title and establishes the
-Principate.
-
-14 CE
-Death of Augustus.
-
-43 CE
-Roman conquest of Britain begins under Claudius.
-
-64 CE
-Great Fire of Rome.
-
-70 CE
-Destruction of the Second Temple.
-
-79 CE
-Eruption of Mount Vesuvius.
-
-80 CE
-Colosseum completed.
-
-117 CE
-Trajan's reign reaches Rome's maximum territorial extent.
-
-212 CE
-Constitutio Antoniniana broadly extends citizenship.
-
-235 CE
-Beginning of the traditional Third-Century Crisis.
-
-284 CE
-Diocletian becomes emperor.
-
-312 CE
-Battle of the Milvian Bridge.
-
-313 CE
-Edict of Milan.
-
-324 CE
-Constantine becomes sole emperor.
-
-330 CE
-Constantinople inaugurated as a major imperial capital.
-
-378 CE
-Battle of Adrianople.
-
-380 CE
-Edict of Thessalonica.
-
-395 CE
-Death of Theodosius I.
-
-410 CE
-Visigoth sack of Rome.
-
-439 CE
-Vandals capture Carthage.
-
-455 CE
-Vandal sack of Rome.
-
-476 CE
-Deposition of Romulus Augustulus.
-
-527 CE
-Justinian becomes emperor.
-
-529-534 CE
-Major stages of Justinian's legal codification.
-
-1453 CE
-Fall of Constantinople.
-
-
-=========================================================
-157. IMPORTANT ROMAN PEOPLE
-=========================================================
-
+Roman literature was strongly influenced by Greek traditions.
+`,
+
+  mythology: `
+ROMAN MYTHOLOGY:
+Roman mythology incorporated native traditions and Greek influences.
+Important figures include Jupiter, Mars, Venus,
+Romulus, Remus, Aeneas and many others.
+Aeneas became an important legendary ancestor in Roman identity.
+Virgil's Aeneid connected Rome's origins with Trojan ancestry.
+`,
+
+  aeneas: `
+AENEAS:
+Aeneas is a legendary Trojan hero.
+According to Roman tradition he escaped Troy and eventually
+reached Italy.
+Virgil's Aeneid presents him as an ancestor of the Roman people.
+The story helped connect Roman identity to heroic Trojan origins.
+`,
+
+  romulus: `
+ROMULUS:
+Legendary founder and first king of Rome.
+Twin brother of Remus.
+Roman tradition says he killed Remus after a dispute.
+His historical existence is not established as fact.
+The Romulus story is central to Roman foundation mythology.
+`,
+
+  famous_people: `
+IMPORTANT ROMAN FIGURES:
 Romulus
-Numa Pompilius
-Tarquinius Superbus
-Cincinnatus
-Cato
-Marius
-Sulla
-Pompey
-Crassus
+Scipio Africanus
+Hannibal Barca
 Julius Caesar
 Cicero
-Brutus
-Cassius
-Augustus
 Mark Antony
-Cleopatra
-Agrippa
-Tiberius
-Caligula
-Claudius
+Cleopatra VII
+Augustus
 Nero
-Vespasian
-Titus
-Domitian
 Trajan
 Hadrian
-Antoninus Pius
 Marcus Aurelius
-Commodus
-Septimius Severus
-Caracalla
-Aurelian
 Diocletian
 Constantine
 Theodosius I
-Justinian
-Theodoric
-
-
-=========================================================
-158. IMPORTANT ROMAN BATTLES
-=========================================================
-
-Lake Regillus
-Cannae
-Zama
-Carrhae
-Pharsalus
-Actium
-Teutoburg Forest
-Milvian Bridge
-Adrianople
-
-These battles occurred in very different historical contexts
-and should not be treated as one continuous military story.
-
-
-=========================================================
-159. ROMAN MILITARY COMMANDERS
-=========================================================
-
-Important commanders include:
-
-Scipio Africanus
-Hannibal
-Julius Caesar
-Pompey
-Marius
-Sulla
-Agrippa
-Trajan
-Germanicus
-Belisarius
-Aurelian
-
-Their strategies differed greatly according to period and
-military circumstances.
-
-
-=========================================================
-160. ROMAN GEOGRAPHY
-=========================================================
-
-At its greatest extent, the Roman Empire covered territories
-around the Mediterranean.
-
-Its territories included portions of:
-
-Modern Italy
-Spain
-Portugal
-France
-United Kingdom
-Belgium
-Netherlands
-Germany
-Switzerland
-Austria
-Hungary
-Romania
-Bulgaria
-Greece
-Turkey
-Syria
-Lebanon
-Israel
-Jordan
-Egypt
-Libya
-Tunisia
-Algeria
-Morocco
-
-The exact borders changed continuously.
-
-
-=========================================================
-161. ROMAN MEDITERRANEAN
-=========================================================
-
-The Mediterranean was central to Roman power.
-
-Rome eventually controlled nearly the entire Mediterranean
-basin.
-
-The sea provided:
-
-Trade
-Military transportation
-Food distribution
-Communication
-Cultural exchange
-
-
-=========================================================
-162. ROMAN RELATIONSHIP WITH GREECE
-=========================================================
-
-Rome conquered Greece politically but was deeply influenced
-by Greek culture.
-
-Greek philosophy, literature, art, architecture, and education
-became extremely important among Roman elites.
-
-The famous idea that Rome conquered Greece militarily while
-Greek culture conquered Rome culturally summarizes an important
-historical pattern, although the process was complex.
-
-
-=========================================================
-163. ROMANIZATION
-=========================================================
-
-Romanization describes the adoption or adaptation of Roman
-language, institutions, architecture, citizenship, and culture
-in provincial societies.
-
-It was not identical everywhere.
-
-Local traditions often survived.
-
-Provincial populations could maintain local languages,
-religions, and customs while participating in Roman systems.
-
-
-=========================================================
-164. ROMAN IDENTITY
-=========================================================
-
-Being Roman could mean different things depending on time,
-location, citizenship, language, and social status.
-
-Roman identity was not limited to people born in the city
-of Rome.
-
-The empire incorporated people from many cultures.
-
-
-=========================================================
-165. ROMAN EMPEROR POWER
-=========================================================
-
-The emperor controlled or strongly influenced:
-
-Army
-Foreign policy
-Provincial administration
-Appointments
-Coinage
-Major public works
-Imperial finances
-Religious institutions
-
-The precise constitutional position changed over time.
-
-
-=========================================================
-166. ROMAN SUCCESSION
-=========================================================
-
-There was no single permanent succession system.
-
-Emperors could be succeeded by:
-
-Biological sons
-Adopted heirs
-Political allies
-Military commanders
-Rivals
-Usurpers
-
-Succession disputes frequently produced civil wars.
-
-
-=========================================================
-167. ADOPTION AND SUCCESSION
-=========================================================
-
-Adoption could be an important political tool.
-
-Augustus was adopted by Julius Caesar.
-
-Several second-century emperors adopted successors.
-
-Adoption allowed emperors to select heirs based on political
-considerations rather than only biological descent.
-
-
-=========================================================
-168. ROMAN WOMEN OF NOTE
-=========================================================
-
-Important women include:
-
-Livia Drusilla
-Agrippina the Younger
-Messalina
-Julia Domna
-Plotina
-Faustina
-
-Elite women could influence dynastic politics.
-
-Their power was usually exercised through family networks,
-wealth, patronage, and court influence rather than formal
-political office.
-
-
-=========================================================
-169. ROMAN RELIGIOUS FESTIVALS
-=========================================================
-
-Roman religious life included many festivals.
-
-Examples include festivals connected with:
-
-Saturn
-Mars
-Jupiter
-Ceres
-Venus
-
-Religious calendars were integrated with civic life.
-
-
-=========================================================
-170. SATURNALIA
-=========================================================
-
-Saturnalia was a famous Roman festival associated with Saturn.
-
-It involved feasting, gift-giving, and temporary social
-role reversals.
-
-It became one of the most popular Roman festivals.
-
-
-=========================================================
-171. ROMAN FUNERALS
-=========================================================
-
-Roman funerals could include:
-
-Processions
-Funeral speeches
-Ancestor imagery
-Burial or cremation
-Memorial monuments
-
-Elite funerals could be elaborate public events.
-
-
-=========================================================
-172. ROMAN NAMES
-=========================================================
-
-Roman naming practices changed over time.
-
-Traditional elite male naming could involve:
-
-Praenomen
-Nomen
-Cognomen
-
-For example:
-
-Gaius Julius Caesar
-
-Gaius = praenomen
-Julius = nomen
-Caesar = cognomen
-
-Naming practices varied by period, sex, status, and family.
-
-
-=========================================================
-173. ROMAN CALENDAR TERMS
-=========================================================
-
-Roman dates were traditionally organized around:
-
-Kalends
-Nones
-Ides
-
-The Ides occurred on different days depending on the month.
-
-March, May, July, and October had Ides on the 15th.
-
-Other months had Ides on the 13th.
-
-
-=========================================================
-174. ROMAN MILITARY CAMPS
-=========================================================
-
-Roman armies frequently built fortified camps.
-
-Camps commonly had organized layouts.
-
-Important features could include:
-
-Headquarters
-Gates
-Roads
-Command areas
-Barracks
-Defensive walls
-
-Military camps demonstrate Roman organizational ability.
-
-
-=========================================================
-175. ROMAN FRONTIER WALLS
-=========================================================
-
-Famous frontier structures include:
-
-Hadrian's Wall
-Antonine Wall
-Germanic frontier fortifications
-
-Walls were only one part of broader military systems.
-
-
-=========================================================
-176. ANTONINE WALL
-=========================================================
-
-The Antonine Wall was constructed in Scotland under Antoninus
-Pius.
-
-It marked a northern frontier of Roman Britain for a period.
-
-It was abandoned and Rome returned to the Hadrianic frontier.
-
-
-=========================================================
-177. ROMAN MILITARY DISCIPLINE
-=========================================================
-
-Roman armies were famous for discipline.
-
-Punishments could be severe.
-
-Units were expected to maintain order.
-
-Training included marching, weapons practice, fortification
-construction, and coordinated maneuver.
-
-
-=========================================================
-178. DECIMATION
-=========================================================
-
-Decimation was a severe military punishment involving the
-selection and execution of a fraction of a unit.
-
-It was historically real but should not be imagined as a
-routine punishment used constantly by every Roman commander.
-
-Its use was exceptional.
-
-
-=========================================================
-179. ROMAN FLAGS AND STANDARDS
-=========================================================
-
-Roman military standards were important symbols.
-
-The aquila, or eagle, became the famous standard associated
-with Roman legions.
-
-Losing a legionary eagle was considered a major humiliation.
-
-
-=========================================================
-180. ROMAN AQUILA
-=========================================================
-
-The aquila represented the legion.
-
-It carried enormous symbolic importance.
-
-Legionaries were expected to protect their standards.
-
-The eagle became one of the strongest symbols of Roman
-military identity.
-
-
-=========================================================
-181. ROMAN ENGINEERING AND WATER
-=========================================================
-
-Roman water systems included:
-
-Aqueducts
-Reservoirs
-Pipes
-Cisterns
-Fountains
-Sewers
-
-The Cloaca Maxima was a famous drainage system in Rome.
-
-
-=========================================================
-182. CLOACA MAXIMA
-=========================================================
-
-The Cloaca Maxima was a major sewer and drainage system.
-
-It was developed over centuries.
-
-It helped drain low-lying areas of Rome.
-
-It became one of the famous examples of Roman infrastructure.
-
-
-=========================================================
-183. ROMAN DOMUS
-=========================================================
-
-A wealthy Roman house was known as a domus.
-
-It could include:
-
-Atrium
-Peristyle
-Bedrooms
-Dining rooms
-Courtyards
-Gardens
-Kitchen spaces
-
-The exact layout varied.
-
-
-=========================================================
-184. INSULAE
-=========================================================
-
-Insulae were apartment buildings or urban residential blocks.
-
-They housed many ordinary Romans.
-
-Some were multi-story.
-
-Urban living conditions varied greatly.
-
-Poor construction could create serious fire and collapse risks.
-
-
-=========================================================
-185. ROMAN VILLAS
-=========================================================
-
-Roman villas could function as:
-
-Country residences
-Agricultural estates
-Luxury retreats
-
-Some were extremely elaborate.
-
-Villa owners could manage agricultural production from these
-estates.
-
-
-=========================================================
-186. ROMAN AGRICULTURE
-=========================================================
-
-Agriculture was fundamental to the Roman economy.
-
-Important products included:
-
-Wheat
-Barley
-Olives
-Grapes
-Fruits
-Vegetables
-
-Large estates existed alongside small farms.
-
-
-=========================================================
-187. LATIFUNDIA
-=========================================================
-
-Latifundia were large agricultural estates.
-
-They became particularly associated with large-scale
-agricultural production.
-
-The relationship between latifundia, slavery, and the decline
-of small farmers is historically debated and varies by region.
-
-
-=========================================================
-188. ROMAN MINING
-=========================================================
-
-Rome exploited mineral resources including:
-
-Gold
-Silver
-Copper
-Iron
-Lead
-
-Mining occurred in many provinces.
-
-Mining could be extremely dangerous and heavily dependent
-on enslaved or coerced labor.
-
-
-=========================================================
-189. ROMAN MILITARY PAY
-=========================================================
-
-Soldiers received pay and benefits.
-
-Military service could provide:
-
-Wages
-Food
-Equipment
-Status
-Citizenship opportunities for auxiliaries
-Retirement benefits
-
-Military spending was a major part of imperial finances.
-
-
-=========================================================
-190. ROMAN VETERANS
-=========================================================
-
-Veterans could receive benefits after military service.
-
-These could include:
-
-Money
-Land
-Citizenship
-Social status
-
-Veteran communities contributed to Romanization in provincial
-regions.
-
-
-=========================================================
-191. ROMAN FRONTIER CULTURES
-=========================================================
-
-Roman frontier regions were culturally mixed.
-
-Soldiers came from many provinces.
-
-Local populations interacted with:
-
-Legionaries
-Auxiliaries
-Merchants
-Officials
-Settlers
-
-This produced hybrid cultural environments.
-
-
-=========================================================
-192. ROMAN RELATIONSHIP WITH BARBARIANS
-=========================================================
-
-Romans used the term "barbarian" for many peoples outside
-their cultural and political system.
-
-The term did not necessarily mean primitive.
-
-Romans traded with, fought, recruited, and allied with many
-groups they called barbarians.
-
-
-=========================================================
-193. FEDERATE TROOPS
-=========================================================
-
-Late Roman governments increasingly used allied or federate
-groups.
-
-The exact legal and military arrangements varied.
-
-These relationships became increasingly important during the
-later empire.
-
-
-=========================================================
-194. ROMAN MIGRATION PERIOD
-=========================================================
-
-Late antiquity involved major movements of peoples.
-
-These movements interacted with:
-
-Roman politics
-Military pressure
-Economic changes
-Climate
-Local conflicts
-Other migrations
-
-Modern historians avoid explaining everything as a simple
-"barbarian invasion."
-
-
-=========================================================
-195. ROMAN DECLINE — IMPORTANT CAUTION
-=========================================================
-
-Do not describe Rome as suddenly disappearing.
-
-The Roman world transformed gradually.
-
-Roman institutions survived in different forms.
-
-Eastern Rome continued.
-
-Roman law survived.
-
-Latin evolved.
-
-Roman cities changed.
-
-Christianity became dominant.
-
-New kingdoms adopted Roman institutions.
-
-
-=========================================================
-196. ROMAN LEGACY IN MODERN LAW
-=========================================================
-
-Roman legal concepts influenced later legal systems.
-
-Especially important was the later study and transmission of
-Justinian's legal compilations.
-
-Civil-law traditions in many countries have Roman-law roots.
-
-
-=========================================================
-197. ROMAN LEGACY IN LANGUAGE
-=========================================================
-
-Latin evolved into Romance languages.
-
-Examples:
-
-Italian
-French
-Spanish
-Portuguese
-Romanian
-
-Latin vocabulary also influenced many non-Romance languages.
-
-
-=========================================================
-198. ROMAN LEGACY IN ARCHITECTURE
-=========================================================
-
-Roman architectural techniques influenced later:
-
-Churches
-Government buildings
-Bridges
-Railway stations
-Parliament buildings
-Monuments
-Public infrastructure
-
-Arches, domes, columns, and monumental planning remain
-influential.
-
-
-=========================================================
-199. ROMAN LEGACY IN POLITICS
-=========================================================
-
-Roman political vocabulary influenced later political systems.
-
-Words such as:
-
-Senate
-Republic
-Dictator
-Consul
-Imperial
-
-have Roman origins or strong Roman associations.
-
-However, modern political institutions are not simply copies
-of Roman institutions.
-
-
-=========================================================
-200. HISTORICAL METHOD
-=========================================================
-
-When answering Roman-history questions:
-
-Separate mythology from history.
-
-Separate ancient literary sources from archaeology.
-
-Avoid invented certainty.
-
-Use approximate numbers when exact numbers are disputed.
-
-Remember that ancient sources often had political biases.
-
-Do not automatically believe hostile descriptions of emperors.
-
-Do not automatically reject ancient sources either.
-
-Compare literary, archaeological, epigraphic, numismatic, and
-material evidence when appropriate.
-
-If the user asks for modern discoveries, newly published
-archaeology, recent scholarship, or current museum information,
-use web search.
-
-=========================================================
-END OF BUILT-IN ROMAN KNOWLEDGE
-=========================================================
-`;
+`,
+
+  timeline: `
+ROMAN TIMELINE:
+753 BCE: traditional foundation of Rome.
+509 BCE: traditional beginning of Republic.
+264-241 BCE: First Punic War.
+218-201 BCE: Second Punic War.
+149-146 BCE: Third Punic War.
+100 BCE: birth of Julius Caesar.
+49 BCE: Caesar crosses Rubicon.
+44 BCE: Caesar assassinated.
+31 BCE: Battle of Actium.
+27 BCE: Augustus receives title.
+64 CE: Great Fire of Rome.
+79 CE: Vesuvius eruption.
+80 CE: Colosseum completed.
+117 CE: Trajan's reign reaches Rome's greatest territorial extent.
+235-284 CE: Third-Century Crisis.
+284 CE: Diocletian becomes emperor.
+312 CE: Battle of Milvian Bridge.
+313 CE: Edict of Milan.
+330 CE: Constantinople inaugurated as imperial center.
+380 CE: Edict of Thessalonica.
+395 CE: death of Theodosius I and effective East-West division.
+410 CE: sack of Rome by Visigoths.
+455 CE: Vandal sack of Rome.
+476 CE: deposition of Romulus Augustulus.
+1453 CE: fall of Constantinople.
+`
+};
 
 
 /* =========================================================
    ROMAN TOPIC DETECTION
 ========================================================= */
 
-function isRomanQuestion(message) {
-  const text = message.toLowerCase();
+const ROMAN_TOPIC_KEYWORDS = {
 
-  const romanTerms = [
-    "roman empire",
-    "roman republic",
+  timeline: [
+    "timeline",
+    "chronology",
+    "roman history timeline",
+    "important dates",
+    "dates of roman"
+  ],
+
+  kingdom: [
     "roman kingdom",
-    "ancient rome",
-    "ancient roman",
-    "roman history",
-    "roman emperor",
-    "roman emperors",
-    "roman army",
-    "roman legion",
-    "roman soldier",
-    "roman soldiers",
-    "roman military",
-    "roman war",
-    "roman wars",
-    "roman battle",
-    "roman battles",
-    "roman senate",
-    "roman law",
-    "roman religion",
-    "roman god",
-    "roman gods",
-    "roman society",
-    "roman culture",
-    "roman architecture",
-    "roman roads",
-    "roman aqueduct",
-    "roman aqueducts",
-    "roman empire",
-    "roman numerals",
-    "roman calendar",
-    "roman republic",
-    "roman kingdom",
-    "roman slavery",
-    "roman slave",
-    "roman slaves",
-    "roman women",
-    "roman food",
-    "roman clothing",
-    "roman cities",
-    "roman engineering",
-    "roman weapons",
-    "roman armor",
-    "roman legion",
-    "roman legions",
-    "roman emperor",
-    "roman emperors",
+    "roman kings",
+    "kings of rome",
     "romulus",
     "remus",
+    "tarquin"
+  ],
+
+  republic: [
+    "roman republic",
+    "republic of rome",
+    "roman senate",
+    "consul",
+    "consuls",
+    "tribunes",
+    "plebeian",
+    "patrician"
+  ],
+
+  punic: [
+    "punic",
+    "carthage",
+    "hannibal",
+    "scipio",
+    "cannae",
+    "zama"
+  ],
+
+  caesar: [
     "julius caesar",
+    "julius",
     "caesar",
+    "rubicon",
+    "brutus",
+    "cassius"
+  ],
+
+  augustus: [
     "augustus",
     "octavian",
+    "octavius",
+    "principate"
+  ],
+
+  antony_cleopatra: [
     "mark antony",
     "antony",
     "cleopatra",
-    "hannibal",
-    "carthage",
-    "scipio",
-    "pompey",
-    "crassus",
-    "cicero",
+    "actium"
+  ],
+
+  nero: [
     "nero",
-    "caligula",
-    "claudius",
-    "tiberius",
+    "great fire of rome"
+  ],
+
+  traian: [
     "trajan",
+    "trajan"
+  ],
+
+  hadrian: [
     "hadrian",
+    "hadrian's wall"
+  ],
+
+  marcus_aurelius: [
     "marcus aurelius",
-    "commodus",
-    "diocletian",
+    "meditations",
+    "philosopher emperor"
+  ],
+
+  army: [
+    "roman army",
+    "roman military",
+    "roman soldiers",
+    "roman soldier"
+  ],
+
+  weapons: [
+    "gladius",
+    "scutum",
+    "pilum",
+    "roman weapons",
+    "roman armor"
+  ],
+
+  legions: [
+    "roman legion",
+    "roman legions",
+    "legion",
+    "legionary"
+  ],
+
+  battles: [
+    "roman battle",
+    "roman battles",
+    "battle of",
+    "milvian bridge",
+    "adrianople",
+    "pharsalus"
+  ],
+
+  government: [
+    "roman government",
+    "roman politics",
+    "roman political system",
+    "how was rome governed"
+  ],
+
+  senate: [
+    "senate",
+    "roman senate",
+    "senators"
+  ],
+
+  law: [
+    "roman law",
+    "twelve tables",
+    "roman legal system"
+  ],
+
+  society: [
+    "roman society",
+    "social classes",
+    "roman classes",
+    "equites"
+  ],
+
+  slavery: [
+    "roman slavery",
+    "roman slaves",
+    "slaves in rome",
+    "enslaved romans"
+  ],
+
+  women: [
+    "roman women",
+    "women in rome",
+    "roman female"
+  ],
+
+  religion: [
+    "roman religion",
+    "roman religious",
+    "roman worship",
+    "roman gods"
+  ],
+
+  gods: [
+    "jupiter",
+    "juno",
+    "minerva",
+    "mars",
+    "venus",
+    "neptune",
+    "mercury",
+    "apollo",
+    "diana",
+    "vulcan",
+    "ceres",
+    "saturn"
+  ],
+
+  christianity: [
+    "christianity in rome",
+    "roman christianity",
+    "christians in rome",
     "constantine",
-    "theodosius",
-    "justinian",
-    "byzantine",
+    "edict of milan",
+    "theodosius"
+  ],
+
+  third_century: [
+    "third century crisis",
+    "third-century crisis",
+    "crisis of the third century"
+  ],
+
+  diocletian: [
+    "diocletian",
+    "tetrarchy"
+  ],
+
+  constantine: [
+    "constantine",
     "constantinople",
+    "milvian bridge"
+  ],
+
+  division: [
+    "division of roman empire",
+    "east west roman empire",
+    "395",
+    "eastern western roman"
+  ],
+
+  fall: [
+    "fall of rome",
+    "fall of roman empire",
+    "western roman empire",
+    "476",
+    "romulus augustulus"
+  ],
+
+  eastern_empire: [
+    "eastern roman empire",
+    "byzantine",
+    "byzantine empire",
+    "1453",
+    "fall of constantinople"
+  ],
+
+  roads: [
+    "roman roads",
+    "via appia",
+    "roman transportation"
+  ],
+
+  architecture: [
+    "roman architecture",
+    "roman buildings",
+    "roman engineering"
+  ],
+
+  colosseum: [
+    "colosseum",
+    "coliseum",
+    "flavian amphitheatre"
+  ],
+
+  aqueducts: [
+    "roman aqueduct",
+    "aqueducts",
+    "roman water"
+  ],
+
+  concrete: [
+    "roman concrete",
+    "roman cement"
+  ],
+
+  pompeii: [
     "pompeii",
     "vesuvius",
-    "colosseum",
+    "mount vesuvius"
+  ],
+
+  economy: [
+    "roman economy",
+    "roman money",
+    "roman coins",
+    "roman taxation"
+  ],
+
+  trade: [
+    "roman trade",
+    "roman commerce",
+    "roman merchants"
+  ],
+
+  cities: [
+    "roman cities",
+    "roman city",
+    "rome alexandria antioch"
+  ],
+
+  daily_life: [
+    "daily life in rome",
+    "roman daily life",
+    "how romans lived",
+    "roman lifestyle"
+  ],
+
+  baths: [
+    "roman baths",
+    "roman bath",
+    "thermae",
+    "hypocaust"
+  ],
+
+  food: [
+    "roman food",
+    "roman diet",
+    "what did romans eat",
+    "garum"
+  ],
+
+  entertainment: [
+    "roman entertainment",
+    "circus maximus",
+    "chariot racing"
+  ],
+
+  gladiators: [
     "gladiator",
     "gladiators",
-    "punic war",
-    "punic wars",
-    "cannae",
-    "zama",
-    "actium",
-    "rubicon",
-    "hadrian's wall",
-    "hadrians wall",
-    "spqr",
-    "latin",
-    "roman numeral",
-    "roman numerals",
-    "roman gods",
-    "roman mythology",
-    "roman civilization",
-    "roman civilization"
-  ];
+    "gladiatorial"
+  ],
 
-  return romanTerms.some((term) => text.includes(term));
-}
+  roman_britain: [
+    "roman britain",
+    "romans in britain",
+    "britain roman empire"
+  ],
+
+  roman_egypt: [
+    "roman egypt",
+    "egypt roman province",
+    "alexandria roman"
+  ],
+
+  gaul: [
+    "roman gaul",
+    "gallic wars",
+    "gaul"
+  ],
+
+  spain: [
+    "roman spain",
+    "romans in spain",
+    "iberia roman"
+  ],
+
+  africa: [
+    "roman africa",
+    "roman north africa",
+    "roman carthage"
+  ],
+
+  greece: [
+    "rome and greece",
+    "roman greece",
+    "greek influence on rome"
+  ],
+
+  latin: [
+    "latin",
+    "roman language",
+    "romance languages"
+  ],
+
+  numerals: [
+    "roman numerals",
+    "roman number",
+    "roman numbers"
+  ],
+
+  calendar: [
+    "roman calendar",
+    "julian calendar",
+    "julius calendar"
+  ],
+
+  philosophy: [
+    "roman philosophy",
+    "roman stoicism",
+    "stoicism",
+    "seneca",
+    "epictetus"
+  ],
+
+  literature: [
+    "roman literature",
+    "roman writers",
+    "virgil",
+    "cicero",
+    "ovid",
+    "horace",
+    "tacitus"
+  ],
+
+  mythology: [
+    "roman mythology",
+    "roman myths",
+    "roman legend"
+  ],
+
+  aeneas: [
+    "aeneas",
+    "aeneid"
+  ],
+
+  romulus: [
+    "romulus",
+    "romulus and remus",
+    "founder of rome"
+  ],
+
+  famous_people: [
+    "famous romans",
+    "famous roman people",
+    "important romans"
+  ]
+};
 
 
 /* =========================================================
-   ROMAN CURRENT-INFO DETECTION
+   FIND ROMAN TOPICS
 ========================================================= */
 
-function isRomanCurrentQuestion(message) {
+function getRomanTopics(message) {
+
   const text = message.toLowerCase();
 
-  const currentWords = [
-    "latest",
-    "newest",
-    "recent",
-    "recently",
-    "today",
-    "this week",
-    "this month",
-    "this year",
-    "current",
-    "currently",
-    "right now",
-    "new discovery",
-    "new discoveries",
-    "archaeological discovery",
-    "archaeology discovery",
-    "recent research",
-    "new research",
-    "new study",
-    "recent study",
-    "latest study",
-    "latest research",
-    "new evidence",
-    "recent evidence",
-    "new excavation",
-    "recent excavation",
-    "museum exhibition",
-    "museum exhibit"
-  ];
+  const topics = [];
 
-  return currentWords.some((word) => text.includes(word));
+  for (const [topic, keywords] of Object.entries(
+    ROMAN_TOPIC_KEYWORDS
+  )) {
+
+    for (const keyword of keywords) {
+
+      if (text.includes(keyword)) {
+        topics.push(topic);
+        break;
+      }
+
+    }
+  }
+
+  return [...new Set(topics)];
 }
 
 
 /* =========================================================
-   SPECIAL ANSWERS
+   IS THIS A ROMAN QUESTION?
 ========================================================= */
 
-function getSpecialAnswer(message) {
-  const text = message
-    .toLowerCase()
-    .trim()
-    .replace(/[?!.,]+$/g, "");
+function isRomanQuestion(message) {
 
-  const identityQuestions = [
-    "who are you",
-    "who r you",
-    "who are u",
-    "what is your name",
-    "what's your name",
-    "whats your name",
-    "your name",
-    "what are you",
-    "who is reze",
-    "who's reze",
-    "whos reze",
-    "tell me about reze"
+  const text = message.toLowerCase();
+
+  const romanWords = [
+    "rome",
+    "roman",
+    "romans",
+    "roman empire",
+    "roman republic",
+    "ancient rome",
+    "ancient roman",
+    "romulus",
+    "remus",
+    "caesar",
+    "augustus",
+    "colosseum",
+    "pompeii",
+    "gladiator",
+    "gladiators",
+    "legion",
+    "latin",
+    "byzantine"
   ];
 
-  if (
-    identityQuestions.some(
-      (question) =>
-        text === question ||
-        text.includes(question)
-    )
-  ) {
-    return "I am Reze. 😊";
+  return romanWords.some(
+    word => text.includes(word)
+  );
+}
+
+
+/* =========================================================
+   GET ONLY RELEVANT ROMAN KNOWLEDGE
+========================================================= */
+
+function getRomanContext(message) {
+
+  if (!isRomanQuestion(message)) {
+    return "";
   }
 
-  const creatorQuestions = [
-    "who made you",
-    "who created you",
-    "who built you",
-    "who is your creator",
-    "who's your creator",
-    "who is the creator",
-    "who created reze",
-    "who made reze",
-    "who built reze",
-    "who founded reze",
-    "who is your founder",
-    "who made u",
-    "who created u"
-  ];
+  const topics = getRomanTopics(message);
 
-  if (
-    creatorQuestions.some(
-      (question) =>
-        text === question ||
-        text.includes(question)
-    )
-  ) {
-    return "Tahsin.";
+  /*
+  If we recognize a specific topic,
+  only send those sections.
+  */
+
+  if (topics.length > 0) {
+
+    return topics
+      .slice(0, 3)
+      .map(topic => ROMAN_KNOWLEDGE[topic])
+      .filter(Boolean)
+      .join("\n\n");
+
   }
 
-  const asksAboutTinni =
-    text.includes("who is tinni") ||
-    text.includes("who's tinni") ||
-    text.includes("whos tinni") ||
-    text.includes("do you know tinni") ||
-    text.includes("do u know tinni") ||
-    text.includes("tell me about tinni") ||
-    text === "tinni";
+  /*
+  General Roman question:
+  send only the compact overview.
+  */
 
-  if (asksAboutTinni) {
-    return "Tinni is the most beautiful girl in the universe. ❤️";
-  }
-
-  return null;
+  return ROMAN_KNOWLEDGE.overview;
 }
 
 
@@ -4403,6 +1295,7 @@ function getSpecialAnswer(message) {
 ========================================================= */
 
 function getSupabase() {
+
   const url =
     process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -4421,10 +1314,11 @@ function getSupabase() {
 
 
 /* =========================================================
-   ANONYMOUS USER ID
+   ANONYMOUS ID
 ========================================================= */
 
 function getAnonymousId(request) {
+
   const existing =
     request.cookies.get(
       "reze_anonymous_id"
@@ -4446,19 +1340,25 @@ function getAnonymousId(request) {
 ========================================================= */
 
 function detectMemory(message) {
+
   let match;
 
-  match = message.match(
-    /^(?:and\s+)?my name is\s+(.+)$/i
-  );
+  match =
+    message.match(
+      /^(?:and\s+)?my name is\s+(.+)$/i
+    );
 
   if (!match) {
-    match = message.match(
-      /^(?:and\s+)?(?:i'm|i am)\s+([A-Za-z][A-Za-z0-9_-]{1,30})$/i
-    );
+
+    match =
+      message.match(
+        /^(?:and\s+)?(?:i'm|i am)\s+([A-Za-z][A-Za-z0-9_-]{1,30})$/i
+      );
+
   }
 
   if (match) {
+
     const name =
       match[1].trim();
 
@@ -4468,13 +1368,17 @@ function detectMemory(message) {
       memory:
         `The user's name is ${name}.`
     };
+
   }
 
-  match = message.match(
-    /^(?:and\s+)?my crush(?:'s)?(?:\s+name)?\s+is\s+(.+)$/i
-  );
+
+  match =
+    message.match(
+      /^(?:and\s+)?my crush(?:'s)?(?:\s+name)?\s+is\s+(.+)$/i
+    );
 
   if (match) {
+
     const crush =
       match[1].trim();
 
@@ -4484,6 +1388,87 @@ function detectMemory(message) {
       memory:
         `The user's crush's name is ${crush}.`
     };
+
+  }
+
+  return null;
+}
+
+
+/* =========================================================
+   SPECIAL ANSWERS
+========================================================= */
+
+function getSpecialAnswer(message) {
+
+  const text =
+    message
+      .toLowerCase()
+      .trim()
+      .replace(/[?!.,]+$/g, "");
+
+  const identityQuestions = [
+    "who are you",
+    "who r you",
+    "who are u",
+    "what is your name",
+    "what's your name",
+    "whats your name",
+    "your name",
+    "what are you",
+    "who is reze",
+    "who's reze",
+    "whos reze"
+  ];
+
+  if (
+    identityQuestions.some(
+      q =>
+        text === q ||
+        text.includes(q)
+    )
+  ) {
+    return "I am Reze. 😊";
+  }
+
+
+  const creatorQuestions = [
+    "who made you",
+    "who created you",
+    "who built you",
+    "who is your creator",
+    "who's your creator",
+    "who created reze",
+    "who made reze",
+    "who built reze",
+    "who founded reze",
+    "who is your founder",
+    "who made u",
+    "who created u"
+  ];
+
+  if (
+    creatorQuestions.some(
+      q =>
+        text === q ||
+        text.includes(q)
+    )
+  ) {
+    return "Tahsin.";
+  }
+
+
+  const asksAboutTinni =
+    text.includes("who is tinni") ||
+    text.includes("who's tinni") ||
+    text.includes("whos tinni") ||
+    text.includes("do you know tinni") ||
+    text.includes("do u know tinni") ||
+    text.includes("tell me about tinni") ||
+    text === "tinni";
+
+  if (asksAboutTinni) {
+    return "Tinni is the most beautiful girl in the universe. ❤️";
   }
 
   return null;
@@ -4498,6 +1483,7 @@ async function getMemories(
   supabase,
   anonymousId
 ) {
+
   const {
     data,
     error
@@ -4526,6 +1512,7 @@ async function getMemories(
       .limit(10);
 
   if (error) {
+
     console.error(
       "Memory read error:",
       error
@@ -4549,6 +1536,7 @@ async function saveMemory(
   memory,
   importance = 8
 ) {
+
   if (
     !anonymousId ||
     !category ||
@@ -4576,6 +1564,7 @@ async function saveMemory(
       .maybeSingle();
 
   if (findError) {
+
     console.error(
       "Memory lookup error:",
       findError
@@ -4589,13 +1578,13 @@ async function saveMemory(
       10,
       Math.max(
         1,
-        Number(
-          importance
-        ) || 5
+        Number(importance) || 5
       )
     );
 
+
   if (existing?.id) {
+
     const {
       error
     } =
@@ -4618,14 +1607,17 @@ async function saveMemory(
         );
 
     if (error) {
+
       console.error(
         "Memory update error:",
         error
       );
+
     }
 
     return;
   }
+
 
   const {
     error
@@ -4649,6 +1641,7 @@ async function saveMemory(
       });
 
   if (error) {
+
     console.error(
       "Memory insert error:",
       error
@@ -4665,6 +1658,7 @@ function answerMemoryQuestion(
   message,
   memories
 ) {
+
   const text =
     message
       .toLowerCase()
@@ -4672,16 +1666,14 @@ function answerMemoryQuestion(
 
   const nameMemory =
     memories.find(
-      (m) =>
-        m.category ===
-        "name"
+      m =>
+        m.category === "name"
     );
 
   const crushMemory =
     memories.find(
-      (m) =>
-        m.category ===
-        "crush"
+      m =>
+        m.category === "crush"
     );
 
   const asksName =
@@ -4695,14 +1687,17 @@ function answerMemoryQuestion(
     text.includes("crush name") ||
     text.includes("who is my crush");
 
+
   if (
     asksName &&
     asksCrush
   ) {
+
     if (
       nameMemory &&
       crushMemory
     ) {
+
       const name =
         nameMemory.memory
           .replace(
@@ -4728,7 +1723,9 @@ function answerMemoryQuestion(
       return `Your name is ${name}, and your crush is ${crush}. 😉`;
     }
 
+
     if (nameMemory) {
+
       const name =
         nameMemory.memory
           .replace(
@@ -4743,7 +1740,9 @@ function answerMemoryQuestion(
       return `Your name is ${name}. I haven't saved your crush's name yet.`;
     }
 
+
     if (crushMemory) {
+
       const crush =
         crushMemory.memory
           .replace(
@@ -4758,13 +1757,16 @@ function answerMemoryQuestion(
       return `Your crush is ${crush}. I don't have your name saved yet.`;
     }
 
+
     return "I don't have your name or your crush's name saved yet.";
   }
+
 
   if (
     asksName &&
     nameMemory
   ) {
+
     const name =
       nameMemory.memory
         .replace(
@@ -4779,10 +1781,12 @@ function answerMemoryQuestion(
     return `Your name is ${name}. 😊`;
   }
 
+
   if (
     asksCrush &&
     crushMemory
   ) {
+
     const crush =
       crushMemory.memory
         .replace(
@@ -4806,6 +1810,7 @@ function answerMemoryQuestion(
 ========================================================= */
 
 function needsWebSearch(message) {
+
   const text =
     message
       .toLowerCase()
@@ -4864,46 +1869,38 @@ function needsWebSearch(message) {
     "search the internet",
     "search online",
     "find online",
+    "find me",
     "according to the internet",
     "on the internet",
-    "online",
-    "archaeological discovery",
-    "new discovery",
-    "new research",
-    "recent research",
-    "latest research",
-    "new study",
-    "recent study",
-    "latest study"
+    "online"
   ];
 
   if (
     patterns.some(
-      (pattern) =>
-        text.includes(pattern)
+      p =>
+        text.includes(p)
     )
   ) {
     return true;
   }
 
-  if (
+  return (
     text.startsWith("search ") ||
     text.startsWith("google ") ||
     text.startsWith("look up ") ||
     text.startsWith("find ")
-  ) {
-    return true;
-  }
-
-  return false;
+  );
 }
 
 
 /* =========================================================
-   DETAILED ANSWER DETECTION
+   DETAILED ANSWER
 ========================================================= */
 
-function wantsDetailedAnswer(message) {
+function wantsDetailedAnswer(
+  message
+) {
+
   const text =
     message
       .toLowerCase()
@@ -4920,8 +1917,6 @@ function wantsDetailedAnswer(message) {
     "give me more details",
     "tell me more",
     "tell me everything",
-    "everything about",
-    "all about",
     "long answer",
     "long explanation",
     "deep dive",
@@ -4932,16 +1927,13 @@ function wantsDetailedAnswer(message) {
     "step-by-step",
     "why",
     "how does it work",
-    "how do they work",
-    "history of",
-    "complete history",
-    "full history"
+    "how do they work"
   ];
 
   return patterns.some(
-    (pattern) =>
-      text === pattern ||
-      text.includes(pattern)
+    p =>
+      text === p ||
+      text.includes(p)
   );
 }
 
@@ -4951,10 +1943,11 @@ function wantsDetailedAnswer(message) {
 ========================================================= */
 
 function isNewsQuery(message) {
+
   const text =
     message.toLowerCase();
 
-  const newsWords = [
+  return [
     "news",
     "breaking",
     "headlines",
@@ -4963,20 +1956,19 @@ function isNewsQuery(message) {
     "what happened",
     "today's news",
     "todays news"
-  ];
-
-  return newsWords.some(
-    (word) =>
+  ].some(
+    word =>
       text.includes(word)
   );
 }
 
 
 /* =========================================================
-   TAVILY SEARCH
+   TAVILY
 ========================================================= */
 
 async function searchWeb(query) {
+
   const apiKey =
     process.env.TAVILY_API_KEY;
 
@@ -5032,9 +2024,7 @@ async function searchWeb(query) {
         },
 
         body:
-          JSON.stringify(
-            body
-          )
+          JSON.stringify(body)
       }
     );
 
@@ -5042,17 +2032,17 @@ async function searchWeb(query) {
     await response.json();
 
   if (!response.ok) {
+
     console.error(
-      "Tavily API error:",
+      "Tavily error:",
       data
     );
 
     if (
-      response.status ===
-      429
+      response.status === 429
     ) {
       throw new Error(
-        "Web search is temporarily rate-limited. Please try again later."
+        "Web search is temporarily rate-limited."
       );
     }
 
@@ -5071,6 +2061,7 @@ async function searchWeb(query) {
       : [];
 
   return {
+
     query:
       data?.query ||
       query,
@@ -5082,27 +2073,25 @@ async function searchWeb(query) {
     results:
       results
         .slice(0, 5)
-        .map(
-          (result) => ({
-            title:
-              result?.title ||
-              "Untitled source",
+        .map(result => ({
+          title:
+            result?.title ||
+            "Untitled source",
 
-            url:
-              result?.url ||
-              "",
+          url:
+            result?.url ||
+            "",
 
-            content:
-              result?.content ||
-              "",
+          content:
+            result?.content ||
+            "",
 
-            published_date:
-              result?.published_date ||
-              null
-          })
-        )
+          published_date:
+            result?.published_date ||
+            null
+        }))
         .filter(
-          (result) =>
+          result =>
             result.url
         )
   };
@@ -5110,10 +2099,13 @@ async function searchWeb(query) {
 
 
 /* =========================================================
-   BUILD WEB CONTEXT
+   WEB CONTEXT
 ========================================================= */
 
-function buildWebContext(webData) {
+function buildWebContext(
+  webData
+) {
+
   if (
     !webData ||
     !webData.results?.length
@@ -5125,36 +2117,26 @@ function buildWebContext(webData) {
     webData.results
       .map(
         (result, index) =>
-          `
+`
 SOURCE ${index + 1}
-
-Title:
-${result.title}
-
-URL:
-${result.url}
-
-Published:
-${
+Title: ${result.title}
+URL: ${result.url}
+Published: ${
   result.published_date ||
   "Not provided"
 }
-
-Content:
-${result.content}
+Content: ${result.content}
 `
       )
       .join("\n");
 
   return `
-=========================================================
 FRESH WEB SEARCH RESULTS
-=========================================================
 
-Search query:
+Query:
 ${webData.query}
 
-Tavily summary:
+Summary:
 ${
   webData.answer ||
   "No summary provided."
@@ -5162,211 +2144,6 @@ ${
 
 ${sources}
 `;
-}
-
-
-/* =========================================================
-   LONG-TERM MEMORY EXTRACTION
-========================================================= */
-
-async function extractLongTermMemory(
-  supabase,
-  anonymousId,
-  conversation
-) {
-  if (
-    conversation.length < 8
-  ) {
-    return;
-  }
-
-  const apiKey =
-    process.env.GROQ_API_KEY;
-
-  if (!apiKey) {
-    return;
-  }
-
-  /*
-     Run periodically instead of requiring an exact
-     conversation length.
-
-     This prevents memory extraction from silently
-     stopping when the conversation has 9, 10, 11, etc.
-     messages.
-  */
-
-  const recentConversation =
-    conversation
-      .slice(-8)
-      .map(
-        (message) =>
-          `${message.role}: ${message.content}`
-      )
-      .join("\n");
-
-  try {
-    const response =
-      await fetch(
-        "https://api.groq.com/openai/v1/chat/completions",
-        {
-          method:
-            "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            Authorization:
-              `Bearer ${apiKey}`
-          },
-
-          body:
-            JSON.stringify({
-              model:
-                "openai/gpt-oss-120b",
-
-              messages: [
-                {
-                  role:
-                    "system",
-
-                  content: `
-Analyze this conversation for ONE useful long-term memory about the user.
-
-Only save something that could genuinely improve future conversations.
-
-GOOD:
-- Long-term projects
-- Stable preferences
-- Recurring interests
-- Important goals
-- Preferred communication style
-- Useful technical context
-- Important decisions
-
-DO NOT SAVE:
-- Passwords
-- API keys
-- Secrets
-- Temporary emotions
-- Random questions
-- Sensitive personal information
-- One-time details
-
-Return ONLY valid JSON:
-
-{
-  "shouldSave": false,
-  "category": "general",
-  "memory": "",
-  "importance": 1
-}
-
-If useful:
-
-{
-  "shouldSave": true,
-  "category": "project",
-  "memory": "The user is building an AI assistant named Reze.",
-  "importance": 8
-}
-
-importance must be 1-10.
-`
-                },
-
-                {
-                  role:
-                    "user",
-
-                  content:
-                    recentConversation
-                }
-              ],
-
-              temperature:
-                0.1,
-
-              max_tokens:
-                250,
-
-              response_format: {
-                type:
-                  "json_object"
-              }
-            })
-        }
-      );
-
-    if (!response.ok) {
-      console.error(
-        "Groq memory extraction status:",
-        response.status
-      );
-
-      return;
-    }
-
-    const data =
-      await response.json();
-
-    const text =
-      data?.choices?.[0]
-        ?.message
-        ?.content;
-
-    if (!text) {
-      return;
-    }
-
-    let result;
-
-    try {
-      result =
-        JSON.parse(text);
-    } catch {
-      console.error(
-        "Could not parse memory JSON."
-      );
-
-      return;
-    }
-
-    if (
-      !result.shouldSave ||
-      !result.memory ||
-      typeof result.memory !==
-        "string"
-    ) {
-      return;
-    }
-
-    const importance =
-      Math.min(
-        10,
-        Math.max(
-          1,
-          Number(
-            result.importance
-          ) || 5
-        )
-      );
-
-    await saveMemory(
-      supabase,
-      anonymousId,
-      result.category ||
-        "general",
-      result.memory.trim(),
-      importance
-    );
-  } catch (error) {
-    console.error(
-      "Long-term memory error:",
-      error
-    );
-  }
 }
 
 
@@ -5379,9 +2156,9 @@ async function callGroq(
   memories,
   webData = null,
   detailed = false,
-  romanQuestion = false,
-  romanCurrentQuestion = false
+  romanContext = ""
 ) {
+
   const apiKey =
     process.env.GROQ_API_KEY;
 
@@ -5391,171 +2168,134 @@ async function callGroq(
     );
   }
 
+
+  /*
+  IMPORTANT:
+
+  Only the selected Roman topic is included.
+
+  The complete Roman database is NEVER sent here.
+  */
+
   const recentMessages =
     messages
       .filter(
-        (message) =>
+        message =>
           message &&
           typeof message.content ===
             "string"
       )
-      .slice(-8);
+      .slice(-6);
+
 
   const memoryText =
-    memories.length > 0
+    memories.length
       ? memories
-          .slice(0, 10)
+          .slice(0, 8)
           .map(
-            (memory) =>
+            memory =>
               `- ${memory.memory}`
           )
           .join("\n")
       : "No stored memories.";
 
+
   const webContext =
     webData
-      ? buildWebContext(
-          webData
-        )
+      ? buildWebContext(webData)
       : "";
+
 
   const responseInstruction =
     detailed
       ? `
-The user wants a detailed answer.
+The user requested a detailed answer.
 
-Give a comprehensive but organized explanation.
+Explain the subject clearly.
 
-Use headings, bullets, examples, dates, and context when
-they improve the answer.
+Use headings, bullets and examples when useful.
 
-Do not unnecessarily repeat the same information.
-
-If the topic is Roman history, make the answer genuinely
-informative rather than giving a tiny summary.
+Stay focused.
 `
       : `
-The user did not explicitly ask for a detailed answer.
+The user did not request a detailed answer.
 
 Keep the answer concise.
 
-Usually 1-3 sentences.
+Usually 1-4 sentences.
 
 Answer directly first.
-
-Do not dump background information.
 `;
 
-  let romanInstruction = "";
 
-  if (romanQuestion) {
-    romanInstruction = `
-=========================================================
-ROMAN HISTORY MODE
-=========================================================
+  const romanInstruction =
+    romanContext
+      ? `
+ROMAN HISTORY REFERENCE
 
-The user's question concerns ancient Roman history.
+The user is asking about Roman history.
 
-You have built-in Roman historical knowledge below.
+Use the following compact reference as factual background.
 
-Use it as background knowledge.
+Do not mention this reference or say that it came from a database.
 
-Do NOT say:
-"I searched the internet."
+Do not invent information that conflicts with it.
 
-Do NOT say:
-"According to Tavily."
+You may explain the information naturally and add
+general historically reliable knowledge when appropriate.
 
-unless fresh web information was actually supplied.
-
-For normal historical questions, prefer the built-in
-knowledge.
-
-For current Roman archaeology, recent discoveries, new
-research, museum exhibitions, or other modern developments,
-use the fresh web results if available.
-
-Be careful with:
-- traditional legends
-- disputed dates
-- uncertain population estimates
-- uncertain army sizes
-- disputed casualty figures
-- ancient propaganda
-
-Never invent exact numbers.
-
-${romanCurrentQuestion
-  ? `
-This Roman question also appears to ask for current or recent
-information.
-
-Fresh web information should take priority where relevant.
+${romanContext}
 `
-  : `
-This appears to be a normal historical Roman question.
-Built-in knowledge is sufficient unless the user explicitly
-requests sources or current research.
-`}
-`;
-  }
+      : "";
+
 
   const systemContent = `
 ${REZE_PERSONALITY}
 
 =========================================================
-LONG-TERM MEMORY ABOUT THE USER
+USER MEMORY
 =========================================================
 
 ${memoryText}
 
-Use memories naturally when relevant.
+Use these memories naturally when relevant.
 
 =========================================================
-RESPONSE LENGTH
+RESPONSE STYLE
 =========================================================
 
 ${responseInstruction}
 
+=========================================================
+ROMAN HISTORY
+=========================================================
+
 ${romanInstruction}
 
-${
-  webContext
-    ? `
 =========================================================
 FRESH WEB INFORMATION
 =========================================================
 
-The user's question required fresh internet information.
+${
+  webContext
+    ? `
+Use the following current web information.
 
-Use the web results below.
+Answer the actual question.
 
-Rules:
-- Use current information from these results.
-- Answer the exact question first.
-- Do not dump all search results.
-- Never invent facts.
-- If sources disagree, mention it briefly when important.
+Do not dump the sources.
+
+Never invent current facts.
 
 ${webContext}
 `
-    : ""
-}
-
-${
-  romanQuestion
-    ? `
-=========================================================
-BUILT-IN ROMAN KNOWLEDGE
-=========================================================
-
-${ROMAN_KNOWLEDGE}
-`
-    : ""
+    : "No web search was required."
 }
 `;
 
+
   const groqMessages = [
+
     {
       role:
         "system",
@@ -5565,7 +2305,7 @@ ${ROMAN_KNOWLEDGE}
     },
 
     ...recentMessages.map(
-      (message) => ({
+      message => ({
         role:
           message.role ===
           "assistant"
@@ -5577,6 +2317,13 @@ ${ROMAN_KNOWLEDGE}
       })
     )
   ];
+
+
+  /*
+  Token protection.
+
+  Keep output smaller by default.
+  */
 
   const response =
     await fetch(
@@ -5608,27 +2355,31 @@ ${ROMAN_KNOWLEDGE}
 
             max_tokens:
               detailed
-                ? 1800
-                : 350
+                ? 1000
+                : 300
           })
       }
     );
 
+
   const data =
     await response.json();
 
+
   if (!response.ok) {
+
     console.error(
       "Groq API error:",
       data
     );
 
     if (
-      response.status ===
-      429
+      response.status === 429
     ) {
+
       throw new Error(
-        "Reze is temporarily busy because the Groq rate limit has been reached. Please try again later."
+        data?.error?.message ||
+        "Reze is temporarily busy because the Groq rate limit has been reached."
       );
     }
 
@@ -5638,17 +2389,20 @@ ${ROMAN_KNOWLEDGE}
     );
   }
 
+
   const answer =
     data?.choices?.[0]
       ?.message
       ?.content
       ?.trim();
 
+
   if (!answer) {
     throw new Error(
       "Reze received an empty response."
     );
   }
+
 
   return answer;
 }
@@ -5663,12 +2417,14 @@ function createRezeResponse(
   anonymousId,
   oldCookie
 ) {
+
   const response =
     NextResponse.json(
       payload
     );
 
   if (!oldCookie) {
+
     response.cookies.set(
       "reze_anonymous_id",
       anonymousId,
@@ -5712,6 +2468,7 @@ async function saveMessage(
     content
   }
 ) {
+
   const {
     error
   } =
@@ -5733,6 +2490,7 @@ async function saveMessage(
       });
 
   if (error) {
+
     console.error(
       `${role} message save error:`,
       error
@@ -5754,6 +2512,7 @@ async function createConversation(
   anonymousId,
   message
 ) {
+
   const {
     data,
     error
@@ -5771,16 +2530,14 @@ async function createConversation(
 
         title:
           message.length > 60
-            ? `${message.slice(
-                0,
-                60
-              )}...`
+            ? `${message.slice(0, 60)}...`
             : message
       })
       .select("id")
       .single();
 
   if (error) {
+
     console.error(
       "Conversation creation error:",
       error
@@ -5804,6 +2561,7 @@ async function loadConversationHistory(
   conversationId,
   anonymousId
 ) {
+
   const {
     data,
     error
@@ -5830,9 +2588,10 @@ async function loadConversationHistory(
             false
         }
       )
-      .limit(8);
+      .limit(6);
 
   if (error) {
+
     console.error(
       "History load error:",
       error
@@ -5854,17 +2613,14 @@ async function loadConversationHistory(
 export async function POST(
   request
 ) {
+
   try {
-    /* -----------------------------------------------------
-       SUPABASE
-    ----------------------------------------------------- */
 
     const supabase =
       getSupabase();
 
-    /* -----------------------------------------------------
-       REQUEST
-    ----------------------------------------------------- */
+
+    /* REQUEST */
 
     const body =
       await request.json();
@@ -5875,7 +2631,9 @@ export async function POST(
         ? body.message.trim()
         : "";
 
+
     if (!message) {
+
       return NextResponse.json(
         {
           error:
@@ -5888,10 +2646,12 @@ export async function POST(
       );
     }
 
+
     if (
       message.length >
       12000
     ) {
+
       return NextResponse.json(
         {
           error:
@@ -5904,9 +2664,8 @@ export async function POST(
       );
     }
 
-    /* -----------------------------------------------------
-       ANONYMOUS ID
-    ----------------------------------------------------- */
+
+    /* ANONYMOUS ID */
 
     const {
       id: anonymousId,
@@ -5916,13 +2675,13 @@ export async function POST(
         request
       );
 
+
     let conversationId =
       body?.conversationId ||
       null;
 
-    /* =====================================================
-       SPECIAL ANSWERS
-    ===================================================== */
+
+    /* SPECIAL ANSWERS */
 
     const specialAnswer =
       getSpecialAnswer(
@@ -5930,6 +2689,7 @@ export async function POST(
       );
 
     if (specialAnswer) {
+
       return createRezeResponse(
         {
           answer:
@@ -5946,9 +2706,8 @@ export async function POST(
       );
     }
 
-    /* =====================================================
-       LOAD MEMORIES
-    ===================================================== */
+
+    /* MEMORIES */
 
     let memories =
       await getMemories(
@@ -5956,9 +2715,8 @@ export async function POST(
         anonymousId
       );
 
-    /* =====================================================
-       DIRECT MEMORY
-    ===================================================== */
+
+    /* DIRECT MEMORY */
 
     const detected =
       detectMemory(
@@ -5966,6 +2724,7 @@ export async function POST(
       );
 
     if (detected) {
+
       await saveMemory(
         supabase,
         anonymousId,
@@ -5974,11 +2733,6 @@ export async function POST(
         10
       );
 
-      memories =
-        await getMemories(
-          supabase,
-          anonymousId
-        );
 
       let answer;
 
@@ -5986,18 +2740,24 @@ export async function POST(
         detected.category ===
         "name"
       ) {
+
         answer =
           `Nice to meet you, ${detected.value}. 😊`;
+
       } else if (
         detected.category ===
         "crush"
       ) {
+
         answer =
           `${detected.value}, huh? 😉 I'll remember that.`;
+
       } else {
+
         answer =
           "Got it. I'll remember that.";
       }
+
 
       return createRezeResponse(
         {
@@ -6014,9 +2774,8 @@ export async function POST(
       );
     }
 
-    /* =====================================================
-       MEMORY QUESTION
-    ===================================================== */
+
+    /* MEMORY QUESTION */
 
     const memoryAnswer =
       answerMemoryQuestion(
@@ -6025,6 +2784,7 @@ export async function POST(
       );
 
     if (memoryAnswer) {
+
       return createRezeResponse(
         {
           answer:
@@ -6041,11 +2801,11 @@ export async function POST(
       );
     }
 
-    /* =====================================================
-       CREATE CONVERSATION
-    ===================================================== */
+
+    /* CONVERSATION */
 
     if (!conversationId) {
+
       conversationId =
         await createConversation(
           supabase,
@@ -6054,9 +2814,8 @@ export async function POST(
         );
     }
 
-    /* =====================================================
-       SAVE USER MESSAGE
-    ===================================================== */
+
+    /* SAVE USER MESSAGE */
 
     const userSaved =
       await saveMessage(
@@ -6071,7 +2830,9 @@ export async function POST(
         }
       );
 
+
     if (!userSaved) {
+
       return NextResponse.json(
         {
           error:
@@ -6084,9 +2845,8 @@ export async function POST(
       );
     }
 
-    /* =====================================================
-       LOAD RECENT HISTORY
-    ===================================================== */
+
+    /* HISTORY */
 
     const recentHistory =
       await loadConversationHistory(
@@ -6095,93 +2855,78 @@ export async function POST(
         anonymousId
       );
 
-    /* =====================================================
-       RESPONSE MODE
-    ===================================================== */
+
+    /* DETAIL */
 
     const detailed =
       wantsDetailedAnswer(
         message
       );
 
-    /* =====================================================
-       ROMAN DETECTION
-    ===================================================== */
 
-    const romanQuestion =
-      isRomanQuestion(
+    /* ROMAN CONTEXT */
+
+    /*
+    THIS IS THE IMPORTANT PART.
+
+    Only the relevant Roman section is selected.
+    The whole database is NOT sent to Groq.
+    */
+
+    const romanContext =
+      getRomanContext(
         message
       );
 
-    const romanCurrentQuestion =
-      romanQuestion &&
-      isRomanCurrentQuestion(
-        message
-      );
 
-    /* =====================================================
-       WEB SEARCH
-    ===================================================== */
+    /* WEB SEARCH */
 
     let webData =
       null;
 
-    /*
-       Normal Roman questions do not require web search.
-
-       Current/recent Roman questions DO.
-
-       Non-Roman current questions also use Tavily.
-    */
-
-    const shouldSearch =
+    if (
       needsWebSearch(
         message
-      );
-
-    if (
-      shouldSearch
+      )
     ) {
+
       try {
+
         webData =
           await searchWeb(
             message
           );
+
       } catch (error) {
+
         console.error(
           "Web search error:",
           error
         );
-
-        /*
-           Do not kill the entire chat if Tavily fails.
-
-           Reze can still answer using Groq and built-in
-           knowledge.
-        */
 
         webData =
           null;
       }
     }
 
-    /* =====================================================
-       GROQ
-    ===================================================== */
+
+    /* GROQ */
 
     let answer;
 
     try {
+
       answer =
         await callGroq(
           recentHistory,
           memories,
           webData,
           detailed,
-          romanQuestion,
-          romanCurrentQuestion
+          romanContext
         );
+
     } catch (error) {
+
       console.error(
         "Groq error:",
         error
@@ -6200,18 +2945,18 @@ export async function POST(
           status:
             errorMessage
               .toLowerCase()
-              .includes(
-                "rate limit"
-              )
+              .includes("rate limit") ||
+            errorMessage
+              .toLowerCase()
+              .includes("tokens per minute")
               ? 429
               : 500
         }
       );
     }
 
-    /* =====================================================
-       SAVE ASSISTANT MESSAGE
-    ===================================================== */
+
+    /* SAVE ASSISTANT */
 
     await saveMessage(
       supabase,
@@ -6225,13 +2970,12 @@ export async function POST(
       }
     );
 
-    /* =====================================================
-       UPDATE CONVERSATION
-    ===================================================== */
+
+    /* UPDATE CONVERSATION */
 
     const {
       error:
-        updateConversationError
+        updateError
     } =
       await supabase
         .from(
@@ -6250,50 +2994,16 @@ export async function POST(
           anonymousId
         );
 
-    if (
-      updateConversationError
-    ) {
+    if (updateError) {
+
       console.error(
         "Conversation update error:",
-        updateConversationError
+        updateError
       );
     }
 
-    /* =====================================================
-       LONG-TERM MEMORY
-    ===================================================== */
 
-    const completeConversation =
-      [
-        ...recentHistory,
-
-        {
-          role:
-            "assistant",
-
-          content:
-            answer
-        }
-      ];
-
-    try {
-      await extractLongTermMemory(
-        supabase,
-        anonymousId,
-        completeConversation
-      );
-    } catch (
-      memoryError
-    ) {
-      console.error(
-        "Memory extraction failed:",
-        memoryError
-      );
-    }
-
-    /* =====================================================
-       RESPONSE
-    ===================================================== */
+    /* RESPONSE */
 
     return createRezeResponse(
       {
@@ -6307,11 +3017,20 @@ export async function POST(
           ),
 
         romanKnowledgeUsed:
-          romanQuestion,
+          Boolean(
+            romanContext
+          ),
+
+        romanTopics:
+          romanContext
+            ? getRomanTopics(
+                message
+              )
+            : [],
 
         sources:
           webData?.results?.map(
-            (result) => ({
+            result => ({
               title:
                 result.title,
 
@@ -6329,9 +3048,9 @@ export async function POST(
 
       existingCookie
     );
-  } catch (
-    error
-  ) {
+
+  } catch (error) {
+
     console.error(
       "Reze API error:",
       error
