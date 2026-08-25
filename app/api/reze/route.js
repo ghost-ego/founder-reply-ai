@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 import {
-  getRomanContext,
-  getRomanTopics,
+  getKnowledgeForQuestion,
+  getFullRomanKnowledge,
   isRomanQuestion,
-} from "./romanKnowledge";
+} from "@/lib/knowledge/router.js";
 
 export const runtime = "nodejs";
 
@@ -1112,34 +1112,35 @@ Usually:
 `;
 
   /* =====================================================
-     ROMAN HISTORY CONTEXT
-
-     IMPORTANT:
-     The actual Roman history is NOT stored in this file.
-
-     It comes from:
-     ./romanKnowledge.js
-
-     Only the relevant Roman information is passed
-     into Groq for the current question.
+     FULL ROMAN KNOWLEDGE
   ===================================================== */
 
   const romanInstruction =
     romanContext
       ? `
-ROMAN HISTORY REFERENCE
+ROMAN HISTORY KNOWLEDGE
 
 The user is asking about Roman history.
 
-Use the following Roman-history reference to answer accurately.
+You have access to Reze's full local Roman knowledge database.
+
+Use the Roman knowledge below as your primary reference for
+Roman-history questions.
 
 Rules:
-- Do not mention the Roman database.
-- Do not say this information came from a separate file.
-- Do not dump the entire reference.
-- Use only information relevant to the question.
-- If the user asks for a detailed explanation, explain it clearly.
-- Do not invent information that is not supported.
+- Answer the user's actual question.
+- Do not mention the database.
+- Do not mention files.
+- Do not mention the router.
+- Do not say the information came from local knowledge.
+- Do not dump unrelated Roman information.
+- Use the relevant information from the database.
+- If the user asks for a detailed answer, explain it fully.
+- Do not invent facts that conflict with the supplied knowledge.
+- If the supplied knowledge does not contain enough information,
+  say so naturally instead of inventing details.
+
+FULL ROMAN KNOWLEDGE:
 
 ${romanContext}
 `
@@ -1695,16 +1696,16 @@ export async function POST(
       );
 
     /* =====================================================
-       ROMAN HISTORY
-
-       This is the ONLY new connection to the Roman file.
-
-       The large Roman knowledge base stays inside:
-
-       app/api/reze/romanKnowledge.js
+       FULL ROMAN KNOWLEDGE ROUTING
     ===================================================== */
 
     let romanContext = "";
+
+    let romanKnowledgeUsed =
+      false;
+
+    let romanCategory =
+      null;
 
     if (
       isRomanQuestion(
@@ -1712,10 +1713,54 @@ export async function POST(
       )
     ) {
       try {
-        romanContext =
-          getRomanContext(
+        const romanRoute =
+          getKnowledgeForQuestion(
             message
           );
+
+        if (
+          romanRoute?.type ===
+          "roman"
+        ) {
+          romanCategory =
+            romanRoute.category ||
+            null;
+
+          /*
+           * IMPORTANT:
+           *
+           * We deliberately use the COMPLETE Roman knowledge
+           * object here instead of the old small file.
+           *
+           * This means Reze gets access to:
+           *
+           * overview
+           * republic
+           * empire
+           * emperors
+           * military
+           * wars
+           * society
+           * religion
+           * economy
+           * architecture
+           * provinces
+           * timeline
+           */
+
+          const fullRomanKnowledge =
+            getFullRomanKnowledge();
+
+          romanContext =
+            JSON.stringify(
+              fullRomanKnowledge,
+              null,
+              2
+            );
+
+          romanKnowledgeUsed =
+            true;
+        }
       } catch (romanError) {
         console.error(
           "Roman knowledge error:",
@@ -1723,6 +1768,9 @@ export async function POST(
         );
 
         romanContext = "";
+
+        romanKnowledgeUsed =
+          false;
       }
     }
 
@@ -1878,17 +1926,9 @@ export async function POST(
             webData
           ),
 
-        romanKnowledgeUsed:
-          Boolean(
-            romanContext
-          ),
+        romanKnowledgeUsed,
 
-        romanTopics:
-          romanContext
-            ? getRomanTopics(
-                message
-              )
-            : [],
+        romanCategory,
 
         sources:
           webData?.results?.map(
